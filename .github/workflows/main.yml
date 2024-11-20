@@ -43,9 +43,9 @@ jobs:
     - name: SSH and Pull Latest Changes
       uses: appleboy/ssh-action@v0.1.7
       with:
-        host: ${{ secrets.AREA_SECRETS_REMOTE_HOST }}
-        username: ${{ secrets.AREA_SECRETS_REMOTE_USER }}
-        key: ${{ secrets.AREA_SECRETS_SSH_PRIVATE_KEY }}
+        host: ${{ secrets.HOST }}
+        username: ${{ secrets.REMOTE_USER }}
+        key: ${{ secrets.SSH_PRIVATE_KEY }}
         script: |
           cd ~/B-DEV-500-RUN-5-2-area-cedric.roulof
           docker-compose down --volumes --remove-orphans

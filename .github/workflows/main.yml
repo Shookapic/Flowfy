@@ -1,0 +1,52 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v3
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '16'
+
+    - name: Install Backend Dependencies
+      run: cd backend && npm install
+
+    - name: Install Frontend Dependencies
+      run: cd frontend && npm install
+
+    - name: Run Code Formatter
+      run: |
+        cd backend && npx prettier --check .
+        cd ../frontend && npx prettier --check .
+
+    - name: Run Unit Tests
+      run: |
+        cd backend && npm test
+        cd ../frontend && npm test
+
+  deploy:
+    needs: build-and-test
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: SSH and Pull Latest Changes
+      uses: appleboy/ssh-action@v0.1.0
+      with:
+        host: ${{ secrets.REMOTE_HOST }}
+        username: ${{ secrets.REMOTE_USER }}
+        key: ${{ secrets.SSH_PRIVATE_KEY }}
+        script: |
+          cd ~/B-DEV-500-RUN-5-2-area-cedric.roulof
+          docker-compose down --volumes --remove-orphans
+          git pull origin main
+          docker-compose up --build -d

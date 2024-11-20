@@ -19,20 +19,20 @@ jobs:
         node-version: '16'
 
     - name: Install Backend Dependencies
-      run: cd backend && npm install
+      run: cd backend/area-back && npm install
 
     - name: Install Frontend Dependencies
-      run: cd frontend && npm install
+      run: cd frontend/area-front && npm install
 
     - name: Run Code Formatter
       run: |
-        cd backend && npx prettier --check .
-        cd ../frontend && npx prettier --check .
+        cd backend/area-back && npx prettier --check .
+        cd ../../frontend/area-front && npx prettier --check .
 
     - name: Run Unit Tests
       run: |
-        cd backend && npm test
-        cd ../frontend && npm test
+        cd backend/area-back && npm test
+        cd ../../frontend/area-front && npm test
 
   deploy:
     needs: build-and-test

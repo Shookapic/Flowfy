@@ -2,6 +2,6 @@ FROM node:18
 WORKDIR /app
 COPY . .
 RUN npm install
-EXPOSE 8081
+EXPOSE 80
 CMD ["npm", "start"]
 

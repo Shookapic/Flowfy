@@ -1,2 +1,2 @@
-./database/area.db
-./backend/area-back/.env
+area.db
+.env

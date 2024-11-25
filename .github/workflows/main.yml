@@ -45,7 +45,7 @@ jobs:
     - name: Setup Node.js
       uses: actions/setup-node@v3
       with:
-        node-version: '18'
+        node-version: '16'
 
     - name: Install Frontend Dependencies
       run: cd frontend/area-front && npm install
@@ -57,6 +57,10 @@ jobs:
     - name: Install Capacitor CLI
       run: |
         npm install @capacitor/core @capacitor/cli --prefix frontend/area-front
+
+    - name: Add Android Platform
+      run: |
+        cd frontend/area-front && npx cap add android
 
     - name: Sync Capacitor Project
       run: |

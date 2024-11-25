@@ -29,14 +29,58 @@ jobs:
         cd backend/area-back && npx prettier --write .
         cd ../../frontend/area-front && npx prettier --write .
 
-
     - name: Run Unit Tests
       run: |
         cd backend/area-back && npm test
         cd ../../frontend/area-front && npm test
 
-  deploy:
+  build-apk:
     needs: build-and-test
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v3
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '16'
+
+    - name: Install Frontend Dependencies
+      run: cd frontend/area-front && npm install
+
+    - name: Build React App
+      run: |
+        cd frontend/area-front && npm run build
+
+    - name: Install Capacitor CLI
+      run: |
+        npm install @capacitor/core @capacitor/cli --prefix frontend/area-front
+
+    - name: Sync Capacitor Project
+      run: |
+        cd frontend/area-front && npx cap sync android
+
+    - name: Setup Android Environment
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y openjdk-11-jdk android-sdk gradle
+        export ANDROID_HOME=/usr/lib/android-sdk
+        export PATH=$ANDROID_HOME/emulator:$ANDROID_HOME/tools:$ANDROID_HOME/tools/bin:$ANDROID_HOME/platform-tools:$PATH
+
+    - name: Build APK
+      working-directory: frontend/area-front/android
+      run: ./gradlew assembleDebug
+
+    - name: Upload APK
+      uses: actions/upload-artifact@v3
+      with:
+        name: app-debug.apk
+        path: frontend/area-front/android/app/build/outputs/apk/debug/app-debug.apk
+
+  deploy:
+    needs: [build-and-test, build-apk]
     runs-on: ubuntu-latest
 
     steps:

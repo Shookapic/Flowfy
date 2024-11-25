@@ -90,4 +90,20 @@ This document provides a quick comparison of three major database technologiesâ€
 - **MongoDB** shines when dealing with **unstructured data** and requires **scalability** with high **write throughput**. It's an excellent choice for **NoSQL** applications that need flexibility.
 - **MariaDB** is a powerful, **MySQL-compatible option**, ideal for **web applications** and **real-time analytics**. It's well-suited for **read-heavy workloads** and offers **high compatibility** with MySQL.
 
-For most applications, **PostgreSQL** stands out as the best solution when you need performance, scalability, and maintainability all in one. MongoDB and MariaDB excel in specific use cases like NoSQL data handling and MySQL compatibility respectively.
+---
+
+## **Our Choice: PostgreSQL**
+
+After evaluating the strengths and weaknesses of each database technology, we have chosen **PostgreSQL** for our database needs. Here are the key reasons for our decision:
+
+- **Advanced Features**: PostgreSQL offers advanced features like complex queries, joins, and analytics, which are essential for our application's requirements.
+- **Performance**: Its use of multi-version concurrency control (MVCC) ensures efficient handling of concurrent reads and writes, making it ideal for transactional systems.
+- **Scalability**: PostgreSQL supports both vertical and horizontal scaling, with extensions like Citus for distributed queries, ensuring it can grow with our needs.
+- **Maintainability**: The rich ecosystem, excellent documentation, and strong community support make PostgreSQL easy to manage and maintain.
+- **Data Integrity**: PostgreSQL's ACID compliance ensures high consistency and data integrity, which are crucial for our application's reliability.
+
+---
+
+For further reading:
+- [Why Choose PostgreSQL](https://example.com/why-postgresql)
+- [PostgreSQL vs MongoDB vs MariaDB: A Detailed Comparison](https://example.com/postgresql-vs-mongodb-vs-mariadb)

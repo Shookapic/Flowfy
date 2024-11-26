@@ -1,5 +1,5 @@
 
-# Contributing to AREA 🎉
+# Contributing to Flowfy 🎉
 
 Thank you for your interest in contributing to our React project! ❤️  
 We welcome all contributions, from bug fixes to new features, improvements, and documentation.
@@ -15,7 +15,7 @@ We welcome all contributions, from bug fixes to new features, improvements, and 
 ### 2. Clone Your Fork Locally
 - Clone the forked repository to your local machine:
   ```bash
-  git clone https://github.com/your-username/repository-name.git
+  git clone https://github.com/Shookapic/Flowfy.git
   cd repository-name
   ```
 
@@ -97,21 +97,16 @@ Provide a detailed description of your changes and their purpose.
 ---
 
 ## 🛠️ How We Use GitHub
-1. **Issues**: Use the [Issues tab](https://github.com/your-repo/issues) to report bugs or suggest features.  
+1. **Issues**: Use the [Issues tab](https://github.com/Shookapic/Flowfy/issues) to report bugs or suggest features.  
 2. **Pull Requests**: Follow the steps above to submit changes for review.  
-3. **Discussions**: Join [Discussions](https://github.com/your-repo/discussions) for questions and ideas.
-
----
-
-## 📜 Code of Conduct
-Please review our [Code of Conduct](CODE_OF_CONDUCT.md) before contributing. Be respectful, patient, and constructive in your interactions.
+3. **Discussions**: Join [Discussions](https://github.com/Shookapic/Flowfy/discussions) for questions and ideas.
 
 ---
 
 ## 📧 Need Help?
 If you encounter any issues or have questions, feel free to:
 - Open an issue in this repository.
-- Join our [Discussions](https://github.com/your-repo/discussions).
+- Join our [Discussions](https://github.com/Shookapic/Flowfy/discussions).
 - Contact the maintainers directly.
 
 ---

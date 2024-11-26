@@ -45,8 +45,8 @@ This document provides a high-level comparison of the top three JavaScript frame
 ---
 
 ## **Sources**
-1. [Amela Tech: React vs Angular vs Vue Comparison](https://amela.tech)  
-2. [Techlasi: Angular vs React vs Vue (2024)](https://techlasi.com)
+1. [Amela Tech: React vs Angular vs Vue Comparison](https://amela.tech/a-detailed-2024-comparison-angular-vs-react-vs-vue-js/)  
+2. [Techlasi: Angular vs React vs Vue (2024)](https://techlasi.com/savvy/angular-vs-react-vs-vue/)
 
 ---
 
@@ -68,7 +68,3 @@ After evaluating the strengths and weaknesses of each framework, we have chosen 
 - **Scalability**: React's flexibility and ecosystem make it highly scalable, suitable for both small projects and large, dynamic applications.
 
 ---
-
-For further reading:
-- [React vs Angular vs Vue: A 2024 Comparison](https://example.com/react-vs-angular-vs-vue-2024)
-- [Why We Chose React for Our Frontend](https://example.com/why-react)

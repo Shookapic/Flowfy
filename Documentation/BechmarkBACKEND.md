@@ -69,5 +69,5 @@ After evaluating the strengths and weaknesses of each technology, we have chosen
 ---
 
 For further reading:
-- [Node.js vs Laravel Comparison](https://kinsta.com/blog/node-vs-laravel/)&#8203;:contentReference[oaicite:5]{index=5}
-- [Python Web Framework Performance](https://www.digitalocean.com/community/tutorials)&#8203;:contentReference[oaicite:6]{index=6}
+- [Node.js vs Laravel vs Python](https://www.bytebase.com/blog/postgres-vs-mongodb/)
+- [When, How, And Why Use Node.js as Your Backend?](https://www.netguru.com/blog/node-js-backend)

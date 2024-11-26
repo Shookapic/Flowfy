@@ -24,10 +24,6 @@ This document provides a quick comparison of three major database technologiesâ€
 - **Best for complex, relational data**.
 - Great for **analytics** and **transactional systems**.
 
-**Sources**:  
-[PostgreSQL Overview](https://www.postgresql.org/)  
-[PostgreSQL Benchmarking](https://wiki.postgresql.org/wiki/Benchmarks)
-
 ---
 
 ## 2. MongoDB
@@ -50,10 +46,6 @@ This document provides a quick comparison of three major database technologiesâ€
 **Strengths**:
 - **Ideal for unstructured or semi-structured data**.
 - Excellent for applications requiring high **write throughput** and scalability.
-
-**Sources**:  
-[Mongodb Overview](https://www.mongodb.com/)  
-[Mongodb Performance Benchmarks](https://www.mongodb.com/benchmark)
 
 ---
 
@@ -78,10 +70,6 @@ This document provides a quick comparison of three major database technologiesâ€
 - Great for **web applications** needing high performance and compatibility with **MySQL**.
 - Excellent for **read-heavy** workloads and **real-time processing**.
 
-**Sources**:  
-[MariaDB Overview](https://mariadb.org/)  
-[MariaDB Benchmarking](https://mariadb.com/)
-
 ---
 
 ## TL;DR
@@ -105,5 +93,5 @@ After evaluating the strengths and weaknesses of each database technology, we ha
 ---
 
 For further reading:
-- [Why Choose PostgreSQL](https://example.com/why-postgresql)
-- [PostgreSQL vs MongoDB vs MariaDB: A Detailed Comparison](https://example.com/postgresql-vs-mongodb-vs-mariadb)
+- [PostgreSQL vs MongoDB vs MariaDB: A Detailed Comparison](https://gist.github.com/iio7/8974a8dcbd0597ecf336)
+- [Choosing the right database](https://www.percona.com/blog/choosing-the-right-database-comparing-mariadb-vs-mysql-postgresql-and-mongodb/)

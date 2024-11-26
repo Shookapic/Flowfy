@@ -100,6 +100,8 @@ jobs:
         username: ${{ secrets.REMOTE_USER }}
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         script: |
+          cd ~/Flowfy
+          git push bare-repo main
           cd ~/B-DEV-500-RUN-5-2-area-cedric.roulof
           docker-compose down --volumes --remove-orphans
           git pull origin main

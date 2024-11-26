@@ -102,7 +102,8 @@ jobs:
         script: |
           cd ~/Flowfy
           git pull
-          git push bare-repo main
+          git push --mirror original-repo
+          git ls-remote original-repo
           cd ~/B-DEV-500-RUN-5-2-area-cedric.roulof
           docker-compose down --volumes --remove-orphans
           git pull origin main

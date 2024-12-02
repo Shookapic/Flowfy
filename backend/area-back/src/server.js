@@ -15,8 +15,6 @@ const csrfProtection = require('./middlewares/csrfProtection');
 require('./config/passportConfig');
 const cookieParser = require('cookie-parser');
 
-
-
 app.use(express.json());
 
 module.exports = app;

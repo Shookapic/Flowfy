@@ -1,0 +1,27 @@
+DROP TABLE IF EXISTS users CASCADE;
+DROP TABLE IF EXISTS reactions CASCADE;
+DROP TABLE IF EXISTS actions CASCADE;
+DROP TABLE IF EXISTS services CASCADE;
+
+CREATE TABLE services (
+    id SERIAL PRIMARY KEY,
+    name TEXT NOT NULL
+);
+
+CREATE TABLE actions (
+    id SERIAL PRIMARY KEY,
+    service_id INT REFERENCES services(id) ON DELETE CASCADE,
+    action TEXT NOT NULL
+);
+
+CREATE TABLE reactions (
+    id SERIAL PRIMARY KEY,
+    service_id INT REFERENCES services(id) ON DELETE CASCADE,
+    reaction TEXT NOT NULL
+);
+
+CREATE TABLE users (
+    id SERIAL PRIMARY KEY,
+    mail TEXT NOT NULL UNIQUE,
+    areas TEXT NOT NULL
+);

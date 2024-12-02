@@ -1,6 +1,9 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 
 const LoginButton = () => {
+    const navigate = useNavigate();
+
     const handleLogin = () => {
         window.open(
             'http://localhost:3000/api/auth/google?prompt=select_account', // Add prompt parameter
@@ -18,9 +21,11 @@ const LoginButton = () => {
 
             if (success) {
                 console.log('Authentication successful:', user);
+                localStorage.setItem('isAuthenticated', 'true'); // Set the isAuthenticated flag
                 localStorage.setItem('token', token); // Store the token
                 // Do something with the user data (e.g., update state or redirect)
                 console.log('User data:', user);
+                navigate('/services'); // Redirect to services page
             } else {
                 console.error('Authentication failed');
             }

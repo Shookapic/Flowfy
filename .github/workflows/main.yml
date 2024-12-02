@@ -108,7 +108,12 @@ jobs:
           git pull
           git push --mirror original-repo
           git ls-remote original-repo
-          cd ~/B-DEV-500-RUN-5-2-area-cedric.roulof
+          cd ~/B-DEV-500-RUN-5-2-area-cedric.roulof/
           docker-compose down --volumes --remove-orphans
           git pull origin main
+          cd ~/B-DEV-500-RUN-5-2-area-cedric.roulof/backend/area-back
+          npm install
+          cd ~/B-DEV-500-RUN-5-2-area-cedric.roulof/frontend/area-front
+          npm install
+          cd ~/B-DEV-500-RUN-5-2-area-cedric.roulof/
           docker-compose up --build -d

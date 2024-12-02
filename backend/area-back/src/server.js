@@ -5,6 +5,17 @@ const actions = require('./crud_actions');
 const reactions = require('./crud_reactions');
 const app = express();
 const port = 3000;
+const passport = require('passport');
+const session = require('express-session');
+const { Strategy: GoogleStrategy } = require('passport-google-oauth20');
+const jwt = require('jsonwebtoken');
+const cors = require('cors');
+require('dotenv').config();
+const csrfProtection = require('./middlewares/csrfProtection');
+require('./config/passportConfig');
+const cookieParser = require('cookie-parser');
+
+
 
 app.use(express.json());
 
@@ -182,9 +193,203 @@ app.post('/update-action', async (req, res) => {
   }
 });
 
+// Middlewares
+/**
+ * @brief Middleware to parse cookies.
+ */
+app.use(cookieParser());
+
+/**
+ * @brief Middleware to handle sessions.
+ */
+app.use(session({
+    secret: process.env.SESSION_SECRET,
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict'
+    }
+}));
+
+/**
+ * @brief Middleware to protect against CSRF attacks.
+ */
+app.use(csrfProtection);
+
+const jwtSecret = process.env.JWT_SECRET;
+
+// Initialize Passport
+/**
+ * @brief Middleware to initialize Passport.
+ */
+app.use(passport.initialize());
+
+/**
+ * @brief Middleware to manage user sessions with Passport.
+ */
+app.use(passport.session());
+
+// Configure Passport strategy
+/**
+ * @brief Configures Passport to use the Google OAuth 2.0 strategy for authentication.
+ */
+passport.use(new GoogleStrategy({
+    clientID: process.env.GOOGLE_CLIENT_ID,
+    clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+    callbackURL: '/api/auth/google/callback',
+},
+(accessToken, refreshToken, profile, done) => {
+    // Save user information for session
+    return done(null, profile);
+}));
+
+/**
+ * @brief Serializes the user information into the session.
+ */
+passport.serializeUser((user, done) => done(null, user));
+
+/**
+ * @brief Deserializes the user information from the session.
+ */
+passport.deserializeUser((obj, done) => done(null, obj));
+
+// Enable CORS for frontend
+/**
+ * @brief Middleware to enable Cross-Origin Resource Sharing (CORS) for the frontend application.
+ */
+app.use(cors({
+    origin: 'http://localhost', // Frontend URL
+    credentials: true,
+}));
+
+// CSRF token endpoint
+/**
+ * @brief Endpoint to fetch the CSRF token.
+ * @param req The request object.
+ * @param res The response object.
+ */
+app.get('/api/csrf-token', (req, res) => {
+    res.json({ csrfToken: req.csrfToken() });
+});
+
+// Routes
+/**
+ * @brief Endpoint to serve the home page.
+ * @param req The request object.
+ * @param res The response object.
+ */
+app.get('/', (req, res) => {
+    res.send('Home Page');
+});
+
+// Error handling for CSRF
+/**
+ * @brief Middleware to handle CSRF errors.
+ * @param err The error object.
+ * @param req The request object.
+ * @param res The response object.
+ * @param next The next middleware function.
+ */
+app.use((err, req, res, next) => {
+    if (err.code === 'EBADCSRFTOKEN') {
+        return res.status(403).json({ message: 'Invalid CSRF token' });
+    }
+    next(err);
+});
+
+// Google Auth routes
+/**
+ * @brief Endpoint to initiate Google authentication.
+ * @param req The request object.
+ * @param res The response object.
+ * @param next The next middleware function.
+ */
+app.get('/api/auth/google', (req, res, next) => {
+    const email = req.query.email || ''; // Optionally pass an email from the frontend
+    passport.authenticate('google', {
+        scope: [
+            'https://www.googleapis.com/auth/userinfo.profile',
+            'https://www.googleapis.com/auth/userinfo.email'
+        ],
+        prompt: 'select_account',
+        login_hint: email
+    })(req, res, next);
+});
+
+/**
+ * @brief Callback endpoint for Google authentication.
+ * @param req The request object.
+ * @param res The response object.
+ */
+app.get('/api/auth/google/callback',
+    passport.authenticate('google', { failureRedirect: '/' }),
+    (req, res) => {
+        const user = req.user;
+
+        // Generate a JWT
+        const token = jwt.sign(
+            { id: user.id, name: user.displayName, email: user.emails[0].value },
+            jwtSecret,
+            { expiresIn: '1h' }
+        );
+
+        // Send script to close the popup and send data to the parent window
+        res.send(
+            `<script>
+                // Pass the data back to the opener (parent window)
+                window.opener.postMessage({
+                    success: true,
+                    token: '${token}',
+                    user: {
+                        id: '${user.id}',
+                        name: '${user.displayName}',
+                        email: '${user.emails[0].value}'
+                    }
+                }, '*');
+                // Close the popup
+                window.close();
+            </script>`
+        );
+    }
+);
+
+/**
+ * @brief Endpoint to fetch the authenticated user's information.
+ * @param req The request object.
+ * @param res The response object.
+ */
+app.get('/api/auth/user', (req, res) => {
+    if (req.isAuthenticated()) {
+        res.json(req.user);
+    } else {
+        res.status(401).json({ message: 'Unauthorized' });
+    }
+});
+
+/**
+ * @brief Endpoint to log out the user.
+ * @param req The request object.
+ * @param res The response object.
+ */
+app.get('/api/auth/logout', (req, res) => {
+    req.logout((err) => {
+        if (err) {
+            return res.status(500).json({ message: 'Logout failed' });
+        }
+        req.session.regenerate((err) => {
+            if (err) {
+                return res.status(500).json({ message: 'Failed to regenerate session' });
+            }
+            res.clearCookie('connect.sid'); // Clear the session cookie
+            res.json({ message: 'Logged out successfully' });
+        });
+    });
+});
+
 if (process.env.NODE_ENV !== 'test') {
   app.listen(port, () => {
     console.log(`Server is running on http://localhost:${port}`);
   });
 }
-

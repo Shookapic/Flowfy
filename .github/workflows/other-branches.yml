@@ -1,0 +1,34 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches-ignore:
+      - main
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v3
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '16'
+
+    - name: Install Backend Dependencies
+      run: cd backend/area-back && npm install
+
+    - name: Install Frontend Dependencies
+      run: cd frontend/area-front && npm install
+
+    - name: Run Code Formatter
+      run: |
+        cd backend/area-back && npx prettier --write .
+        cd ../../frontend/area-front && npx prettier --write .
+
+    - name: Run Unit Tests
+      run: |
+        cd backend/area-back && npm test

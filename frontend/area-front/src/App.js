@@ -1,6 +1,7 @@
 import './App.css';
 import Oauth2 from './component/Oauth2';
 import { Services } from './component/services.jsx';
+import { ServiceTemplate } from './component/ServiceTemplate.jsx';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 
 function App() {
@@ -10,6 +11,7 @@ function App() {
         <Routes>
           <Route path="/" element={<Oauth2 />} />
           <Route path="/services" element={<Services />} />
+          <Route path="/:serviceName" element={<ServiceTemplate />} />
         </Routes>
       </div>
     </Router>

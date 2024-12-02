@@ -8,6 +8,8 @@ const port = 3000;
 
 app.use(express.json());
 
+module.exports = app;
+
 app.get('/users', async (req, res) => {
   try {
     const result = await users.getUsers();
@@ -72,7 +74,7 @@ app.post('/add_services', async (req, res) => {
   }
 });
 
-app/post('/delete-service', async (req, res) => {
+app.post('/delete-service', async (req, res) => {
   const { id } = req.body;
   try {
     await services.deleteService(id);
@@ -183,3 +185,4 @@ app.post('/update-action', async (req, res) => {
 app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);
 });
+

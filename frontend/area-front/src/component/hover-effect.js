@@ -35,7 +35,7 @@ export const HoverEffect = ({
             )}
           </AnimatePresence>
           <Card bgColor={item.bgColor}>
-            <CardLogo src={item.logo} alt={item.title} scale={item.scale} />
+            <CardLogo icon={item.icon} />
             <CardDescription textColor={item.textColor}>{item.description}</CardDescription>
           </Card>
         </Link>
@@ -63,18 +63,11 @@ export const Card = ({
 
 export const CardLogo = ({
   className,
-  src,
-  alt,
-  scale
+  icon
 }) => {
   return (
-    <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
-      <img
-        className={cn("mb-4", className)}
-        src={src}
-        alt={alt}
-        style={{ transform: `scale(${scale})` }}
-      />
+    <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-5xl">
+      {icon}
     </div>
   );
 };

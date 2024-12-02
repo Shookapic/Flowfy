@@ -4,12 +4,35 @@ const users = require('../src/crud_users');
 const services = require('../src/crud_services');
 const actions = require('../src/crud_actions');
 const reactions = require('../src/crud_reactions');
-const app = require('../src/server'); // Assume the code is in a file named server.js
+const app = require('../src/server');
 
-jest.mock('../src/crud_users');
-jest.mock('../src/crud_services');
-jest.mock('../src/crud_actions');
-jest.mock('../src/crud_reactions');
+jest.mock('../src/crud_users', () => ({
+  getUsers: jest.fn(),
+  createUser: jest.fn(),
+  deleteUser: jest.fn(),
+  updateUser: jest.fn(),
+}));
+
+jest.mock('../src/crud_services', () => ({
+  getServices: jest.fn(),
+  createService: jest.fn(),
+  deleteService: jest.fn(),
+  updateService: jest.fn(),
+}));
+
+jest.mock('../src/crud_actions', () => ({
+  getActions: jest.fn(),
+  createAction: jest.fn(),
+  deleteAction: jest.fn(),
+  updateAction: jest.fn(),
+}));
+
+jest.mock('../src/crud_reactions', () => ({
+  getReactions: jest.fn(),
+  createReaction: jest.fn(),
+  deleteReaction: jest.fn(),
+  updateReaction: jest.fn(),
+}));
 
 describe('Express API Tests', () => {
   beforeEach(() => {

@@ -1,145 +1,188 @@
 const express = require('express');
-const passport = require('passport');
-const session = require('express-session');
-const { Strategy: GoogleStrategy } = require('passport-google-oauth20');
-const jwt = require('jsonwebtoken');
-const cors = require('cors');
-require('dotenv').config();
-const csrfProtection = require('./middlewares/csrfProtection');
-require('./config/passportConfig');
-const { generateToken } = require('./config/jwtConfig');
-const cookieParser = require('cookie-parser');
-
-// Apply CSRF protection to all sensitive routes
-
+const users = require('./crud_users');
+const services = require('./crud_services');
+const actions = require('./crud_actions');
+const reactions = require('./crud_reactions');
 const app = express();
+const port = 3000;
 
-// Middlewares
-app.use(cookieParser());
-app.use(session({
-    secret: process.env.SESSION_SECRET,
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict'
-    }
-}));
+app.use(express.json());
 
-// CSRF protection
-app.use(csrfProtection);
+module.exports = app;
 
-const jwtSecret = process.env.JWT_SECRET;
-
-
-// Initialize Passport
-app.use(passport.initialize());
-app.use(passport.session());
-
-// Configure Passport strategy
-passport.use(new GoogleStrategy({
-    clientID: process.env.GOOGLE_CLIENT_ID,
-    clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    callbackURL: '/api/auth/google/callback',
-},
-(accessToken, refreshToken, profile, done) => {
-    // Save user information for session
-    return done(null, profile);
-}));
-
-passport.serializeUser((user, done) => done(null, user));
-passport.deserializeUser((obj, done) => done(null, obj));
-
-// Enable CORS for frontend
-app.use(cors({
-    origin: 'http://localhost:8000', // Frontend URL
-    credentials: true,
-}));
-// CSRF token endpoint
-app.get('/api/csrf-token', (req, res) => {
-    res.json({ csrfToken: req.csrfToken() });
+app.get('/users', async (req, res) => {
+  try {
+    const result = await users.getUsers();
+    res.status(200).json(result);
+  } catch (error) {
+    console.error(error);
+    res.status(500).send('Error fetching users');
+  }
 });
 
-// Routes
-app.get('/', (req, res) => {
-    res.send('Home Page');
+app.post('/add-users', async (req, res) => {
+  const { email, areas } = req.body;
+  try {
+    await users.createUser(email, areas);
+    res.status(201).send('User created');
+  } catch (error) {
+    console.error(error);
+    res.status(500).send('Error creating user');
+  }
 });
 
-// Error handling for CSRF
-app.use((err, req, res, next) => {
-    if (err.code === 'EBADCSRFTOKEN') {
-        return res.status(403).json({ message: 'Invalid CSRF token' });
-    }
-    next(err);
+app.post('/delete-user', async (req, res) => {
+  const { id } = req.body;
+  try {
+    await users.deleteUser(id);
+    res.status(200).send('User deleted');
+  } catch (error) {
+    console.error(error);
+    res.status(500).send('Error deleting user');
+  }
 });
 
-// Google Auth routes
-app.get('/api/auth/google', (req, res, next) => {
-    const email = req.query.email || ''; // Optionally pass an email from the frontend
-    passport.authenticate('google', {
-        scope: ['profile', 'email'],
-        prompt: 'select_account',
-        login_hint: email
-    })(req, res, next);
+app.post('/update-user', async (req, res) => {
+  const { id, email, areas } = req.body;
+  try {
+    await users.updateUser(id, email, areas);
+    res.status(200).send('User updated');
+  } catch (error) {
+    console.error(error);
+    res.status(500).send('Error updating user');
+  }
 });
 
-app.get('/api/auth/google/callback',
-    passport.authenticate('google', { failureRedirect: '/' }),
-    (req, res) => {
-        const user = req.user;
-
-        // Generate a JWT
-        const token = jwt.sign(
-            { id: user.id, name: user.displayName, email: user.emails[0].value },
-            jwtSecret,
-            { expiresIn: '1h' }
-        );
-
-        // Send script to close the popup and send data to the parent window
-        res.send(
-            `<script>
-                // Pass the data back to the opener (parent window)
-                window.opener.postMessage({
-                    success: true,
-                    token: '${token}',
-                    user: {
-                        id: '${user.id}',
-                        name: '${user.displayName}',
-                        email: '${user.emails[0].value}'
-                    }
-                }, '*');
-                // Close the popup
-                window.close();
-            </script>`
-        );
-    }
-);
-
-// Route to fetch user info after login
-app.get('/api/auth/user', (req, res) => {
-    if (req.isAuthenticated()) {
-        res.json(req.user);
-    } else {
-        res.status(401).json({ message: 'Unauthorized' });
-    }
+app.get('/services', async (req, res) => {
+  try {
+    const result = await services.getServices();
+    res.status(200).json(result);
+  } catch (error) {
+    console.error(error);
+    res.status(500).send('Error fetching services');
+  }
 });
 
-// Logout route
-app.get('/api/auth/logout', (req, res) => {
-    req.logout((err) => {
-        if (err) {
-            return res.status(500).json({ message: 'Logout failed' });
-        }
-        req.session.regenerate((err) => {
-            if (err) {
-                return res.status(500).json({ message: 'Failed to regenerate session' });
-            }
-            res.clearCookie('connect.sid'); // Clear the session cookie
-            res.json({ message: 'Logged out successfully' });
-        });
-    });
+app.post('/add_services', async (req, res) => {
+  const { name } = req.body;
+  try {
+    await services.createService(name);
+    res.status(201).send('Service created');
+  } catch (error) {
+    console.error(error);
+    res.status(500).send('Error creating service');
+  }
 });
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+app.post('/delete-service', async (req, res) => {
+  const { id } = req.body;
+  try {
+    await services.deleteService(id);
+    res.status(200).send('Service deleted');
+  } catch (error) {
+    console.error(error);
+    res.status(500).send('Error deleting service');
+  }
+});
+
+app.post('/update-service', async (req, res) => {
+  const { id, name } = req.body;
+  try {
+    await services.updateService(id, name);
+    res.status(200).send('Service updated');
+  } catch (error) {
+    console.error(error);
+    res.status(500).send('Error updating service');
+  }
+});
+
+app.get('/reactions', async (req, res) => {
+  try {
+    const result = await reactions.getReactions();
+    res.status(200).json(result);
+  } catch (error) {
+    console.error(error);
+    res.status(500).send('Error fetching reactions');
+  }
+});
+
+app.post('/add-reactions', async (req, res) => {
+  const { serviceId, description } = req.body;
+  try {
+    await reactions.createReaction(serviceId, description);
+    res.status(201).send('Reaction created');
+  } catch (error) {
+    console.error(error);
+    res.status(500).send('Error creating reaction');
+  }
+});
+
+app.post('/delete-reaction', async (req, res) => {
+  const { id } = req.body;
+  try {
+    await reactions.deleteReaction(id);
+    res.status(200).send('Reaction deleted');
+  } catch (error) {
+    console.error(error);
+    res.status(500).send('Error deleting reaction');
+  }
+});
+
+app.post('/update-reaction', async (req, res) => {
+  const { id, description } = req.body;
+  try {
+    await reactions.updateReaction(id, description);
+    res.status(200).send('Reaction updated');
+  } catch (error) {
+    console.error(error);
+    res.status(500).send('Error updating reaction');
+  }
+});
+
+app.post('/actions', async (req, res) => {
+  try {
+    const result = await actions.getActions();
+    res.status(200).json(result);
+  } catch (error) {
+    console.error(error);
+    res.status(500).send('Error fetching actions');
+  }
+});
+
+app.post('/add-actions', async (req, res) => {
+  const { serviceId, description } = req.body;
+  try {
+    await actions.createAction(serviceId, description);
+    res.status(201).send('Action created');
+  } catch (error) {
+    console.error(error);
+    res.status(500).send('Error creating action');
+  }
+});
+
+app.post('/delete-action', async (req, res) => {
+  const { id } = req.body;
+  try {
+    await actions.deleteAction(id);
+    res.status(200).send('Action deleted');
+  } catch (error) {
+    console.error(error);
+    res.status(500).send('Error deleting action');
+  }
+});
+
+app.post('/update-action', async (req, res) => {
+  const { id, description } = req.body;
+  try {
+    await actions.updateAction(id, description);
+    res.status(200).send('Action updated');
+  } catch (error) {
+    console.error(error);
+    res.status(500).send('Error updating action');
+  }
+});
+
+app.listen(port, () => {
+  console.log(`Server is running on http://localhost:${port}`);
+});
+

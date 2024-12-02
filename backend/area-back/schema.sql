@@ -11,17 +11,17 @@ CREATE TABLE services (
 CREATE TABLE actions (
     id SERIAL PRIMARY KEY,
     service_id INT REFERENCES services(id) ON DELETE CASCADE,
-    action TEXT NOT NULL
+    description TEXT NOT NULL
 );
 
 CREATE TABLE reactions (
     id SERIAL PRIMARY KEY,
     service_id INT REFERENCES services(id) ON DELETE CASCADE,
-    reaction TEXT NOT NULL
+    description TEXT NOT NULL
 );
 
 CREATE TABLE users (
     id SERIAL PRIMARY KEY,
-    mail TEXT NOT NULL UNIQUE,
+    email TEXT NOT NULL UNIQUE,
     areas TEXT NOT NULL
 );

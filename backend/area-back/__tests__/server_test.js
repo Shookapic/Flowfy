@@ -6,6 +6,8 @@ const actions = require('../src/crud_actions');
 const reactions = require('../src/crud_reactions');
 const app = require('../src/server');
 
+let server;
+
 jest.mock('../src/crud_users', () => ({
   getUsers: jest.fn(),
   createUser: jest.fn(),
@@ -33,6 +35,18 @@ jest.mock('../src/crud_reactions', () => ({
   deleteReaction: jest.fn(),
   updateReaction: jest.fn(),
 }));
+
+beforeAll(() => {
+  // Start the server before all tests
+  server = app.listen(3000, () => {
+    console.log('Server is running on http://localhost:3000');
+  });
+});
+
+afterAll(() => {
+  // Close the server after all tests
+  server.close();
+});
 
 describe('Express API Tests', () => {
   beforeEach(() => {

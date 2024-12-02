@@ -18,7 +18,7 @@ const AuthCallback = () => {
                 }
             })
             .catch((err) => console.error('Auth error:', err));
-    }, []);
+    }, [navigate]);
 
     return <div>Authenticating...</div>;
 };

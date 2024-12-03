@@ -5,6 +5,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import '../icon/fontawesome';
 import Footer from './Footer';
 import { motion } from 'framer-motion';
+import Navbar from './Navbar';
 
 
 function Homepage() {
@@ -26,6 +27,7 @@ function Homepage() {
 
     return (
       <>
+        <Navbar />
         <div className="relative w-full h-[80vh]">
           <img src={headerImage} alt="header_image" className="object-cover w-full h-full" />
           <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center">

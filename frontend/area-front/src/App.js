@@ -25,7 +25,7 @@ function App() {
           <Route path="/auth/callback" element={<AuthCallback />} />
           <Route path="/services" element={<ProtectedRoute><Services /></ProtectedRoute>} />
           <Route path="*" element={<Navigate to="/login" replace />} />
-          <Route path="/" element={<ProtectedRoute> <Homepage /> </ProtectedRoute>} />
+          <Route path="/" element={<Homepage /> } />
         </Routes>
       </div>
     </Router>

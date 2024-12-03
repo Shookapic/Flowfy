@@ -15,7 +15,7 @@ const LogoutButton = () => {
         .catch((err) => console.error('Logout error:', err));
     };
 
-    return <button onClick={handleLogout}>Logout</button>;
+    return <button onClick={handleLogout} className="btn btn-error btn-outline">Logout</button>;
 };
 
 export default LogoutButton;

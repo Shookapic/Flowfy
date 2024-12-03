@@ -6,13 +6,31 @@ import { Services } from './component/services.jsx';
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
-  const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
-  
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
+  const [isLogged, setIsLogged] = React.useState(null);
+
+  React.useEffect(() => {
+    const email = localStorage.getItem('email');
+    if (email) {
+      fetch(`http://localhost:3000/isUserLogged?email=${encodeURIComponent(email)}`, {
+        method: 'GET',
+      })
+        .then((response) => response.json()) // Assumes the API returns plain `true` or `false`
+        .then((data) => setIsLogged(data))
+        .catch((error) => {
+          console.error('Error checking login status:', error);
+          setIsLogged(false);
+        });
+    } else {
+      setIsLogged(false);
+    }
+  }, []);
+
+  if (isLogged === null) {
+    // Show a loading indicator while waiting for the API response
+    return <div>Loading...</div>;
   }
 
-  return children;
+  return isLogged ? children : <Navigate to="/login" replace />;
 };
 
 function App() {

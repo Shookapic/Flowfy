@@ -62,7 +62,7 @@ async function deleteUser(id) {
 }
 
 /**
- * Creates a new user in the database.
+ * Creates a new user in the database or updates the existing user's information.
  * 
  * @async
  * @function createUser
@@ -72,7 +72,7 @@ async function deleteUser(id) {
  * @param {string} access_token - The access token for the user.
  * @param {string} refresh_token - The refresh token for the user.
  * 
- * @returns {Promise<void>} - A promise that resolves when the user is created.
+ * @returns {Promise<void>} - A promise that resolves when the user is created or updated.
  * @throws {Error} - Throws an error if the database query fails.
  */
 async function createUser(email, areas, is_logged, access_token, refresh_token) {
@@ -82,18 +82,21 @@ async function createUser(email, areas, is_logged, access_token, refresh_token) 
     const checkRes = await client.query(checkQuery, [email]);
 
     if (checkRes.rows.length > 0) {
-      console.log('User already exists:', checkRes.rows[0]);
-      return;
+      // Update the existing user
+      const updateQuery = 'UPDATE users SET areas = $2, is_logged = $3, access_token = $4, refresh_token = $5 WHERE email = $1 RETURNING *';
+      const updateValues = [email, areas, is_logged, access_token, refresh_token];
+      const updateRes = await client.query(updateQuery, updateValues);
+      console.log('User Updated:', updateRes.rows[0]);
+    } else {
+      // Insert the new user
+      const insertQuery = 'INSERT INTO users(email, areas, is_logged, access_token, refresh_token) VALUES($1, $2, $3, $4, $5) RETURNING *';
+      const insertValues = [email, areas, is_logged, access_token, refresh_token];
+      const insertRes = await client.query(insertQuery, insertValues);
+      console.log('User Created:', insertRes.rows[0]);
     }
-
-    // Insert the new user
-    const query = 'INSERT INTO users(email, areas, is_logged, access_token, refresh_token) VALUES($1, $2, $3, $4, $5) RETURNING *';
-    const values = [email, areas, is_logged, access_token, refresh_token];
-    const res = await client.query(query, values);
-    console.log('User Created:', res.rows[0]);
   } catch (error) {
-    console.error('Error creating user:', error);
-    throw new Error('Error creating user');
+    console.error('Error creating or updating user:', error);
+    throw new Error('Error creating or updating user');
   }
 }
 

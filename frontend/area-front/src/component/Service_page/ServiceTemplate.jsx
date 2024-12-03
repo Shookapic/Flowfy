@@ -65,7 +65,6 @@ export function ServiceTemplate() {
     }
   };
 
-    // Update handleActionSubmit
   const handleActionSubmit = (action) => {
     if (!isConnected) {
       setNotification("Please connect to the service first");
@@ -76,34 +75,26 @@ export function ServiceTemplate() {
     setSelectedActions([...selectedActions, { id: actionId, name: action }]);
     setSelectedReactions({ ...selectedReactions, [actionId]: [] });
     setIsActionModalOpen(false);
-    // Add notification for adding reactions
     setNotification("Add at least one reaction to make this action work");
     setTimeout(() => setNotification(null), 3000);
   };
   
-  // Update handleReactionSubmit
   const handleReactionSubmit = (reactions) => {
     setSelectedReactions({
       ...selectedReactions,
       [currentAction]: reactions
     });
-  
-    // Extract service names from reactions
     const serviceNames = reactions.map(r => {
       const match = r.match(/\((.*?)\)/);
       return match ? match[1].toLowerCase() : '';
     });
-  
-    // Check if services are connected
     const notConnectedServices = serviceNames.filter(
       name => !connectedServices[name]
     );
-  
     if (notConnectedServices.length > 0) {
       setNotification(`Connect to (${notConnectedServices.join('), (')}) to activate this reaction`);
       setTimeout(() => setNotification(null), 3000);
     }
-  
     setIsReactionModalOpen(false);
     setCurrentAction(null);
   };

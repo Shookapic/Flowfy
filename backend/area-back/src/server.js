@@ -29,16 +29,16 @@ app.get('/users', async (req, res) => {
   }
 });
 
-app.post('/add-users', async (req, res) => {
-  const { email, areas } = req.body;
-  try {
-    await users.createUser(email, areas);
-    res.status(201).send('User created');
-  } catch (error) {
-    console.error(error);
-    res.status(500).send('Error creating user');
-  }
-});
+  app.post('/add-users', async (req, res) => {
+    const { email, areas, is_logged, accessToken, refreshToken} = req.body;
+    try {
+      await users.createUser(email, areas, is_logged, accessToken, refreshToken);
+      res.status(201).send('User created');
+    } catch (error) {
+      console.error(error);
+      res.status(500).send('Error creating user');
+    }
+  });
 
 app.post('/delete-user', async (req, res) => {
   const { id } = req.body;
@@ -258,7 +258,7 @@ passport.deserializeUser((obj, done) => done(null, obj));
  * @brief Middleware to enable Cross-Origin Resource Sharing (CORS) for the frontend application.
  */
 app.use(cors({
-    origin: 'http://flowfy.duckdns.org', // Frontend URL
+    origin: 'http://localhost', // Frontend URL
     credentials: true,
 }));
 
@@ -324,7 +324,8 @@ app.get('/api/auth/google', (req, res, next) => {
 app.get('/api/auth/google/callback',
     passport.authenticate('google', { failureRedirect: '/' }),
     (req, res) => {
-        const user = req.user;
+      const user = req.user;
+        users.createUser(user.emails[0].value, [], false, '', '');
 
         // Generate a JWT
         const token = jwt.sign(
@@ -384,6 +385,44 @@ app.get('/api/auth/logout', (req, res) => {
             res.json({ message: 'Logged out successfully' });
         });
     });
+});
+
+app.get('/get-user-by-email', async (req, res) => {
+  const { email } = req.query;
+  try {
+    const result = await users.getUserByEmail(email);
+    res.status(200).json(result);
+  } catch (error) {
+    console.error(error);
+    res.status(500).send('Error fetching user');
+  }
+});
+
+app.get('/isUserLogged', async (req, res) => {
+  const { email } = req.query;
+  try {
+    const result = await users.isUserLogged(email);
+    if (result) {
+      const isLogged = result.is_logged; // Extract the is_logged field
+      res.status(200).json({ is_logged: isLogged }); // Send proper JSON response
+    } else {
+      res.status(404).json({ is_logged: false }); // User not found
+    }
+  } catch (error) {
+    console.error(error);
+    res.status(500).send('Error fetching user');
+  }
+});
+
+app.get('/setUserLoggedStatus', async (req, res) => {
+  const { email, status } = req.query;
+  try {
+    await users.setUserLoggedStatus(email, status);
+    res.status(200).send('User logged status updated');
+  } catch (error) {
+    console.error(error);
+    res.status(500).send('Error updating user logged status');
+  }
 });
 
 if (process.env.NODE_ENV !== 'test') {

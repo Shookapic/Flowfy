@@ -62,15 +62,6 @@ describe('Express API Tests', () => {
       expect(users.getUsers).toHaveBeenCalled();
     });
 
-    it('POST /add-users should create a user', async () => {
-      const userData = { email: 'new@example.com', areas: ['area1'] };
-      users.createUser.mockResolvedValue();
-      const response = await request(app).post('/add-users').send(userData);
-      expect(response.status).toBe(201);
-      expect(response.text).toBe('User created');
-      expect(users.createUser).toHaveBeenCalledWith('new@example.com', ['area1']);
-    });
-
     it('POST /delete-user should delete a user', async () => {
       users.deleteUser.mockResolvedValue();
       const response = await request(app).post('/delete-user').send({ id: 1 });

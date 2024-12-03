@@ -2,12 +2,16 @@ name: CI/CD Pipeline
 
 on:
   pull_request:
-    branches-ignore:
+    branches:
       - main
 
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [16, 18]
 
     steps:
     - name: Checkout Repository
@@ -16,19 +20,29 @@ jobs:
     - name: Setup Node.js
       uses: actions/setup-node@v3
       with:
-        node-version: '16'
+        node-version: ${{ matrix.node-version }}
 
     - name: Install Backend Dependencies
-      run: cd backend/area-back && npm install
+      working-directory: backend/area-back
+      run: npm install
 
     - name: Install Frontend Dependencies
-      run: cd frontend/area-front && npm install
+      working-directory: frontend/area-front
+      run: npm install
 
-    - name: Run Code Formatter
+    - name: Check Code Formatting
       run: |
-        cd backend/area-back && npx prettier --write .
-        cd ../../frontend/area-front && npx prettier --write .
+        cd backend/area-back && npx prettier --check .
+        cd ../../frontend/area-front && npx prettier --check --write .
 
-    - name: Run Unit Tests
-      run: |
-        cd backend/area-back && npm test
+    - name: Run Backend Unit Tests
+      working-directory: backend/area-back
+      run: npm test
+
+    - name: Run Frontend Unit Tests
+      working-directory: frontend/area-front
+      run: npm test
+
+    - name: Does it build ?
+      working-directory: frontend/area-front
+      run: npm build

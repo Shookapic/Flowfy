@@ -23,5 +23,8 @@ CREATE TABLE reactions (
 CREATE TABLE users (
     id SERIAL PRIMARY KEY,
     email TEXT NOT NULL UNIQUE,
-    areas TEXT NOT NULL
+    areas TEXT[] NOT NULL,
+    is_logged BOOLEAN NOT NULL,
+    access_token TEXT NULL,
+    refresh_token TEXT NULL
 );

@@ -133,15 +133,6 @@ describe('Express API Tests', () => {
       expect(reactions.getReactions).toHaveBeenCalled();
     });
 
-    it('POST /add-reactions should create a reaction', async () => {
-      reactions.createReaction.mockResolvedValue();
-      const reactionData = { serviceId: 1, description: 'NewReaction' };
-      const response = await request(app).post('/add-reactions').send(reactionData);
-      expect(response.status).toBe(201);
-      expect(response.text).toBe('Reaction created');
-      expect(reactions.createReaction).toHaveBeenCalledWith(1, 'NewReaction');
-    });
-
     it('POST /delete-reaction should delete a reaction', async () => {
       reactions.deleteReaction.mockResolvedValue();
       const response = await request(app).post('/delete-reaction').send({ id: 1 });

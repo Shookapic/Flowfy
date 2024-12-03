@@ -11,7 +11,7 @@ const port = 3000;
 app.use(express.json());
 app.use(cookieParser());
 app.use(cors({
-    origin: 'http://localhost',
+    origin: 'http://flowfy.duckdns.org',
     credentials: true,
 }));
 app.use(session({
@@ -35,5 +35,5 @@ app.use(oauth2Routes);
 app.use(crudRoutes);
 
 app.listen(port, () => {
-    console.log(`Server is running on http://localhost:${port}`);
+    console.log(`Server is running on http://flowfy.duckdns.org:${port}`);
 });

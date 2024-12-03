@@ -1,0 +1,48 @@
+name: PR tests
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [16, 18]
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v3
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: ${{ matrix.node-version }}
+
+    - name: Install Backend Dependencies
+      working-directory: backend/area-back
+      run: npm install
+
+    - name: Install Frontend Dependencies
+      working-directory: frontend/area-front
+      run: npm install
+
+    - name: Check Code Formatting
+      run: |
+        cd backend/area-back && npx prettier --write .
+        cd ../../frontend/area-front && npx prettier --write .
+
+    - name: Run Backend Unit Tests
+      working-directory: backend/area-back
+      run: npm test
+
+    - name: Run Frontend Unit Tests
+      working-directory: frontend/area-front
+      run: npm test
+
+    - name: Does it build ?
+      working-directory: frontend/area-front
+      run: npm build

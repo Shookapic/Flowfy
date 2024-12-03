@@ -1,8 +1,8 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   content: [
-      './src/**/*.{html,js}',
-      'node_modules/preline/dist/*.js'
+    './src/**/*.{html,js,jsx}',
+    'node_modules/preline/dist/*.js'
   ],
   theme: {
     extend: {
@@ -23,4 +23,3 @@ module.exports = {
     require('daisyui'),
   ],
 }
-

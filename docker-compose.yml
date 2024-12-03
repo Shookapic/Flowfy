@@ -7,6 +7,18 @@ services:
     ports:
       - "3000:3000"
     container_name: server_service
+    env_file:
+      - ./.env
+    depends_on:
+      - postgres
+
+  postgres:
+    image: postgres:13
+    container_name: postgres_service
+    ports:
+      - "5432:5432"
+    env_file:
+      - ./.env
 
   client_web:
     build:
@@ -16,4 +28,3 @@ services:
     container_name: client_web_service
     depends_on:
       - server
-

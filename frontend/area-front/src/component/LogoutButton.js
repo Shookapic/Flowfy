@@ -2,7 +2,7 @@ import React from 'react';
 
 const LogoutButton = () => {
     const handleLogout = () => {
-        fetch('http://localhost:3000/api/auth/logout', {
+        fetch('http://flowfy.duckdns.org:3000/api/auth/logout', {
             credentials: 'include',
         })
         .then((res) => res.json())

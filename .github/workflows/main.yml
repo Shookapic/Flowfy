@@ -18,14 +18,6 @@ jobs:
       with:
         node-version: '16'
 
-    - name: Set Environment Variables
-      env:
-        GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
-        GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
-        JWT_SECRET: ${{ secrets.JWT_SECRET }}
-        SESSION_SECRET: ${{ secrets.SESSION_SECRET }}
-      run: echo "Environment variables set"
-
     - name: Install Backend Dependencies
       run: cd backend/area-back && npm install
 
@@ -38,8 +30,12 @@ jobs:
         cd ../../frontend/area-front && npx prettier --write .
 
     - name: Run Unit Tests
-      run: |
-        cd backend/area-back && npm test
+      env:
+        GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+        GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+        JWT_SECRET: ${{ secrets.JWT_SECRET }}
+        SESSION_SECRET: ${{ secrets.SESSION_SECRET }}
+      run: cd backend/area-back && npm test
 
   build-apk:
     needs: build-and-test
@@ -112,7 +108,12 @@ jobs:
           git pull
           git push --mirror original-repo
           git ls-remote original-repo
-          cd ~/B-DEV-500-RUN-5-2-area-cedric.roulof
+          cd ~/B-DEV-500-RUN-5-2-area-cedric.roulof/
           docker-compose down --volumes --remove-orphans
           git pull origin main
+          cd ~/B-DEV-500-RUN-5-2-area-cedric.roulof/backend/area-back
+          npm install
+          cd ~/B-DEV-500-RUN-5-2-area-cedric.roulof/frontend/area-front
+          npm install
+          cd ~/B-DEV-500-RUN-5-2-area-cedric.roulof/
           docker-compose up --build -d

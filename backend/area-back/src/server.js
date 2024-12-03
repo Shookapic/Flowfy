@@ -258,7 +258,7 @@ passport.deserializeUser((obj, done) => done(null, obj));
  * @brief Middleware to enable Cross-Origin Resource Sharing (CORS) for the frontend application.
  */
 app.use(cors({
-    origin: 'http://localhost', // Frontend URL
+    origin: 'http://flowfy.duckdns.org', // Frontend URL
     credentials: true,
 }));
 

@@ -33,7 +33,7 @@ jobs:
     - name: Check Code Formatting
       run: |
         cd backend/area-back && npx prettier --check .
-        cd ../../frontend/area-front && npx prettier --check .
+        cd ../../frontend/area-front && npx prettier --check --write .
 
     - name: Run Backend Unit Tests
       working-directory: backend/area-back

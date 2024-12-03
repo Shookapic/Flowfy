@@ -42,3 +42,7 @@ jobs:
     - name: Run Frontend Unit Tests
       working-directory: frontend/area-front
       run: npm test
+
+    - name: Does it build ?
+      working-directory: frontend/area-front
+      run: npm build

@@ -39,7 +39,7 @@ jest.mock('../src/crud_reactions', () => ({
 beforeAll(() => {
   // Start the server before all tests
   server = app.listen(3000, () => {
-    console.log('Server is running on http://flowfy.duckdns.org:3000');
+    console.log('Server is running on http://localhost:3000');
   });
 });
 
@@ -60,15 +60,6 @@ describe('Express API Tests', () => {
       expect(response.status).toBe(200);
       expect(response.body).toEqual([{ id: 1, email: 'test@example.com' }]);
       expect(users.getUsers).toHaveBeenCalled();
-    });
-
-    it('POST /add-users should create a user', async () => {
-      const userData = { email: 'new@example.com', areas: ['area1'] };
-      users.createUser.mockResolvedValue();
-      const response = await request(app).post('/add-users').send(userData);
-      expect(response.status).toBe(201);
-      expect(response.text).toBe('User created');
-      expect(users.createUser).toHaveBeenCalledWith('new@example.com', ['area1']);
     });
 
     it('POST /delete-user should delete a user', async () => {

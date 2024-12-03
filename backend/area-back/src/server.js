@@ -24,16 +24,17 @@ app.use(session({
         sameSite: 'strict'
     }
 }));
-app.use(csrfProtection);
 
-// Import routes
 const oauth2Routes = require('./oauth2-routes');
 const crudRoutes = require('./crud-routes');
 
-// Use routes
 app.use(oauth2Routes);
 app.use(crudRoutes);
 
-app.listen(port, () => {
-    console.log(`Server is running on http://flowfy.duckdns.org:${port}`);
-});
+if (process.env.NODE_ENV !== 'test') {
+  app.listen(port, () => {
+    console.log(`Server is running on http://localhost:${port}`);
+  });
+}
+
+module.exports = app;

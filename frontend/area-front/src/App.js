@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import Oauth2 from './component/Oauth2';
 import AuthCallback from './component/OAuthCallback';
 import { Services } from './component/services.jsx';
+import Homepage from './component/Homepage.js';
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
@@ -42,6 +43,7 @@ function App() {
           <Route path="/auth/callback" element={<AuthCallback />} />
           <Route path="/services" element={<ProtectedRoute><Services /></ProtectedRoute>} />
           <Route path="*" element={<Navigate to="/login" replace />} />
+          <Route path="/" element={<Homepage /> } />
         </Routes>
       </div>
     </Router>

@@ -6,14 +6,14 @@ const LoginButton = () => {
 
     const handleLogin = () => {
         window.open(
-            'http://flowfy.duckdns.org:3000/api/auth/google?prompt=select_account', // Add prompt parameter
+            'http://localhost:3000/api/auth/google?prompt=select_account', // Add prompt parameter
             '_blank',
             'width=500,height=600'
         );
 
         // Listen for the message from the popup
         const messageListener = (event) => {
-            if (event.origin !== 'http://flowfy.duckdns.org:3000') {
+            if (event.origin !== 'http://localhost:3000') {
                 console.error('Invalid origin:', event.origin);
                 return; // Verify origin
             }

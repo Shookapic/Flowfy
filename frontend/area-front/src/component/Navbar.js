@@ -6,12 +6,12 @@ const Navbar = () => {
   const [isMenuVisible, setIsMenuVisible] = useState(false);
 
   const handleAvatarClick = () => {
-    setIsMenuVisible((prev) => !prev); // Toggle l'état du menu
+    setIsMenuVisible((prev) => !prev);
   };
 
   const handleOutsideClick = (event) => {
     if (!event.target.closest('#avatar-menu') && !event.target.closest('#avatar-image')) {
-      setIsMenuVisible(false); // Ferme le menu si on clique ailleurs
+      setIsMenuVisible(false);
     }
   };
 
@@ -54,15 +54,15 @@ const Navbar = () => {
           </ul>
         </div>
         <FontAwesomeIcon icon={['fas', 'circle-nodes']} className="text-2xl text-gray-600" />
-        <a className="btn btn-ghost text-xl">Flowfy</a>
+        <a className="btn btn-ghost text-xl" href="/">Flowfy</a>
       </div>
       <div className="navbar-center hidden lg:flex">
         <ul className="menu menu-horizontal px-1">
-          <li><a className="font-bold">Services</a></li>
+          <li><a className="font-bold" href="/services">Services</a></li>
           <li>
-            <a className="font-bold">Log in</a>
+            <a className="font-bold" href="/login">Log in</a>
           </li>
-          <li><a className="font-bold">Get Start</a></li>
+          <li><a className="font-bold" href="/login">Get Start</a></li>
         </ul>
       </div>
       <div className="navbar-end relative">
@@ -83,9 +83,7 @@ const Navbar = () => {
             className="menu bg-base-200 rounded-box w-56 absolute z-10 mt-3"
             style={{ top: '100%' }}
           >
-            <li><a href="#">Item 1</a></li>
-            <li><a href="#">Item 2</a></li>
-            <li><a href="#">Item 3</a></li>
+            <li><a href="/profile">View profile</a></li>
           </ul>
         )}
       </div>

@@ -2,7 +2,7 @@
 module.exports = {
   content: [
     './src/**/*.{html,js,jsx}',
-    'node_modules/preline/dist/*.js'
+    'node_modules/preline/dist/*.js',
   ],
   theme: {
     extend: {

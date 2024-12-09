@@ -1,0 +1,59 @@
+[
+    {
+        "id": 1,
+        "name": "Youtube",
+        "logo": "youtube",
+        "color": "bg-red-700",
+        "action": "When i liked a video",
+        "reaction": "Send a message to my discord channel",
+        "date": "2021-06-01"
+    },
+    {
+        "id": 2,
+        "name": "Spotify",
+        "logo": "spotify",
+        "color": "bg-green-500",
+        "action": "When i add a song to my playlist",
+        "reaction": "Create a tweet on X",
+        "date": "2024-08-05"
+    },
+    {
+        "id": 3,
+        "name": "Discord",
+        "logo": "discord",
+        "color": "bg-blue-500",
+        "action": "When i join a server",
+        "reaction": "Send a mail",
+        "date": "2022-01-01"
+
+    },
+    {
+        "id": 4,
+        "name": "Github",
+        "logo": "github",
+        "color": "bg-gray-700",
+        "action": "When i push a commit",
+        "reaction": "Send a message to all the contributors",
+        "date": "2023-02-01"
+    },
+    {
+        "id": 5,
+        "name": "X",
+        "logo": "x-twitter",
+        "color": "bg-black",
+        "action": "When i tweet",
+        "reaction": "Send a message to my discord channel",
+        "date": "2021-06-01"
+        
+    },
+    {
+        "id": 6,
+        "name": "Gmail",
+        "logo": "google",
+        "color": "bg-red-500",
+        "action": "When i receive an email",
+        "reaction": "Send a message to my discord channel",
+        "date": "2021-06-01"
+
+    }
+]

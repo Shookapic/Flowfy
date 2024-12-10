@@ -17,14 +17,10 @@ const LoginButton = () => {
                 console.error('Invalid origin:', event.origin);
                 return; // Verify origin
             }
-            const { success, token, user } = event.data;
+            const { success, user } = event.data;
 
             if (success) {
-                console.log('Authentication successful:', user);
-                localStorage.setItem('isAuthenticated', 'true'); // Set the isAuthenticated flag
-                localStorage.setItem('token', token); // Store the token
-                // Do something with the user data (e.g., update state or redirect)
-                console.log('User data:', user);
+                localStorage.setItem('email', user.email); // Store the email in localStorage
                 navigate('/services'); // Redirect to services page
             } else {
                 console.error('Authentication failed');

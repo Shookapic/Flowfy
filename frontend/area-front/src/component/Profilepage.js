@@ -5,6 +5,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import '../icon/fontawesome';
 import Services from './profile/services.json';
 import { useState, useEffect } from 'react';
+import Barchart from '../component/Barchart';
 
 function Profilepage() {
 
@@ -37,30 +38,34 @@ function Profilepage() {
       <Navbar />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
         <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ duration: 1 }}>
-        <div className="col-span-1 mt-12 ml-8">
-      <div className="flex">
-        <img src={profilePhoto} alt="profile" className="rounded-full h-24 w-24" />
-        <div className="ml-4 mt-4">
-          <h1 className="text-3xl font-bold dark:text-white text-slate-700">Username</h1>
-          <p className="text-1xl font-bold dark:text-white text-slate-700">Email</p>
-        </div>
-      </div>
-      <div className="flex">
-        <button
-          className="btn btn-primary mt-6"
-          onClick={() => document.getElementById('photoInput').click()}
-        >
-          Change photo
-        </button>
-        <input
-          id="photoInput"
-          type="file"
-          accept="image/*"
-          style={{ display: 'none' }}
-          onChange={handlePhotoChange}
-        />
-      </div>
-    </div>
+          <div className="col-span-1 mt-12 ml-8">
+            <div className="flex">
+              <img src={profilePhoto} alt="profile" className="rounded-full h-24 w-24" />
+              <div className="ml-4 mt-4">
+                <h1 className="text-3xl font-bold dark:text-white text-slate-700">Username</h1>
+                <p className="text-1xl font-bold dark:text-white text-slate-700">Email</p>
+              </div>
+            </div>
+            <div className="flex">
+              <button
+                className="btn btn-primary mt-6"
+                onClick={() => document.getElementById('photoInput').click()}
+              >
+                Change photo
+              </button>
+              <input
+                id="photoInput"
+                type="file"
+                accept="image/*"
+                style={{ display: 'none' }}
+                onChange={handlePhotoChange}
+              />
+            </div>
+            <h1 className="text-3xl font-bold dark:text-white text-slate-700 mt-12">Statistics Action/Reaction</h1>
+            <div className="flex mt-12">
+              <Barchart />
+            </div>
+          </div>
         </motion.div>
         <div className="col-span-1 mt-12">
           <div className="flex">

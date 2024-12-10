@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import Oauth2 from './component/Oauth2';
 import AuthCallback from './component/OAuthCallback';
 import { Services } from './component/services.jsx';
+import { ServiceTemplate } from './component/Service_page/ServiceTemplate.jsx';
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
@@ -41,6 +42,7 @@ function App() {
           <Route path="/login" element={<Oauth2 />} />
           <Route path="/auth/callback" element={<AuthCallback />} />
           <Route path="/services" element={<ProtectedRoute><Services /></ProtectedRoute>} />
+          <Route path="/:serviceName" element={<ProtectedRoute><ServiceTemplate /></ProtectedRoute>} />
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
       </div>

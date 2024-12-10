@@ -5,6 +5,7 @@ import AuthCallback from './component/OAuthCallback';
 import { Services } from './component/services.jsx';
 import Homepage from './component/Homepage.js';
 import Profilepage from './component/Profilepage.js';
+import { ServiceTemplate } from './component/Service_page/ServiceTemplate.jsx';
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
@@ -43,6 +44,7 @@ function App() {
           <Route path="/login" element={<Oauth2 />} />
           <Route path="/auth/callback" element={<AuthCallback />} />
           <Route path="/services" element={<ProtectedRoute><Services /></ProtectedRoute>} />
+          <Route path="/:serviceName" element={<ProtectedRoute><ServiceTemplate /></ProtectedRoute>} />
           <Route path="*" element={<Navigate to="/login" replace />} />
           <Route path="/" element={<ProtectedRoute> <Homepage /> </ProtectedRoute>} />
           <Route path="/profile" element={<ProtectedRoute> <Profilepage /> </ProtectedRoute>} />

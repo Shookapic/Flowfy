@@ -4,6 +4,7 @@ import Oauth2 from './component/Oauth2';
 import AuthCallback from './component/OAuthCallback';
 import { Services } from './component/services.jsx';
 import { ServiceTemplate } from './component/Service_page/ServiceTemplate.jsx';
+import Policy from './component/PolicyPage';
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
@@ -44,6 +45,7 @@ function App() {
           <Route path="/services" element={<ProtectedRoute><Services /></ProtectedRoute>} />
           <Route path="/:serviceName" element={<ProtectedRoute><ServiceTemplate /></ProtectedRoute>} />
           <Route path="*" element={<Navigate to="/login" replace />} />
+          <Route path="/policy" element={<Policy />} />
         </Routes>
       </div>
     </Router>

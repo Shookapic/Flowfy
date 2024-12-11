@@ -216,4 +216,26 @@ router.get('/setUserLoggedStatus', async (req, res) => {
     }
 });
 
+router.get('/get-actions-by-service-id', async (req, res) => {
+    const { serviceId } = req.query;
+    try {
+        const result = await actions.getActionsByServiceId(serviceId);
+        res.status(200).json(result);
+    } catch (error) {
+        console.error(error);
+        res.status(500).send('Error fetching actions');
+    }
+});
+
+router.get('/get-reactions-by-service-id', async (req, res) => {
+    const { serviceId } = req.query;
+    try {
+        const result = await reactions.getReactionsByServiceId(serviceId);
+        res.status(200).json(result);
+    } catch (error) {
+        console.error(error);
+        res.status(500).send('Error fetching reactions');
+    }
+});
+
 module.exports = router;

@@ -1,5 +1,4 @@
-// ServiceTemplate.jsx
-import React, { useState } from 'react'; // Remove useEffect since it's not used
+import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { Notification } from './Notification';
 import { ServiceHeader } from './ServiceHeader';
@@ -8,39 +7,60 @@ import { ReactionModal } from './ReactionModal';
 import { ActionCard } from './ActionCard';
 import { projects } from '../services';
 
-const serviceActions = {
-  'discord-service': ['Send message', 'Create channel'],
-  'github-service': ['Push a commit', 'Create an issue'],
-  'spotify-service': ['Like a song', 'Create a playlist'],
-  'x-service': ['Post a tweet', 'Retweet a post'],
-  'youtube-service': ['Like a video', 'Upload a video', 'Subscribe to a channel'],
-  'gmail-service': ['Receive an email with attachment']
+const serviceApiEndpoints = {
+  'spotify-service': '/api/auth/spotify',
+  'youtube-service': '/api/auth/youtube',
+  'netflix-service': '/api/auth/netflix',
+  'twitch-service': '/api/auth/twitch',
+  'twitter-service': '/api/auth/twitter',
 };
 
-const availableReactions = {
-  'discord-service': ['Send message (Discord)', 'Create channel (Discord)'],
-  'github-service': ['Create issue (GitHub)', 'Create PR (GitHub)'],
-  'spotify-service': ['Add to playlist (Spotify)', 'Like song (Spotify)'],
-  'x-service': ['Tweet about it (Twitter)', 'DM user (Twitter)'],
-  'youtube-service': ['Add to playlist (YouTube)', 'Comment on video (YouTube)'],
-  'gmail-service': ['Send email notification (Gmail)', 'Create draft (Gmail)']
+const serviceIds = {
+  'spotify-service': 1,
+  'youtube-service': 2,
+  'netflix-service': 3,
+  'twitch-service': 4,
+  'twitter-service': 5,
 };
 
 export function ServiceTemplate() {
   const { serviceName } = useParams();
   const service = projects.find((project) => project.link.includes(serviceName));
 
+  const [serviceActions, setServiceActions] = useState([]);
+  const [availableReactions, setAvailableReactions] = useState([]);
   const [selectedActions, setSelectedActions] = useState([]);
   const [isActionModalOpen, setIsActionModalOpen] = useState(false);
   const [isReactionModalOpen, setIsReactionModalOpen] = useState(false);
   const [currentAction, setCurrentAction] = useState(null);
   const [selectedReactions, setSelectedReactions] = useState({});
-  const [isConnected, setIsConnected] = useState(false);
+  const [isConnected, setIsConnected] = useState(true);
   const [notification, setNotification] = useState(null);
   const [connectedServices, setConnectedServices] = useState({
     twitter: false, discord: false, gmail: false,
     spotify: false, github: false
   });
+
+  useEffect(() => {
+    const fetchActionsAndReactions = async () => {
+      const serviceId = serviceIds[serviceName];
+      if (!serviceId) return;
+
+      try {
+        const actionsResponse = await fetch(`http://localhost:3000/get-actions-by-service-id?serviceId=${serviceId}`);
+        const actionsData = await actionsResponse.json();
+        setServiceActions(actionsData);
+
+        const reactionsResponse = await fetch(`http://localhost:3000/get-reactions-by-service-id?serviceId=${serviceId}`);
+        const reactionsData = await reactionsResponse.json();
+        setAvailableReactions(reactionsData);
+      } catch (error) {
+        console.error('Error fetching actions and reactions:', error);
+      }
+    };
+
+    fetchActionsAndReactions();
+  }, [serviceName]);
 
   const handleDeleteAction = (actionId) => {
     setSelectedActions(selectedActions.filter(a => a.id !== actionId));
@@ -55,9 +75,28 @@ export function ServiceTemplate() {
     });
   };
 
+  const handleServiceConnect = (serviceName) => {
+    const endpoint = serviceApiEndpoints[serviceName];
+    if (!endpoint) {
+      setNotification(`No API endpoint configured for ${serviceName}`);
+      setTimeout(() => setNotification(null), 3000);
+      return;
+    }
+
+    const email = localStorage.getItem('email');
+    if (!email) {
+      setNotification('Email not found in localStorage');
+      setTimeout(() => setNotification(null), 3000);
+      return;
+    }
+
+    const url = `http://localhost:3000${endpoint}?email=${encodeURIComponent(email)}`;
+    window.location.href = url; // Redirect to the OAuth2 provider
+  };
+
   const handleConnect = () => {
     if (!isConnected) {
-      setIsConnected(true);
+      handleServiceConnect(serviceName);
     } else {
       setIsConnected(false);
       setSelectedActions([]);
@@ -78,7 +117,7 @@ export function ServiceTemplate() {
     setNotification("Add at least one reaction to make this action work");
     setTimeout(() => setNotification(null), 3000);
   };
-  
+
   const handleReactionSubmit = (reactions) => {
     setSelectedReactions({
       ...selectedReactions,
@@ -97,13 +136,6 @@ export function ServiceTemplate() {
     }
     setIsReactionModalOpen(false);
     setCurrentAction(null);
-  };
-
-  const handleServiceConnect = (serviceName) => {
-    setConnectedServices(prev => ({
-      ...prev,
-      [serviceName]: !prev[serviceName]
-    }));
   };
 
   if (!service) return <div>Service not found</div>;
@@ -156,14 +188,14 @@ export function ServiceTemplate() {
       <ActionModal
         isOpen={isActionModalOpen}
         onClose={() => setIsActionModalOpen(false)}
-        actions={serviceActions[serviceName] || []}
+        actions={serviceActions.map(action => action.description)} // Ensure actions are rendered correctly
         onSubmit={handleActionSubmit}
       />
 
       <ReactionModal
         isOpen={isReactionModalOpen}
         onClose={() => setIsReactionModalOpen(false)}
-        reactions={availableReactions[serviceName] || []}
+        reactions={availableReactions.map(reaction => reaction.description)} // Ensure reactions are rendered correctly
         selectedReactions={selectedReactions[currentAction] || []}
         onSubmit={handleReactionSubmit}
       />

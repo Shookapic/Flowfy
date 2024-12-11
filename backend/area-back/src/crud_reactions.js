@@ -60,10 +60,19 @@ async function deleteReaction(id) {
   console.log('Reaction Deleted:', res.rows[0]);
 }
 
+async function getReactionsByServiceId(serviceId) {
+  const query = 'SELECT * FROM reactions WHERE service_id = $1';
+  const values = [serviceId];
+  const res = await client.query(query, values);
+  console.log('Reactions:', res.rows);
+  return res.rows;
+}
+
 // Export the functions for use in other modules.
 module.exports = {
   createReaction,
   getReactions,
   updateReaction,
-  deleteReaction
+  deleteReaction,
+  getReactionsByServiceId
 };

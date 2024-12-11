@@ -1,0 +1,16 @@
+{
+  "actions": {
+    "2": {
+      "name": "On Like",
+      "function": "AonLike",
+      "file": "./youtube-areas"
+    }
+  },
+  "reactions": {
+    "2": {
+      "name": "Subscribe to channel",
+      "function": "RsubscribeToChannel",
+      "file": "./youtube-areas"
+    }
+  }
+}

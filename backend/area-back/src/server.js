@@ -4,6 +4,10 @@ const cors = require('cors');
 const cookieParser = require('cookie-parser');
 require('dotenv').config();
 const csrfProtection = require('./middlewares/csrfProtection');
+const youtubeAuth = require('./oauth2-youtube');
+const { onLike, subscribeToChannel } = require('./youtube-areas');
+const { getUsers } = require('./crud_users');
+const areasFunctions = require('./areas_functions.json');
 
 const app = express();
 const port = 3000;
@@ -11,7 +15,7 @@ const port = 3000;
 app.use(express.json());
 app.use(cookieParser());
 app.use(cors({
-    origin: 'http://flowfy.duckdns.org',
+    origin: 'http://localhost',
     credentials: true,
 }));
 app.use(session({
@@ -28,8 +32,49 @@ app.use(session({
 const oauth2Routes = require('./oauth2-routes');
 const crudRoutes = require('./crud-routes');
 
+app.use(youtubeAuth);
 app.use(oauth2Routes);
 app.use(crudRoutes);
+
+app.post('/api/youtube/on-like', async (req, res) => {
+  const { email } = req.body;
+
+  try {
+    await onLike(email);
+    res.status(200).send('Action created for liked video');
+  } catch (error) {
+    res.status(500).send('Error creating action for liked video');
+  }
+});
+
+async function runAREAS() {
+  try {
+    const users = await getUsers();
+    for (const user of users) {
+      const { email, areas } = user;
+      for (const area of areas) {
+        const [actionId, reactionId] = area.split(':');
+        const action = areasFunctions.actions[actionId];
+        const reaction = areasFunctions.reactions[reactionId];
+
+        if (action && reaction) {
+          const actionModule = require(action.file);
+          const reactionModule = require(reaction.file);
+
+          if (typeof actionModule[action.function] === 'function' && typeof reactionModule[reaction.function] === 'function') {
+            await actionModule[action.function](email);
+            await reactionModule[reaction.function](email);
+          }
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Error running AREAS:', error);
+  }
+}
+
+// Run the runAREAS function every 5 minutes
+setInterval(runAREAS, 5 * 60 * 1000);
 
 if (process.env.NODE_ENV !== 'test') {
   app.listen(port, () => {

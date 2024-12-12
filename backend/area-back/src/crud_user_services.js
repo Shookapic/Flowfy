@@ -1,20 +1,38 @@
 const client = require('./db');
 
 /**
- * Creates a new user_service in the database.
+ * Creates or updates a user_service in the database.
  *
  * @param {number} userId - The ID of the user.
  * @param {number} serviceId - The ID of the service.
  * @param {string} accessToken - The access token for the service.
  * @param {string} refreshToken - The refresh token for the service.
  * @param {boolean} isLogged - The logged status of the user for the service.
- * @returns {Promise<void>} - A promise that resolves when the user_service is created.
+ * @returns {Promise<void>} - A promise that resolves when the user_service is created or updated.
  */
 async function createUserService(userId, serviceId, accessToken, refreshToken, isLogged) {
-    const query = 'INSERT INTO user_services(user_id, service_id, access_token, refresh_token, is_logged) VALUES($1, $2, $3, $4, $5) RETURNING *';
-    const values = [userId, serviceId, accessToken, refreshToken, isLogged];
-    const res = await client.query(query, values);
-    console.log('User Service Created:', res.rows[0]);
+    try {
+        // Check if the user_service entry already exists
+        const checkQuery = 'SELECT * FROM user_services WHERE user_id = $1 AND service_id = $2';
+        const checkValues = [userId, serviceId];
+        const checkRes = await client.query(checkQuery, checkValues);
+
+        if (checkRes.rows.length > 0) {
+            // Update the existing user_service entry
+            const updateQuery = 'UPDATE user_services SET access_token = $1, refresh_token = $2, is_logged = $3 WHERE user_id = $4 AND service_id = $5 RETURNING *';
+            const updateValues = [accessToken, refreshToken, isLogged, userId, serviceId];
+            const updateRes = await client.query(updateQuery, updateValues);
+            console.log('User Service Updated:', updateRes.rows[0]);
+        } else {
+            // Create a new user_service entry
+            const insertQuery = 'INSERT INTO user_services(user_id, service_id, access_token, refresh_token, is_logged) VALUES($1, $2, $3, $4, $5) RETURNING *';
+            const insertValues = [userId, serviceId, accessToken, refreshToken, isLogged];
+            const insertRes = await client.query(insertQuery, insertValues);
+            console.log('User Service Created:', insertRes.rows[0]);
+        }
+    } catch (error) {
+        console.error('Error creating or updating user service:', error);
+    }
 }
 
 /**
@@ -106,6 +124,7 @@ async function getUserServicesByUserMail(userMail) {
         const values = [userId];
         const res = await client.query(query, values);
         console.log('User Services for User ID:', userId, res.rows);
+        return res.rows;
     } catch (error) {
         console.error('Error fetching user services:', error);
     }

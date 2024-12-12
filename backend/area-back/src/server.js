@@ -40,16 +40,18 @@ app.post('/api/youtube/on-like', async (req, res) => {
   const { email } = req.body;
 
   try {
-    await onLike(email);
-    res.status(200).send('Action created for liked video');
+    await onLike(email); // Ensure onLike handles all necessary logic
+    await subscribeToChannel(email); // Pass the oauth2Client directly
+    res.status(200).send('Action created for liked video and subscription initiated');
   } catch (error) {
-    res.status(500).send('Error creating action for liked video');
+    res.status(500).send('Error creating action for liked video or subscription initiation');
   }
 });
 
 async function runAREAS() {
   try {
     const users = await getUsers();
+    console.log(users);
     for (const user of users) {
       const { email, areas } = user;
       for (const area of areas) {
@@ -74,7 +76,7 @@ async function runAREAS() {
 }
 
 // Run the runAREAS function every 5 minutes
-setInterval(runAREAS, 5 * 60 * 1000);
+setInterval(runAREAS, 10 * 1000);
 
 if (process.env.NODE_ENV !== 'test') {
   app.listen(port, () => {

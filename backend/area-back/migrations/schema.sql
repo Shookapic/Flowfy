@@ -46,6 +46,7 @@ INSERT INTO services (name) VALUES ('Twitch');
 INSERT INTO services (name) VALUES ('Twitter');
 -- YOUTUBE AREAS
 INSERT INTO actions (service_id, description) VALUES (2, 'On Like');
-INSERT INTO actions (service_id, description) VALUES (2, 'On Dislike');
+INSERT INTO actions (service_id, description) VALUES (2, 'On Subscribe');
 INSERT INTO reactions (service_id, description) VALUES (2, 'Subscribe to channel');
 INSERT INTO reactions (service_id, description) VALUES (2, 'Unsubscribe to channel');
+INSERT INTO reactions (service_id, description) VALUES (2, 'Like 3 latest videos from subscribed channels');

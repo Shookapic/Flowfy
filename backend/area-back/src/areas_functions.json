@@ -1,15 +1,30 @@
 {
   "actions": {
-    "2": {
+    "1": {
       "name": "On Like",
       "function": "AonLike",
+      "file": "./youtube-areas"
+    },
+    "2": {
+      "name": "On Subscribe",
+      "function": "AonComment",
       "file": "./youtube-areas"
     }
   },
   "reactions": {
-    "2": {
+    "1": {
       "name": "Subscribe to channel",
       "function": "RsubscribeToChannel",
+      "file": "./youtube-areas"
+    },
+    "2": {
+      "name": "Unsubscribe from channel",
+      "function": "RunsubscribeFromChannel",
+      "file": "./youtube-areas"
+    },
+    "3": {
+      "name": "Like 3 latest videos from subscribed channels",
+      "function": "Rlike3latestvideo",
       "file": "./youtube-areas"
     }
   }

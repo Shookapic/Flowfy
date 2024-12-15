@@ -48,7 +48,16 @@ app.post('/api/youtube/on-like', async (req, res) => {
   }
 });
 
+let isRunning = false;
+
 async function runAREAS() {
+  if (isRunning) {
+    console.log('runAREAS is already running. Skipping this interval.');
+    return;
+  }
+
+  isRunning = true;
+
   try {
     const users = await getUsers();
     console.log(users);
@@ -72,6 +81,8 @@ async function runAREAS() {
     }
   } catch (error) {
     console.error('Error running AREAS:', error);
+  } finally {
+    isRunning = false;
   }
 }
 

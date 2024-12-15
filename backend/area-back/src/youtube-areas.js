@@ -349,4 +349,4 @@ async function Rlike3latestvideo(email) {
   }
 }
 
-module.exports = { AonLike, AonComment, RsubscribeToChannel, RunsubscribeFromChannel, Rlike3latestvideo };
+module.exports = { AonLike, AonSubscribe, RsubscribeToChannel, RunsubscribeFromChannel, Rlike3latestvideo };

@@ -33,16 +33,11 @@ app.use(session({
 }));
 
 const oauth2Routes = require('./oauth2-routes');
-const oauthSpotify = require('./oauth2-spotify');
-const oauthMicrosoft = require('./oauth2-microsoft');
 const oauthGithub = require('./oauth2-github');
 const crudRoutes = require('./crud-routes');
 
 app.use(youtubeAuth);
-app.use(youtubeAuth);
 app.use(oauth2Routes);
-app.use(oauthSpotify);
-app.use(oauthMicrosoft);
 app.use(oauthGithub);
 app.use(crudRoutes);
 

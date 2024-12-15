@@ -39,6 +39,7 @@ const oauthGithub = require('./oauth2-github');
 const crudRoutes = require('./crud-routes');
 
 app.use(youtubeAuth);
+app.use(youtubeAuth);
 app.use(oauth2Routes);
 app.use(oauthSpotify);
 app.use(oauthMicrosoft);

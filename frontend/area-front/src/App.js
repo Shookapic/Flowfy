@@ -13,7 +13,7 @@ const ProtectedRoute = ({ children }) => {
   React.useEffect(() => {
     const email = localStorage.getItem('email');
     if (email) {
-      fetch(`http://flowfy.duckdns.org:3000/isUserLogged?email=${encodeURIComponent(email)}`, {
+      fetch(`http://localhost:3000/isUserLogged?email=${encodeURIComponent(email)}`, {
         method: 'GET',
       })
         .then((response) => response.json()) // Assumes the API returns plain `true` or `false`

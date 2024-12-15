@@ -61,10 +61,18 @@ async function deleteService(id) {
   console.log('Service Deleted:', res.rows[0]);
 }
 
+async function getServiceByName(name) {
+  const query = 'SELECT id FROM services WHERE name = $1';
+  const values = [name];
+  const res = await client.query(query, values);
+  return res.rows[0].id;
+}
+
 // Export the functions for use in other modules.
 module.exports = {
   createService,
   getServices,
   updateService,
-  deleteService
+  deleteService,
+  getServiceByName
 };

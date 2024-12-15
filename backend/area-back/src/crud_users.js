@@ -28,7 +28,7 @@ async function createUser(email, areas) {
 async function getUsers() {
   const query = 'SELECT * FROM users';
   const res = await client.query(query);
-  console.log('Users:', res.rows);
+  return res.rows;
 }
 
 /**

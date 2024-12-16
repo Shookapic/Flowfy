@@ -1,4 +1,4 @@
-const { getUserIdByEmail, createUserService } = require('./crud_user_services');
+const { getUserIdByEmail, createUserServiceID } = require('./crud_user_services');
 
 const client = require('./db');
 
@@ -20,7 +20,7 @@ async function connectUserToService(email, serviceName, accessToken, refreshToke
     const serviceId = serviceRes.rows[0].id;
 
     // Call createUserService with the appropriate parameters
-    await createUserService(userId, serviceId, accessToken, refreshToken, true);
+    await createUserServiceID(userId, serviceId, accessToken, refreshToken, true);
     console.log(`User ${email} connected to ${serviceName}`);
   } catch (error) {
     console.error('Error connecting user to service:', error);

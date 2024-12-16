@@ -1,6 +1,6 @@
 const express = require('express');
 const { google } = require('googleapis');
-const { getUserIdByEmail, createUserService } = require('./crud_user_services');
+const { getUserIdByEmail, createUserServiceEMAIL } = require('./crud_user_services');
 const { getServiceByName } = require('./crud_services');
 require('dotenv').config();
 
@@ -47,7 +47,7 @@ router.get('/api/auth/youtube/callback', async (req, res) => {
         throw new Error('No refresh token available');
       }
   
-      await createUserService(email, service_id, tokens.access_token, refreshToken, true);
+      await createUserServiceEMAIL(email, service_id, tokens.access_token, refreshToken, true);
       console.log('YouTube tokens:', tokens);
       res.redirect('http://flowfy.duckdns.org/youtube-service');
     } catch (error) {

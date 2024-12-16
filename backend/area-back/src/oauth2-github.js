@@ -1,6 +1,6 @@
 const express = require('express');
 const { google } = require('googleapis');
-const { getUserIdByEmail, createUserService } = require('./crud_user_services');
+const { getUserIdByEmail, createUserServiceEMAIL } = require('./crud_user_services');
 const { getServiceByName } = require('./crud_services');
 require('dotenv').config();
 
@@ -47,7 +47,7 @@ router.get(
         const service_id = await getServiceByName('Github');
 
         // Example: Save GitHub user info to the database with the provided email
-        await createUserService(email, service_id, user.accessToken, null, true);
+        await createUserServiceEMAIL(email, service_id, user.accessToken, null, true);
 
         res.redirect('http://flowfy.duckdns.org/github-service'); // Redirect after success
       } catch (error) {

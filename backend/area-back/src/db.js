@@ -6,9 +6,21 @@ const client = new Client({
   port: process.env.DB_PORT,
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
-  database: process.env.DB_DATABASE
+  database: process.env.DB_DATABASE,
 });
 
-client.connect();
+async function connectDb() {
+  if (!client._connected) {
+    await client.connect();
+    client._connected = true; // Custom flag to track the connection state
+  }
+}
 
-module.exports = client;
+async function disconnectDb() {
+  if (client._connected) {
+    await client.end();
+    client._connected = false;
+  }
+}
+
+module.exports = { client, connectDb, disconnectDb };

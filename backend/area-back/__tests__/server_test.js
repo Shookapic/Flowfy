@@ -5,8 +5,9 @@ const services = require('../src/crud_services');
 const actions = require('../src/crud_actions');
 const reactions = require('../src/crud_reactions');
 const app = require('../src/server');
-
+const { connectDb, disconnectDb } = require('../src/db'); // Import connection functions
 let server;
+
 
 jest.mock('../src/crud_users', () => ({
   getUsers: jest.fn(),
@@ -36,17 +37,18 @@ jest.mock('../src/crud_reactions', () => ({
   updateReaction: jest.fn(),
 }));
 
-beforeAll(() => {
-  // Start the server before all tests
+beforeAll(async () => {
+  await connectDb(); // Ensure DB connection is established before tests
   server = app.listen(3000, () => {
     console.log('Server is running on http://flowfy.duckdns.org:3000');
   });
 });
 
-afterAll(() => {
-  // Close the server after all tests
-  server.close();
+afterAll(async () => {
+  server.close(); // Close the Express server
+  await disconnectDb(); // Close the DB connection
 });
+
 
 describe('Express API Tests', () => {
   beforeEach(() => {

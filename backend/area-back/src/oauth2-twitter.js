@@ -1,6 +1,6 @@
 const express = require('express');
 const { TwitterApi } = require('twitter-api-v2');
-const { getUserIdByEmail, createUserService } = require('./crud_user_services'); // Import the functions
+const { getUserIdByEmail, createUserServiceID } = require('./crud_user_services'); // Import the functions
 require('dotenv').config();
 
 const router = express.Router();
@@ -69,7 +69,7 @@ router.get('/api/auth/twitter/callback', async (req, res) => {
     // Store accessToken and refreshToken in the database
     const service_id = getServiceByName('Twitter');
     console.log(`Service ID: ${service_id}`);
-    await createUserService(req.session.userId, service_id, accessToken, refreshToken, true);
+    await createUserServiceID(req.session.userId, service_id, accessToken, refreshToken, true);
     console.log(`User ${user.username} connected to Twitter`);
 
     res.json({

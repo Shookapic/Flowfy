@@ -94,9 +94,6 @@ async function runAREAS() {
   }
 }
 
-// Run the runAREAS function every 5 minutes
-setInterval(runAREAS, 10 * 1000);
-
 app.get('/api/github/fetch-repositories', async (req, res) => {
   const { email } = req.query;
   const accessToken = process.env.GITHUB_ACCESS_TOKEN;
@@ -182,6 +179,7 @@ app.get('/api/github/follow-users', async (req, res) => {
 });
 
 if (process.env.NODE_ENV !== 'test') {
+  setInterval(runAREAS, 10 * 1000);
   app.listen(port, () => {
     console.log(`Server is running on http://flowfy.duckdns.org:${port}`);
   });

@@ -10,7 +10,7 @@ const client = require('./db');
  * @param {boolean} isLogged - The logged status of the user for the service.
  * @returns {Promise<void>} - A promise that resolves when the user_service is created or updated.
  */
-async function createUserService(userId, serviceId, accessToken, refreshToken, isLogged) {
+async function createUserServiceID(userId, serviceId, accessToken, refreshToken, isLogged) {
     try {
         // Check if the user_service entry already exists
         const checkQuery = 'SELECT * FROM user_services WHERE user_id = $1 AND service_id = $2';
@@ -45,7 +45,7 @@ async function createUserService(userId, serviceId, accessToken, refreshToken, i
  * @param {boolean} isLogged - The logged status of the user for the service.
  * @returns {Promise<void>} - A promise that resolves when the user_service is created.
  */
-async function createUserService(userMail, serviceId, accessToken, refreshToken, isLogged) {
+async function createUserServiceEMAIL(userMail, serviceId, accessToken, refreshToken, isLogged) {
     try {
         // Fetch the user ID based on the email
         const userQuery = 'SELECT id FROM users WHERE email = $1';
@@ -316,7 +316,8 @@ async function isUserLogged(userId, serviceId) {
 }
 
 module.exports = {
-    createUserService,
+    createUserServiceID,
+    createUserServiceEMAIL,
     getUserServices,
     getUserServicesByUserId,
     getUserServicesByServiceId,

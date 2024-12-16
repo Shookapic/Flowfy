@@ -60,10 +60,19 @@ async function deleteAction(id) {
   console.log('Action Deleted:', res.rows[0]);
 }
 
+async function getActionsByServiceId(serviceId) {
+  const query = 'SELECT * FROM actions WHERE service_id = $1';
+  const values = [serviceId];
+  const res = await client.query(query, values);
+  console.log('Actions:', res.rows);
+  return res.rows;
+}
+
 // Export the functions for use in other modules.
 module.exports = {
   createAction,
   getActions,
   updateAction,
-  deleteAction
+  deleteAction,
+  getActionsByServiceId
 };

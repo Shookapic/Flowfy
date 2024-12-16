@@ -1,3 +1,8 @@
+/**
+ * @file crud-routes.js
+ * @description Express router module for performing CRUD operations on users, services, actions, and reactions.
+ */
+
 const express = require('express');
 const users = require('./crud_users');
 const services = require('./crud_services');
@@ -6,6 +11,12 @@ const reactions = require('./crud_reactions');
 
 const router = express.Router();
 
+/**
+ * Get all users.
+ * @name GET /users
+ * @function
+ * @memberof module:crud-routes
+ */
 router.get('/users', async (req, res) => {
     try {
         const result = await users.getUsers();
@@ -16,6 +27,19 @@ router.get('/users', async (req, res) => {
     }
 });
 
+/**
+ * Add a new user.
+ * @name POST /add-users
+ * @function
+ * @memberof module:crud-routes
+ * @param {Object} req - The request object.
+ * @param {Object} req.body - The body of the request.
+ * @param {string} req.body.email - The email address of the user.
+ * @param {Array} req.body.areas - The areas associated with the user.
+ * @param {boolean} req.body.is_logged - Indicates if the user is logged in.
+ * @param {string} req.body.accessToken - The access token for authentication.
+ * @param {string} req.body.refreshToken - The refresh token for authentication.
+ */
 router.post('/add-users', async (req, res) => {
     const { email, areas, is_logged, accessToken, refreshToken } = req.body;
     try {
@@ -27,6 +51,15 @@ router.post('/add-users', async (req, res) => {
     }
 });
 
+/**
+ * Delete a user.
+ * @name POST /delete-user
+ * @function
+ * @memberof module:crud-routes
+ * @param {Object} req - The request object.
+ * @param {Object} req.body - The body of the request.
+ * @param {number} req.body.id - The ID of the user to delete.
+ */
 router.post('/delete-user', async (req, res) => {
     const { id } = req.body;
     try {
@@ -38,6 +71,17 @@ router.post('/delete-user', async (req, res) => {
     }
 });
 
+/**
+ * Update a user.
+ * @name POST /update-user
+ * @function
+ * @memberof module:crud-routes
+ * @param {Object} req - The request object.
+ * @param {Object} req.body - The body of the request.
+ * @param {number} req.body.id - The ID of the user to update.
+ * @param {string} req.body.email - The new email address of the user.
+ * @param {Array} req.body.areas - The new areas associated with the user.
+ */
 router.post('/update-user', async (req, res) => {
     const { id, email, areas } = req.body;
     try {
@@ -49,6 +93,12 @@ router.post('/update-user', async (req, res) => {
     }
 });
 
+/**
+ * Get all services.
+ * @name GET /services
+ * @function
+ * @memberof module:crud-routes
+ */
 router.get('/services', async (req, res) => {
     try {
         const result = await services.getServices();
@@ -59,6 +109,15 @@ router.get('/services', async (req, res) => {
     }
 });
 
+/**
+ * Add a new service.
+ * @name POST /add_services
+ * @function
+ * @memberof module:crud-routes
+ * @param {Object} req - The request object.
+ * @param {Object} req.body - The body of the request.
+ * @param {string} req.body.name - The name of the service to create.
+ */
 router.post('/add_services', async (req, res) => {
     const { name } = req.body;
     try {
@@ -70,6 +129,15 @@ router.post('/add_services', async (req, res) => {
     }
 });
 
+/**
+ * Delete a service.
+ * @name POST /delete-service
+ * @function
+ * @memberof module:crud-routes
+ * @param {Object} req - The request object.
+ * @param {Object} req.body - The body of the request.
+ * @param {number} req.body.id - The ID of the service to delete.
+ */
 router.post('/delete-service', async (req, res) => {
     const { id } = req.body;
     try {
@@ -81,6 +149,16 @@ router.post('/delete-service', async (req, res) => {
     }
 });
 
+/**
+ * Update a service.
+ * @name POST /update-service
+ * @function
+ * @memberof module:crud-routes
+ * @param {Object} req - The request object.
+ * @param {Object} req.body - The body of the request.
+ * @param {number} req.body.id - The ID of the service to update.
+ * @param {string} req.body.name - The new name of the service.
+ */
 router.post('/update-service', async (req, res) => {
     const { id, name } = req.body;
     try {
@@ -92,6 +170,12 @@ router.post('/update-service', async (req, res) => {
     }
 });
 
+/**
+ * Get all reactions.
+ * @name GET /reactions
+ * @function
+ * @memberof module:crud-routes
+ */
 router.get('/reactions', async (req, res) => {
     try {
         const result = await reactions.getReactions();
@@ -102,6 +186,16 @@ router.get('/reactions', async (req, res) => {
     }
 });
 
+/**
+ * Add a new reaction.
+ * @name POST /add-reactions
+ * @function
+ * @memberof module:crud-routes
+ * @param {Object} req - The request object.
+ * @param {Object} req.body - The body of the request.
+ * @param {number} req.body.serviceId - The ID of the service associated with the reaction.
+ * @param {string} req.body.description - The description of the reaction.
+ */
 router.post('/add-reactions', async (req, res) => {
     const { serviceId, description } = req.body;
     try {
@@ -113,6 +207,15 @@ router.post('/add-reactions', async (req, res) => {
     }
 });
 
+/**
+ * Delete a reaction.
+ * @name POST /delete-reaction
+ * @function
+ * @memberof module:crud-routes
+ * @param {Object} req - The request object.
+ * @param {Object} req.body - The body of the request.
+ * @param {number} req.body.id - The ID of the reaction to delete.
+ */
 router.post('/delete-reaction', async (req, res) => {
     const { id } = req.body;
     try {
@@ -124,6 +227,16 @@ router.post('/delete-reaction', async (req, res) => {
     }
 });
 
+/**
+ * Update a reaction.
+ * @name POST /update-reaction
+ * @function
+ * @memberof module:crud-routes
+ * @param {Object} req - The request object.
+ * @param {Object} req.body - The body of the request.
+ * @param {number} req.body.id - The ID of the reaction to update.
+ * @param {string} req.body.description - The new description of the reaction.
+ */
 router.post('/update-reaction', async (req, res) => {
     const { id, description } = req.body;
     try {
@@ -135,6 +248,12 @@ router.post('/update-reaction', async (req, res) => {
     }
 });
 
+/**
+ * Get all actions.
+ * @name POST /actions
+ * @function
+ * @memberof module:crud-routes
+ */
 router.post('/actions', async (req, res) => {
     try {
         const result = await actions.getActions();
@@ -145,6 +264,16 @@ router.post('/actions', async (req, res) => {
     }
 });
 
+/**
+ * Add a new action.
+ * @name POST /add-actions
+ * @function
+ * @memberof module:crud-routes
+ * @param {Object} req - The request object.
+ * @param {Object} req.body - The body of the request.
+ * @param {number} req.body.serviceId - The ID of the service associated with the action.
+ * @param {string} req.body.description - The description of the action.
+ */
 router.post('/add-actions', async (req, res) => {
     const { serviceId, description } = req.body;
     try {
@@ -156,6 +285,15 @@ router.post('/add-actions', async (req, res) => {
     }
 });
 
+/**
+ * Delete an action.
+ * @name POST /delete-action
+ * @function
+ * @memberof module:crud-routes
+ * @param {Object} req - The request object.
+ * @param {Object} req.body - The body of the request.
+ * @param {number} req.body.id - The ID of the action to delete.
+ */
 router.post('/delete-action', async (req, res) => {
     const { id } = req.body;
     try {
@@ -167,6 +305,16 @@ router.post('/delete-action', async (req, res) => {
     }
 });
 
+/**
+ * Update an action.
+ * @name POST /update-action
+ * @function
+ * @memberof module:crud-routes
+ * @param {Object} req - The request object.
+ * @param {Object} req.body - The body of the request.
+ * @param {number} req.body.id - The ID of the action to update.
+ * @param {string} req.body.description - The new description of the action.
+ */
 router.post('/update-action', async (req, res) => {
     const { id, description } = req.body;
     try {
@@ -178,6 +326,15 @@ router.post('/update-action', async (req, res) => {
     }
 });
 
+/**
+ * Get a user by email.
+ * @name GET /get-user-by-email
+ * @function
+ * @memberof module:crud-routes
+ * @param {Object} req - The request object.
+ * @param {Object} req.query - The query parameters.
+ * @param {string} req.query.email - The email address of the user.
+ */
 router.get('/get-user-by-email', async (req, res) => {
     const { email } = req.query;
     try {
@@ -189,6 +346,15 @@ router.get('/get-user-by-email', async (req, res) => {
     }
 });
 
+/**
+ * Check if a user is logged in.
+ * @name GET /isUserLogged
+ * @function
+ * @memberof module:crud-routes
+ * @param {Object} req - The request object.
+ * @param {Object} req.query - The query parameters.
+ * @param {string} req.query.email - The email address of the user.
+ */
 router.get('/isUserLogged', async (req, res) => {
     const { email } = req.query;
     try {
@@ -205,6 +371,16 @@ router.get('/isUserLogged', async (req, res) => {
     }
 });
 
+/**
+ * Set the logged status of a user.
+ * @name GET /setUserLoggedStatus
+ * @function
+ * @memberof module:crud-routes
+ * @param {Object} req - The request object.
+ * @param {Object} req.query - The query parameters.
+ * @param {string} req.query.email - The email address of the user.
+ * @param {boolean} req.query.status - The new logged status of the user.
+ */
 router.get('/setUserLoggedStatus', async (req, res) => {
     const { email, status } = req.query;
     try {
@@ -216,6 +392,15 @@ router.get('/setUserLoggedStatus', async (req, res) => {
     }
 });
 
+/**
+ * Get actions by service ID.
+ * @name GET /get-actions-by-service-id
+ * @function
+ * @memberof module:crud-routes
+ * @param {Object} req - The request object.
+ * @param {Object} req.query - The query parameters.
+ * @param {number} req.query.serviceId - The ID of the service.
+ */
 router.get('/get-actions-by-service-id', async (req, res) => {
     const { serviceId } = req.query;
     try {
@@ -227,6 +412,15 @@ router.get('/get-actions-by-service-id', async (req, res) => {
     }
 });
 
+/**
+ * Get reactions by service ID.
+ * @name GET /get-reactions-by-service-id
+ * @function
+ * @memberof module:crud-routes
+ * @param {Object} req - The request object.
+ * @param {Object} req.query - The query parameters.
+ * @param {number} req.query.serviceId - The ID of the service.
+ */
 router.get('/get-reactions-by-service-id', async (req, res) => {
     const { serviceId } = req.query;
     try {

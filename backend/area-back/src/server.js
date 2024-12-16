@@ -1,3 +1,8 @@
+/**
+ * @file server.js
+ * @description Main server file for the application, setting up Express server and routes.
+ */
+
 const express = require('express');
 const session = require('express-session');
 const cors = require('cors');
@@ -6,7 +11,7 @@ require('dotenv').config();
 const csrfProtection = require('./middlewares/csrfProtection');
 const youtubeAuth = require('./oauth2-youtube');
 const { onLike, subscribeToChannel } = require('./youtube-areas');
-const { fetchRepositories, compareRepositories, AonRepoCreation, AonRepoDeletion, RcreateRepo, RfollowUser, RfollowUsersFromFile} = require('./github-areas');
+const { fetchRepositories, compareRepositories, AonRepoCreation, AonRepoDeletion, RcreateRepo, RfollowUser, RfollowUsersFromFile } = require('./github-areas');
 const { getUsers } = require('./crud_users');
 const { getAccessTokenByEmailAndServiceName } = require('./crud_user_services');
 const areasFunctions = require('./areas_functions.json');
@@ -41,6 +46,16 @@ app.use(oauth2Routes);
 app.use(oauthGithub);
 app.use(crudRoutes);
 
+/**
+ * Route for handling YouTube like action.
+ * @name POST /api/youtube/on-like
+ * @function
+ * @memberof module:server
+ * @param {Object} req - The request object.
+ * @param {Object} req.body - The body of the request.
+ * @param {string} req.body.email - The email address of the user.
+ * @param {Object} res - The response object.
+ */
 app.post('/api/youtube/on-like', async (req, res) => {
   const { email } = req.body;
 
@@ -55,6 +70,12 @@ app.post('/api/youtube/on-like', async (req, res) => {
 
 let isRunning = false;
 
+/**
+ * Function to run AREAS actions and reactions.
+ * @async
+ * @function runAREAS
+ * @memberof module:server
+ */
 async function runAREAS() {
   if (isRunning) {
     console.log('runAREAS is already running. Skipping this interval.');
@@ -94,6 +115,16 @@ async function runAREAS() {
   }
 }
 
+/**
+ * Route for fetching GitHub repositories.
+ * @name GET /api/github/fetch-repositories
+ * @function
+ * @memberof module:server
+ * @param {Object} req - The request object.
+ * @param {Object} req.query - The query parameters.
+ * @param {string} req.query.email - The email address of the user.
+ * @param {Object} res - The response object.
+ */
 app.get('/api/github/fetch-repositories', async (req, res) => {
   const { email } = req.query;
   const accessToken = process.env.GITHUB_ACCESS_TOKEN;
@@ -101,11 +132,27 @@ app.get('/api/github/fetch-repositories', async (req, res) => {
   res.status(200).send('Repositories fetched');
 });
 
+/**
+ * Route for getting stored GitHub repositories.
+ * @name GET /api/github/repos
+ * @function
+ * @memberof module:server
+ * @param {Object} req - The request object.
+ * @param {Object} res - The response object.
+ */
 app.get('/api/github/repos', async (req, res) => {
   console.log('repositories:', storedRepositories);
   res.status(200).json(storedRepositories);
 });
 
+/**
+ * Route for handling GitHub repository creation action.
+ * @name GET /api/github/on-repo-creation
+ * @function
+ * @memberof module:server
+ * @param {Object} req - The request object.
+ * @param {Object} res - The response object.
+ */
 app.get('/api/github/on-repo-creation', async (req, res) => {
   try {
     // Ensure the comparison is awaited
@@ -124,6 +171,14 @@ app.get('/api/github/on-repo-creation', async (req, res) => {
   }
 });
 
+/**
+ * Route for handling GitHub repository deletion action.
+ * @name GET /api/github/on-repo-deletion
+ * @function
+ * @memberof module:server
+ * @param {Object} req - The request object.
+ * @param {Object} res - The response object.
+ */
 app.get('/api/github/on-repo-deletion', async (req, res) => {
   try {
     // Ensure the comparison is awaited
@@ -142,6 +197,14 @@ app.get('/api/github/on-repo-deletion', async (req, res) => {
   }
 });
 
+/**
+ * Route for comparing GitHub repositories.
+ * @name GET /api/github/compare-repos
+ * @function
+ * @memberof module:server
+ * @param {Object} req - The request object.
+ * @param {Object} res - The response object.
+ */
 app.get('/api/github/compare-repos', async (req, res) => {
   try {
     // Ensure the comparison is awaited
@@ -158,6 +221,14 @@ app.get('/api/github/compare-repos', async (req, res) => {
   }
 });
 
+/**
+ * Route for creating a GitHub repository.
+ * @name GET /api/github/create-repo
+ * @function
+ * @memberof module:server
+ * @param {Object} req - The request object.
+ * @param {Object} res - The response object.
+ */
 app.get('/api/github/create-repo', async (req, res) => {
   try {
     const response = await RcreateRepo(process.env.GITHUB_ACCESS_TOKEN);
@@ -168,6 +239,14 @@ app.get('/api/github/create-repo', async (req, res) => {
   }
 });
 
+/**
+ * Route for following users on GitHub.
+ * @name GET /api/github/follow-users
+ * @function
+ * @memberof module:server
+ * @param {Object} req - The request object.
+ * @param {Object} res - The response object.
+ */
 app.get('/api/github/follow-users', async (req, res) => {
   try {
     const response = await RfollowUsersFromFile(process.env.GITHUB_ACCESS_TOKEN);

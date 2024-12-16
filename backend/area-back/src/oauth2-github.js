@@ -1,3 +1,8 @@
+/**
+ * @file oauth2-github.js
+ * @description Express router module for handling GitHub OAuth2 authentication.
+ */
+
 const express = require('express');
 const { google } = require('googleapis');
 const { getUserIdByEmail, createUserServiceEMAIL } = require('./crud_user_services');
@@ -13,7 +18,17 @@ const bodyParser = require('body-parser');
 // app.use(passport.initialize());
 // app.use(passport.session());
 
-// GitHub Auth Routes
+/**
+ * Route for initiating GitHub authentication.
+ * @name GET /api/auth/github
+ * @function
+ * @memberof module:oauth2-github
+ * @param {Object} req - The request object.
+ * @param {Object} req.query - The query parameters.
+ * @param {string} req.query.email - The email address of the user.
+ * @param {Object} res - The response object.
+ * @param {Function} next - The next middleware function.
+ */
 router.get('/api/auth/github', (req, res, next) => {
   const { email } = req.query;
 
@@ -27,6 +42,17 @@ router.get('/api/auth/github', (req, res, next) => {
   })(req, res, next);
 });
 
+/**
+ * Route for handling GitHub authentication callback.
+ * @name GET /api/auth/github/callback
+ * @function
+ * @memberof module:oauth2-github
+ * @param {Object} req - The request object.
+ * @param {Object} req.query - The query parameters.
+ * @param {string} req.query.state - The state parameter containing the email.
+ * @param {Object} res - The response object.
+ * @param {Function} next - The next middleware function.
+ */
 router.get(
   '/api/auth/github/callback',
   (req, res, next) => {
@@ -58,11 +84,18 @@ router.get(
   }
 );
 
+/**
+ * Route for logging out the user.
+ * @name GET /logout
+ * @function
+ * @memberof module:oauth2-github
+ * @param {Object} req - The request object.
+ * @param {Object} res - The response object.
+ */
 router.get('/logout', (req, res) => {
   req.logout(() => {
     res.redirect('/');
   });
 });
-
 
 module.exports = router;

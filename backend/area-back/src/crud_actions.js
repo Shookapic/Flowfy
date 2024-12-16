@@ -1,7 +1,8 @@
 /**
- * Database client instance for performing CRUD operations.
- * @type {Object}
+ * @file crud_actions.js
+ * @description Module for performing CRUD operations on actions in the database.
  */
+
 const client = require('./db');
 
 /**
@@ -60,6 +61,12 @@ async function deleteAction(id) {
   console.log('Action Deleted:', res.rows[0]);
 }
 
+/**
+ * Fetches all actions associated with a specific service ID from the database.
+ *
+ * @param {number} serviceId - The ID of the service.
+ * @returns {Promise<Array>} - A promise that resolves with an array of actions.
+ */
 async function getActionsByServiceId(serviceId) {
   const query = 'SELECT * FROM actions WHERE service_id = $1';
   const values = [serviceId];

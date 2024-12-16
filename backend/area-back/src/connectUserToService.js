@@ -2,6 +2,16 @@ const { getUserIdByEmail, createUserServiceID } = require('./crud_user_services'
 
 const client = require('./db');
 
+/**
+ * Connects a user to a specified service by storing the access and refresh tokens.
+ *
+ * @param {string} email - The email of the user to connect.
+ * @param {string} serviceName - The name of the service to connect the user to.
+ * @param {string} accessToken - The access token for the service.
+ * @param {string} refreshToken - The refresh token for the service.
+ * @throws {Error} If the user is not found, the service is not found, or there is an error connecting the user to the service.
+ * @returns {Promise<void>} A promise that resolves when the user is successfully connected to the service.
+ */
 async function connectUserToService(email, serviceName, accessToken, refreshToken) {
   try {
     // Retrieve the user ID

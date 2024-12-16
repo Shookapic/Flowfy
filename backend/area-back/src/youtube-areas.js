@@ -1,3 +1,8 @@
+/**
+ * @file youtube-areas.js
+ * @description Module for handling YouTube actions and reactions using OAuth2 authentication.
+ */
+
 const { google } = require('googleapis');
 const fs = require('fs');
 const path = require('path');
@@ -12,21 +17,24 @@ const oauth2Client = new google.auth.OAuth2(
   'http://flowfy.duckdns.org:3000/api/auth/youtube/callback'
 );
 
+/**
+ * Handles the YouTube like action.
+ * @async
+ * @function AonLike
+ * @param {string} email - The email address of the user.
+ */
 async function AonLike(email) {
   try {
-    // Retrieve the user's YouTube service credentials
     const userServices = await getUserServicesByUserMail(email);
     if (!userServices || userServices.length === 0) {
       throw new Error('No services found for the user');
     }
 
-    // Find the YouTube service
     const youtubeService = userServices.find(service => service.service_id === 2);
     if (!youtubeService) {
       throw new Error('YouTube service not connected');
     }
 
-    // Set the credentials for the OAuth2 client
     oauth2Client.setCredentials({
       access_token: youtubeService.access_token,
       refresh_token: youtubeService.refresh_token
@@ -34,7 +42,6 @@ async function AonLike(email) {
 
     const youtube = google.youtube({ version: 'v3', auth: oauth2Client });
 
-    // Retrieve the liked videos playlist ID
     const channelResponse = await youtube.channels.list({
       part: 'contentDetails',
       mine: true
@@ -49,7 +56,6 @@ async function AonLike(email) {
 
     console.log('Likes Playlist ID:', likesPlaylistId);
 
-    // Fetch recent activities
     const response = await youtube.playlistItems.list({
       part: 'snippet',
       playlistId: likesPlaylistId,
@@ -58,7 +64,6 @@ async function AonLike(email) {
 
     console.log('Recent activities:', response.data.items);
   
-    // Filter activities to find "like" actions
     const likedVideos = response.data.items.map(item => ({
       videoId: item.snippet.resourceId.videoId,
       title: item.snippet.title,
@@ -72,14 +77,12 @@ async function AonLike(email) {
       return;
     }
 
-    // Prepare data for writing to the file
     const likeData = likedVideos.map(video => {
       return `Video ID: ${video.videoId}, Title: ${video.title}, Channel ID: ${video.channelId}`;
     }).join('\n');
 
     console.log('Like data:', likeData);
   
-    // Write the data to "recent_likes.txt"
     const filePath = path.join(__dirname, 'recent_likes.txt');
     fs.writeFileSync(filePath, likeData);
 
@@ -89,21 +92,24 @@ async function AonLike(email) {
   }
 }
 
+/**
+ * Handles the YouTube subscription action.
+ * @async
+ * @function AonSubscribe
+ * @param {string} email - The email address of the user.
+ */
 async function AonSubscribe(email) {
   try {
-    // Retrieve the user's YouTube service credentials
     const userServices = await getUserServicesByUserMail(email);
     if (!userServices || userServices.length === 0) {
       throw new Error('No services found for the user');
     }
 
-    // Find the YouTube service
     const youtubeService = userServices.find(service => service.service_id === 2);
     if (!youtubeService) {
       throw new Error('YouTube service not connected');
     }
 
-    // Set the credentials for the OAuth2 client
     oauth2Client.setCredentials({
       access_token: youtubeService.access_token,
       refresh_token: youtubeService.refresh_token
@@ -111,17 +117,15 @@ async function AonSubscribe(email) {
 
     const youtube = google.youtube({ version: 'v3', auth: oauth2Client });
 
-    // Fetch the list of subscriptions
     const response = await youtube.subscriptions.list({
       part: 'snippet',
       mine: true,
       maxResults: 10,
-      order: 'relevance' // Order by date to get the most recent subscriptions first
+      order: 'relevance'
     });
 
     console.log('Subscribed channels:', response.data.items);
 
-    // Extract details of the last 10 subscribed channels
     const subscribedChannels = response.data.items.map(item => ({
       channelId: item.snippet.resourceId.channelId,
       title: item.snippet.title,
@@ -129,14 +133,12 @@ async function AonSubscribe(email) {
 
     console.log('Subscribed channels:', subscribedChannels);
 
-    // Prepare data for writing to the file
     const subscribedChannelData = subscribedChannels.map(channel => {
       return `Channel ID: ${channel.channelId}, Title: ${channel.title}`;
     }).join('\n');
 
     console.log('Subscribed channel data:', subscribedChannelData);
 
-    // Write the data to "subscribed_channels.txt"
     const filePath = path.join(__dirname, 'subscribed_channels.txt');
     fs.writeFileSync(filePath, subscribedChannelData);
 
@@ -148,9 +150,14 @@ async function AonSubscribe(email) {
 
 const readline = require('readline');
 
+/**
+ * Subscribes to channels listed in the recent likes file.
+ * @async
+ * @function RsubscribeToChannel
+ * @param {string} email - The email address of the user.
+ */
 async function RsubscribeToChannel(email) {
   try {
-    // Fetch the user's services to get the YouTube tokens
     const userServices = await getUserServicesByUserMail(email);
     if (!userServices || userServices.length === 0) {
       throw new Error('No services found for the user');
@@ -161,7 +168,6 @@ async function RsubscribeToChannel(email) {
       throw new Error('YouTube service not connected');
     }
 
-    // Set the credentials for the OAuth2 client
     oauth2Client.setCredentials({
       access_token: youtubeService.access_token,
       refresh_token: youtubeService.refresh_token
@@ -169,11 +175,9 @@ async function RsubscribeToChannel(email) {
 
     const youtube = google.youtube({ version: 'v3', auth: oauth2Client });
 
-    // Read the recent likes file and get all Channel IDs
     const channelIds = await readChannelIdsFromFile('./src/recent_likes.txt');
     console.log('Channel IDs:', channelIds);
 
-    // Subscribe to each channel
     for (const channelId of channelIds) {
       try {
         await youtube.subscriptions.insert({
@@ -201,7 +205,13 @@ async function RsubscribeToChannel(email) {
   }
 }
 
-// Function to read Channel IDs from file
+/**
+ * Reads channel IDs from a file.
+ * @async
+ * @function readChannelIdsFromFile
+ * @param {string} filePath - The path to the file containing channel IDs.
+ * @returns {Promise<Array<string>>} A promise that resolves with an array of channel IDs.
+ */
 async function readChannelIdsFromFile(filePath) {
   const channelIds = [];
   const fileStream = fs.createReadStream(filePath);
@@ -220,9 +230,14 @@ async function readChannelIdsFromFile(filePath) {
   return channelIds;
 }
 
+/**
+ * Unsubscribes from channels listed in the recent dislikes file.
+ * @async
+ * @function RunsubscribeFromChannel
+ * @param {string} email - The email address of the user.
+ */
 async function RunsubscribeFromChannel(email) {
   try {
-    // Fetch the user's services to get the YouTube tokens
     const userServices = await getUserServicesByUserMail(email);
     if (!userServices || userServices.length === 0) {
       throw new Error('No services found for the user');
@@ -233,7 +248,6 @@ async function RunsubscribeFromChannel(email) {
       throw new Error('YouTube service not connected');
     }
 
-    // Set the credentials for the OAuth2 client
     oauth2Client.setCredentials({
       access_token: youtubeService.access_token,
       refresh_token: youtubeService.refresh_token
@@ -241,14 +255,11 @@ async function RunsubscribeFromChannel(email) {
 
     const youtube = google.youtube({ version: 'v3', auth: oauth2Client });
 
-    // Read the recent dislikes file and get all Channel IDs
     const channelIds = await readChannelIdsFromFile('./src/recent_dislikes.txt');
     console.log('Channel IDs to unsubscribe from:', channelIds);
 
-    // Unsubscribe from each channel
     for (const channelId of channelIds) {
       try {
-        // Retrieve the subscription ID for the given channel
         const subscriptions = await youtube.subscriptions.list({
           part: 'id',
           forChannelId: channelId,
@@ -262,7 +273,6 @@ async function RunsubscribeFromChannel(email) {
 
         const subscriptionId = subscriptions.data.items[0].id;
 
-        // Delete the subscription
         await youtube.subscriptions.delete({
           id: subscriptionId
         });
@@ -277,9 +287,14 @@ async function RunsubscribeFromChannel(email) {
   }
 }
 
+/**
+ * Likes the 3 latest videos from subscribed channels.
+ * @async
+ * @function Rlike3latestvideo
+ * @param {string} email - The email address of the user.
+ */
 async function Rlike3latestvideo(email) {
   try {
-    // Fetch the user's services to get the YouTube tokens
     const userServices = await getUserServicesByUserMail(email);
     if (!userServices || userServices.length === 0) {
       throw new Error('No services found for the user');
@@ -290,7 +305,6 @@ async function Rlike3latestvideo(email) {
       throw new Error('YouTube service not connected');
     }
 
-    // Set the credentials for the OAuth2 client
     const oauth2Client = new google.auth.OAuth2();
     oauth2Client.setCredentials({
       access_token: youtubeService.access_token,
@@ -299,33 +313,29 @@ async function Rlike3latestvideo(email) {
 
     const youtube = google.youtube({ version: 'v3', auth: oauth2Client });
 
-    // Read the subscribed channels from the file
     const filePath = path.join(__dirname, 'subscribed_channels.txt');
     const fileContent = fs.readFileSync(filePath, 'utf-8');
     const lines = fileContent.split('\n');
 
-    // Process each line to get channel details
     const subscribedChannels = lines.map(line => {
       const parts = line.split(', ');
-      const channelId = parts[0].split(': ')[1]?.trim();  // Handle the possible undefined error
-      const title = parts[1].split(': ')[1]?.trim();    // Handle the possible undefined error
+      const channelId = parts[0].split(': ')[1]?.trim();
+      const title = parts[1].split(': ')[1]?.trim();
 
       if (channelId && title) {
-        return { channelId, title};
+        return { channelId, title };
       }
-      return null; // Return null if the data is incomplete
-    }).filter(channel => channel !== null); // Remove any invalid entries
+      return null;
+    }).filter(channel => channel !== null);
 
-    // Iterate over each channel to get their latest 3 videos
     for (let channel of subscribedChannels) {
       console.log(`Processing Channel: ${channel.title} (ID: ${channel.channelId})`);
 
-      // Get the latest videos
       const videoResponse = await youtube.search.list({
         part: 'snippet',
         channelId: channel.channelId,
         maxResults: 3,
-        order: 'date' // Order by most recent
+        order: 'date'
       });
 
       const videos = videoResponse.data.items;

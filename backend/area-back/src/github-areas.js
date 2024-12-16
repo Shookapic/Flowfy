@@ -1,10 +1,21 @@
+/**
+ * @file github-areas.js
+ * @description Module for interacting with GitHub API to manage repositories and follow users.
+ */
+
 const axios = require('axios');
 const fs = require('fs');
 const readline = require('readline');
 require('dotenv').config();
 const GITHUB_API_URL = 'https://api.github.com';
 
-// Function to fetch repositories from GitHub and store them
+/**
+ * Fetches repositories from GitHub and stores them.
+ * @async
+ * @function fetchRepositories
+ * @param {string} accessToken - The GitHub access token.
+ * @returns {Promise<Array<string>>} A promise that resolves with an array of repository full names.
+ */
 const fetchRepositories = async (accessToken) => {
   const url = 'https://api.github.com/user/repos';
   let page = 1;
@@ -34,7 +45,13 @@ const fetchRepositories = async (accessToken) => {
   }
 };
 
-// Function to compare fetched and stored repositories
+/**
+ * Compares fetched and stored repositories.
+ * @async
+ * @function compareRepositories
+ * @param {Array<string>} storedRepos - The stored repository full names.
+ * @returns {Promise<Object>} A promise that resolves with an object containing new, removed, and fetched repositories.
+ */
 const compareRepositories = async (storedRepos) => {
   const fetchedRepos = await fetchRepositories(process.env.GITHUB_ACCESS_TOKEN);
 
@@ -54,6 +71,13 @@ const compareRepositories = async (storedRepos) => {
   return { newRepos, removedRepos, fetchedRepos };
 };
 
+/**
+ * Checks for new repository creations.
+ * @async
+ * @function AonRepoCreation
+ * @param {Array<string>} storedRepos - The stored repository full names.
+ * @returns {Promise<Object>} A promise that resolves with an object containing new repositories.
+ */
 const AonRepoCreation = async (storedRepos) => {
   const fetchedRepos = await fetchRepositories(process.env.GITHUB_ACCESS_TOKEN);
 
@@ -67,6 +91,13 @@ const AonRepoCreation = async (storedRepos) => {
   return { newRepos };
 };
 
+/**
+ * Checks for repository deletions.
+ * @async
+ * @function AonRepoDeletion
+ * @param {Array<string>} storedRepos - The stored repository full names.
+ * @returns {Promise<Object>} A promise that resolves with an object containing removed repositories.
+ */
 const AonRepoDeletion = async (storedRepos) => {
   const fetchedRepos = await fetchRepositories(process.env.GITHUB_ACCESS_TOKEN);
 
@@ -80,6 +111,12 @@ const AonRepoDeletion = async (storedRepos) => {
   return { removedRepos };
 };
 
+/**
+ * Creates repositories on GitHub based on a configuration file.
+ * @async
+ * @function RcreateRepo
+ * @param {string} githubToken - The GitHub access token.
+ */
 async function RcreateRepo(githubToken) {
   try {
     // Read repository details from a file
@@ -117,7 +154,13 @@ async function RcreateRepo(githubToken) {
   }
 }
 
-// Function to read repository details from a file
+/**
+ * Reads repository details from a file.
+ * @async
+ * @function readReposFromFile
+ * @param {string} filePath - The path to the file containing repository details.
+ * @returns {Promise<Array<Object>>} A promise that resolves with an array of repository objects.
+ */
 async function readReposFromFile(filePath) {
   // Check if the file exists, if not create it
   if (!fs.existsSync(filePath)) {
@@ -146,6 +189,13 @@ async function readReposFromFile(filePath) {
   return repos;
 }
 
+/**
+ * Follows a user on GitHub.
+ * @async
+ * @function RfollowUser
+ * @param {string} githubToken - The GitHub access token.
+ * @param {string} targetUsername - The username of the user to follow.
+ */
 async function RfollowUser(githubToken, targetUsername) {
   try {
     // Check if the user exists by querying their profile
@@ -165,7 +215,14 @@ async function RfollowUser(githubToken, targetUsername) {
   }
 }
 
-// Function to check if a user exists on GitHub
+/**
+ * Checks if a user exists on GitHub.
+ * @async
+ * @function checkUserExists
+ * @param {string} username - The username to check.
+ * @param {string} githubToken - The GitHub access token.
+ * @returns {Promise<boolean>} A promise that resolves with a boolean indicating if the user exists.
+ */
 async function checkUserExists(username, githubToken) {
   try {
     const response = await axios.get(`${GITHUB_API_URL}/users/${username}`, {
@@ -182,7 +239,13 @@ async function checkUserExists(username, githubToken) {
   }
 }
 
-// Function to follow a user
+/**
+ * Follows a user on GitHub.
+ * @async
+ * @function followUser
+ * @param {string} username - The username of the user to follow.
+ * @param {string} githubToken - The GitHub access token.
+ */
 async function followUser(username, githubToken) {
   try {
     await axios.put(
@@ -200,6 +263,12 @@ async function followUser(username, githubToken) {
   }
 }
 
+/**
+ * Follows users from a file.
+ * @async
+ * @function RfollowUsersFromFile
+ * @param {string} githubToken - The GitHub access token.
+ */
 async function RfollowUsersFromFile(githubToken) {
   const usernames = await readUsernamesFromFile('./src/users_to_follow.txt');  // Read usernames from file
   console.log('Usernames to follow:', usernames);
@@ -208,7 +277,13 @@ async function RfollowUsersFromFile(githubToken) {
   }
 }
 
-// Function to read usernames from a file
+/**
+ * Reads usernames from a file.
+ * @async
+ * @function readUsernamesFromFile
+ * @param {string} filePath - The path to the file containing usernames.
+ * @returns {Promise<Array<string>>} A promise that resolves with an array of usernames.
+ */
 async function readUsernamesFromFile(filePath) {
   // Check if the file exists, if not create it
   if (!fs.existsSync(filePath)) {
@@ -229,7 +304,6 @@ async function readUsernamesFromFile(filePath) {
 
   return usernames;
 }
-
 
 module.exports = {
   fetchRepositories,

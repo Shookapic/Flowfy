@@ -46,11 +46,11 @@ const Navbar = () => {
             tabIndex="0"
             className="menu menu-sm dropdown-content bg-base-100 rounded-box z-[1] mt-3 w-52 p-2 shadow"
           >
-            <li><a className="font-bold">Services</a></li>
+            <li><a className="font-bold" href="/services">Services</a></li>
             <li>
-              <a className="font-bold">Log in</a>
+              <a className="font-bold" href="/login">Log in</a>
             </li>
-            <li><a className="font-bold">Get Start</a></li>
+            <li><a className="font-bold" href="/login">Get Start</a></li>
           </ul>
         </div>
         <FontAwesomeIcon icon={['fas', 'circle-nodes']} className="text-2xl text-gray-600" />

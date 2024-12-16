@@ -13,6 +13,7 @@ const serviceApiEndpoints = {
   'netflix-service': '/api/auth/netflix',
   'twitch-service': '/api/auth/twitch',
   'twitter-service': '/api/auth/twitter',
+  'github-service': '/api/auth/github',
 };
 
 const serviceIds = {
@@ -21,6 +22,7 @@ const serviceIds = {
   'netflix-service': 3,
   'twitch-service': 4,
   'twitter-service': 5,
+  'github-service': 6,
 };
 
 export function ServiceTemplate() {

@@ -262,6 +262,40 @@ async function getUserIdByEmail(email) {
   return result.rows[0]?.id;
 }
 
+async function getAccessTokenByEmailAndServiceName(email, serviceName) {
+  // Get user_id from users table using email
+  const userQuery = 'SELECT id FROM users WHERE email = $1';
+  const userValues = [email];
+  const userResult = await client.query(userQuery, userValues);
+  const userId = userResult.rows[0]?.id;
+
+  if (!userId) {
+    throw new Error(`User with email ${email} not found`);
+  }
+
+  // Get service_id from services table using serviceName
+  const serviceQuery = 'SELECT id FROM services WHERE name = $1';
+  const serviceValues = [serviceName];
+  const serviceResult = await client.query(serviceQuery, serviceValues);
+  const serviceId = serviceResult.rows[0]?.id;
+
+  if (!serviceId) {
+    throw new Error(`Service with name ${serviceName} not found`);
+  }
+
+  // Get access_token from user_services table using user_id and service_id
+  const tokenQuery = 'SELECT access_token FROM user_services WHERE user_id = $1 AND service_id = $2';
+  const tokenValues = [userId, serviceId];
+  const tokenResult = await client.query(tokenQuery, tokenValues);
+  const accessToken = tokenResult.rows[0]?.access_token;
+
+  if (!accessToken) {
+    throw new Error(`Access token for user_id ${userId} and service_id ${serviceId} not found`);
+  }
+
+  return accessToken;
+}
+
 async function storeTokens(userId, accessToken, refreshToken) {
   const query = `
     UPDATE users
@@ -295,5 +329,6 @@ module.exports = {
     getUserIdByEmail,
     storeTokens,
     getUserServicesByUserMail,
+    getAccessTokenByEmailAndServiceName,
     isUserLogged
 };

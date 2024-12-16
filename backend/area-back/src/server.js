@@ -6,16 +6,19 @@ require('dotenv').config();
 const csrfProtection = require('./middlewares/csrfProtection');
 const youtubeAuth = require('./oauth2-youtube');
 const { onLike, subscribeToChannel } = require('./youtube-areas');
+const { fetchRepositories, compareRepositories, AonRepoCreation, AonRepoDeletion, RcreateRepo, RfollowUser, RfollowUsersFromFile} = require('./github-areas');
 const { getUsers } = require('./crud_users');
+const { getAccessTokenByEmailAndServiceName } = require('./crud_user_services');
 const areasFunctions = require('./areas_functions.json');
 
 const app = express();
 const port = 3000;
+let storedRepositories = [];
 
 app.use(express.json());
 app.use(cookieParser());
 app.use(cors({
-    origin: 'http://localhost',
+    origin: 'http://localhost:8000',
     credentials: true,
 }));
 app.use(session({
@@ -30,10 +33,12 @@ app.use(session({
 }));
 
 const oauth2Routes = require('./oauth2-routes');
+const oauthGithub = require('./oauth2-github');
 const crudRoutes = require('./crud-routes');
 
 app.use(youtubeAuth);
 app.use(oauth2Routes);
+app.use(oauthGithub);
 app.use(crudRoutes);
 
 app.post('/api/youtube/on-like', async (req, res) => {
@@ -71,8 +76,10 @@ async function runAREAS() {
         if (action && reaction) {
           const actionModule = require(action.file);
           const reactionModule = require(reaction.file);
+          console.log('AREAS:', action, reaction);
 
           if (typeof actionModule[action.function] === 'function' && typeof reactionModule[reaction.function] === 'function') {
+            console.log('Running AREAS:', action, reaction);
             await actionModule[action.function](email);
             await reactionModule[reaction.function](email);
           }
@@ -88,6 +95,90 @@ async function runAREAS() {
 
 // Run the runAREAS function every 5 minutes
 setInterval(runAREAS, 10 * 1000);
+
+app.get('/api/github/fetch-repositories', async (req, res) => {
+  const { email } = req.query;
+  const accessToken = process.env.GITHUB_ACCESS_TOKEN;
+  storedRepositories = await fetchRepositories(accessToken);
+  res.status(200).send('Repositories fetched');
+});
+
+app.get('/api/github/repos', async (req, res) => {
+  console.log('repositories:', storedRepositories);
+  res.status(200).json(storedRepositories);
+});
+
+app.get('/api/github/on-repo-creation', async (req, res) => {
+  try {
+    // Ensure the comparison is awaited
+    const { newRepos } = await AonRepoCreation(storedRepositories);
+
+    if (newRepos.length > 0) {
+      // Update storedRepositories with the fetched ones
+      storedRepositories = await fetchRepositories(process.env.GITHUB_ACCESS_TOKEN);
+    }
+
+    // Return the results
+    res.status(200).json({ newRepos });
+  } catch (error) {
+    console.error('Error comparing repositories:', error);
+    res.status(500).json({ error: 'Failed to compare repositories' });
+  }
+});
+
+app.get('/api/github/on-repo-deletion', async (req, res) => {
+  try {
+    // Ensure the comparison is awaited
+    const { removedRepos } = await AonRepoDeletion(storedRepositories);
+
+    if (removedRepos.length > 0) {
+      // Update storedRepositories with the fetched ones
+      storedRepositories = fetchedRepos;
+    }
+
+    // Return the results
+    res.status(200).json({ removedRepos });
+  } catch (error) {
+    console.error('Error comparing repositories:', error);
+    res.status(500).json({ error: 'Failed to compare repositories' });
+  }
+});
+
+app.get('/api/github/compare-repos', async (req, res) => {
+  try {
+    // Ensure the comparison is awaited
+    const { newRepos, removedRepos, fetchedRepos } = await compareRepositories(storedRepositories);
+
+    // Update storedRepositories with the fetched ones
+    storedRepositories = fetchedRepos;
+
+    // Return the results
+    res.status(200).json({ newRepos, removedRepos });
+  } catch (error) {
+    console.error('Error comparing repositories:', error);
+    res.status(500).json({ error: 'Failed to compare repositories' });
+  }
+});
+
+app.get('/api/github/create-repo', async (req, res) => {
+  try {
+    const response = await RcreateRepo(process.env.GITHUB_ACCESS_TOKEN);
+    res.status(200).json(response);
+  } catch (error) {
+    console.error('Error creating repository:', error);
+    res.status(500).json({ error: 'Failed to create repository' });
+  }
+});
+
+app.get('/api/github/follow-users', async (req, res) => {
+  try {
+    const response = await RfollowUsersFromFile(process.env.GITHUB_ACCESS_TOKEN);
+    res.status(200).json(response);
+  } catch (error) {
+    console.error('Error following user:', error);
+    res.status(500).json({ error: 'Failed to follow user' });
+  }
+});
 
 if (process.env.NODE_ENV !== 'test') {
   app.listen(port, () => {

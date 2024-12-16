@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: youtube-areas.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: youtube-areas.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/**
+ * @file youtube-areas.js
+ * @description Module for handling YouTube actions and reactions using OAuth2 authentication.
+ */
+
+const { google } = require('googleapis');
+const fs = require('fs');
+const path = require('path');
+const { getUserServicesByUserMail } = require('./crud_user_services');
+const { createAction } = require('./crud_actions');
+const { createReaction } = require('./crud_reactions');
+require('dotenv').config();
+
+const oauth2Client = new google.auth.OAuth2(
+  process.env.YOUTUBE_CLIENT_ID,
+  process.env.YOUTUBE_CLIENT_SECRET,
+  'http://flowfy.duckdns.org:3000/api/auth/youtube/callback'
+);
+
+/**
+ * Handles the YouTube like action.
+ * @async
+ * @function AonLike
+ * @param {string} email - The email address of the user.
+ */
+async function AonLike(email) {
+  try {
+    const userServices = await getUserServicesByUserMail(email);
+    if (!userServices || userServices.length === 0) {
+      throw new Error('No services found for the user');
+    }
+
+    const youtubeService = userServices.find(service => service.service_id === 2);
+    if (!youtubeService) {
+      throw new Error('YouTube service not connected');
+    }
+
+    oauth2Client.setCredentials({
+      access_token: youtubeService.access_token,
+      refresh_token: youtubeService.refresh_token
+    });
+
+    const youtube = google.youtube({ version: 'v3', auth: oauth2Client });
+
+    const channelResponse = await youtube.channels.list({
+      part: 'contentDetails',
+      mine: true
+    });
+
+    const channel = channelResponse.data.items[0];
+    if (!channel || !channel.contentDetails || !channel.contentDetails.relatedPlaylists.likes) {
+      throw new Error('Failed to retrieve liked videos playlist ID');
+    }
+
+    const likesPlaylistId = channel.contentDetails.relatedPlaylists.likes;
+
+    console.log('Likes Playlist ID:', likesPlaylistId);
+
+    const response = await youtube.playlistItems.list({
+      part: 'snippet',
+      playlistId: likesPlaylistId,
+      maxResults: 10
+    });
+
+    console.log('Recent activities:', response.data.items);
+  
+    const likedVideos = response.data.items.map(item => ({
+      videoId: item.snippet.resourceId.videoId,
+      title: item.snippet.title,
+      channelId: item.snippet.videoOwnerChannelId
+    }));
+
+    console.log('Liked videos:', likedVideos);
+
+    if (likedVideos.length === 0) {
+      console.log('No liked videos found.');
+      return;
+    }
+
+    const likeData = likedVideos.map(video => {
+      return `Video ID: ${video.videoId}, Title: ${video.title}, Channel ID: ${video.channelId}`;
+    }).join('\n');
+
+    console.log('Like data:', likeData);
+  
+    const filePath = path.join(__dirname, 'recent_likes.txt');
+    fs.writeFileSync(filePath, likeData);
+
+    console.log(`Recent likes saved to ${filePath}`);
+  } catch (error) {
+    console.error('Error handling on like event:', error);
+  }
+}
+
+/**
+ * Handles the YouTube subscription action.
+ * @async
+ * @function AonSubscribe
+ * @param {string} email - The email address of the user.
+ */
+async function AonSubscribe(email) {
+  try {
+    const userServices = await getUserServicesByUserMail(email);
+    if (!userServices || userServices.length === 0) {
+      throw new Error('No services found for the user');
+    }
+
+    const youtubeService = userServices.find(service => service.service_id === 2);
+    if (!youtubeService) {
+      throw new Error('YouTube service not connected');
+    }
+
+    oauth2Client.setCredentials({
+      access_token: youtubeService.access_token,
+      refresh_token: youtubeService.refresh_token
+    });
+
+    const youtube = google.youtube({ version: 'v3', auth: oauth2Client });
+
+    const response = await youtube.subscriptions.list({
+      part: 'snippet',
+      mine: true,
+      maxResults: 10,
+      order: 'relevance'
+    });
+
+    console.log('Subscribed channels:', response.data.items);
+
+    const subscribedChannels = response.data.items.map(item => ({
+      channelId: item.snippet.resourceId.channelId,
+      title: item.snippet.title,
+    }));
+
+    console.log('Subscribed channels:', subscribedChannels);
+
+    const subscribedChannelData = subscribedChannels.map(channel => {
+      return `Channel ID: ${channel.channelId}, Title: ${channel.title}`;
+    }).join('\n');
+
+    console.log('Subscribed channel data:', subscribedChannelData);
+
+    const filePath = path.join(__dirname, 'subscribed_channels.txt');
+    fs.writeFileSync(filePath, subscribedChannelData);
+
+    console.log(`Subscribed channels saved to ${filePath}`);
+  } catch (error) {
+    console.error('Error handling subscription event:', error);
+  }
+}
+
+const readline = require('readline');
+
+/**
+ * Subscribes to channels listed in the recent likes file.
+ * @async
+ * @function RsubscribeToChannel
+ * @param {string} email - The email address of the user.
+ */
+async function RsubscribeToChannel(email) {
+  try {
+    const userServices = await getUserServicesByUserMail(email);
+    if (!userServices || userServices.length === 0) {
+      throw new Error('No services found for the user');
+    }
+
+    const youtubeService = userServices.find(service => service.service_id === 2);
+    if (!youtubeService) {
+      throw new Error('YouTube service not connected');
+    }
+
+    oauth2Client.setCredentials({
+      access_token: youtubeService.access_token,
+      refresh_token: youtubeService.refresh_token
+    });
+
+    const youtube = google.youtube({ version: 'v3', auth: oauth2Client });
+
+    const channelIds = await readChannelIdsFromFile('./src/recent_likes.txt');
+    console.log('Channel IDs:', channelIds);
+
+    for (const channelId of channelIds) {
+      try {
+        await youtube.subscriptions.insert({
+          part: 'snippet',
+          resource: {
+            snippet: {
+              resourceId: {
+                kind: 'youtube#channel',
+                channelId
+              }
+            }
+          }
+        });
+        console.log(`Subscribed to channel: ${channelId}`);
+      } catch (error) {
+        if (error.errors &amp;&amp; error.errors[0].reason === 'subscriptionDuplicate') {
+          console.log(`Already subscribed to channel: ${channelId}`);
+        } else {
+          console.error(`Error subscribing to channel: ${channelId}`, error);
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Error subscribing to channels:', error);
+  }
+}
+
+/**
+ * Reads channel IDs from a file.
+ * @async
+ * @function readChannelIdsFromFile
+ * @param {string} filePath - The path to the file containing channel IDs.
+ * @returns {Promise&lt;Array&lt;string>>} A promise that resolves with an array of channel IDs.
+ */
+async function readChannelIdsFromFile(filePath) {
+  const channelIds = [];
+  const fileStream = fs.createReadStream(filePath);
+  const rl = readline.createInterface({
+    input: fileStream,
+    crlfDelay: Infinity
+  });
+
+  for await (const line of rl) {
+    const match = line.match(/Channel ID: ([A-Za-z0-9-_]+)/);
+    if (match) {
+      channelIds.push(match[1]);
+    }
+  }
+
+  return channelIds;
+}
+
+/**
+ * Unsubscribes from channels listed in the recent dislikes file.
+ * @async
+ * @function RunsubscribeFromChannel
+ * @param {string} email - The email address of the user.
+ */
+async function RunsubscribeFromChannel(email) {
+  try {
+    const userServices = await getUserServicesByUserMail(email);
+    if (!userServices || userServices.length === 0) {
+      throw new Error('No services found for the user');
+    }
+
+    const youtubeService = userServices.find(service => service.service_id === 2);
+    if (!youtubeService) {
+      throw new Error('YouTube service not connected');
+    }
+
+    oauth2Client.setCredentials({
+      access_token: youtubeService.access_token,
+      refresh_token: youtubeService.refresh_token
+    });
+
+    const youtube = google.youtube({ version: 'v3', auth: oauth2Client });
+
+    const channelIds = await readChannelIdsFromFile('./src/recent_dislikes.txt');
+    console.log('Channel IDs to unsubscribe from:', channelIds);
+
+    for (const channelId of channelIds) {
+      try {
+        const subscriptions = await youtube.subscriptions.list({
+          part: 'id',
+          forChannelId: channelId,
+          mine: true
+        });
+
+        if (subscriptions.data.items.length === 0) {
+          console.log(`Not subscribed to channel: ${channelId}`);
+          continue;
+        }
+
+        const subscriptionId = subscriptions.data.items[0].id;
+
+        await youtube.subscriptions.delete({
+          id: subscriptionId
+        });
+
+        console.log(`Unsubscribed from channel: ${channelId}`);
+      } catch (error) {
+        console.error(`Error unsubscribing from channel: ${channelId}`, error);
+      }
+    }
+  } catch (error) {
+    console.error('Error unsubscribing from channels:', error);
+  }
+}
+
+/**
+ * Likes the 3 latest videos from subscribed channels.
+ * @async
+ * @function Rlike3latestvideo
+ * @param {string} email - The email address of the user.
+ */
+async function Rlike3latestvideo(email) {
+  try {
+    const userServices = await getUserServicesByUserMail(email);
+    if (!userServices || userServices.length === 0) {
+      throw new Error('No services found for the user');
+    }
+
+    const youtubeService = userServices.find(service => service.service_id === 2);
+    if (!youtubeService) {
+      throw new Error('YouTube service not connected');
+    }
+
+    const oauth2Client = new google.auth.OAuth2();
+    oauth2Client.setCredentials({
+      access_token: youtubeService.access_token,
+      refresh_token: youtubeService.refresh_token
+    });
+
+    const youtube = google.youtube({ version: 'v3', auth: oauth2Client });
+
+    const filePath = path.join(__dirname, 'subscribed_channels.txt');
+    const fileContent = fs.readFileSync(filePath, 'utf-8');
+    const lines = fileContent.split('\n');
+
+    const subscribedChannels = lines.map(line => {
+      const parts = line.split(', ');
+      const channelId = parts[0].split(': ')[1]?.trim();
+      const title = parts[1].split(': ')[1]?.trim();
+
+      if (channelId &amp;&amp; title) {
+        return { channelId, title };
+      }
+      return null;
+    }).filter(channel => channel !== null);
+
+    for (let channel of subscribedChannels) {
+      console.log(`Processing Channel: ${channel.title} (ID: ${channel.channelId})`);
+
+      const videoResponse = await youtube.search.list({
+        part: 'snippet',
+        channelId: channel.channelId,
+        maxResults: 3,
+        order: 'date'
+      });
+
+      const videos = videoResponse.data.items;
+      if (videos.length === 0) {
+        console.log(`No videos found for channel: ${channel.title}`);
+        continue;
+      }
+
+      console.log(`Liking the 3 latest videos from ${channel.title}`);
+
+      for (let video of videos) {
+        await youtube.videos.rate({
+          id: video.id.videoId,
+          rating: 'like'
+        });
+        console.log(`Liked video ID: ${video.id.videoId}`);
+      }
+    }
+  } catch (error) {
+    console.error('Error handling like event for latest videos:', error);
+  }
+}
+
+module.exports = { AonLike, AonSubscribe, RsubscribeToChannel, RunsubscribeFromChannel, Rlike3latestvideo };</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Global</h3><ul><li><a href="global.html#AonLike">AonLike</a></li><li><a href="global.html#AonRepoCreation">AonRepoCreation</a></li><li><a href="global.html#AonRepoDeletion">AonRepoDeletion</a></li><li><a href="global.html#AonSubscribe">AonSubscribe</a></li><li><a href="global.html#RcreateRepo">RcreateRepo</a></li><li><a href="global.html#RfollowUser">RfollowUser</a></li><li><a href="global.html#RfollowUsersFromFile">RfollowUsersFromFile</a></li><li><a href="global.html#Rlike3latestvideo">Rlike3latestvideo</a></li><li><a href="global.html#RsubscribeToChannel">RsubscribeToChannel</a></li><li><a href="global.html#RunsubscribeFromChannel">RunsubscribeFromChannel</a></li><li><a href="global.html#checkUserExists">checkUserExists</a></li><li><a href="global.html#client">client</a></li><li><a href="global.html#compareRepositories">compareRepositories</a></li><li><a href="global.html#connectDb">connectDb</a></li><li><a href="global.html#connectUserToService">connectUserToService</a></li><li><a href="global.html#createAction">createAction</a></li><li><a href="global.html#createReaction">createReaction</a></li><li><a href="global.html#createService">createService</a></li><li><a href="global.html#createUserServiceEMAIL">createUserServiceEMAIL</a></li><li><a href="global.html#createUserServiceID">createUserServiceID</a></li><li><a href="global.html#deleteAction">deleteAction</a></li><li><a href="global.html#deleteReaction">deleteReaction</a></li><li><a href="global.html#deleteService">deleteService</a></li><li><a href="global.html#deleteUserService">deleteUserService</a></li><li><a href="global.html#deleteUserServiceByUserIdAndServiceId">deleteUserServiceByUserIdAndServiceId</a></li><li><a href="global.html#deleteUserServicesByServiceId">deleteUserServicesByServiceId</a></li><li><a href="global.html#deleteUserServicesByUserId">deleteUserServicesByUserId</a></li><li><a href="global.html#deserializeUser">deserializeUser</a></li><li><a href="global.html#disconnectDb">disconnectDb</a></li><li><a href="global.html#fetchRepositories">fetchRepositories</a></li><li><a href="global.html#followUser">followUser</a></li><li><a href="global.html#getActions">getActions</a></li><li><a href="global.html#getActionsByServiceId">getActionsByServiceId</a></li><li><a href="global.html#getReactions">getReactions</a></li><li><a href="global.html#getServices">getServices</a></li><li><a href="global.html#getUserServices">getUserServices</a></li><li><a href="global.html#getUserServicesByServiceId">getUserServicesByServiceId</a></li><li><a href="global.html#getUserServicesByUserId">getUserServicesByUserId</a></li><li><a href="global.html#getUserServicesByUserMail">getUserServicesByUserMail</a></li><li><a href="global.html#readChannelIdsFromFile">readChannelIdsFromFile</a></li><li><a href="global.html#readReposFromFile">readReposFromFile</a></li><li><a href="global.html#readUsernamesFromFile">readUsernamesFromFile</a></li><li><a href="global.html#serializeUser">serializeUser</a></li><li><a href="global.html#updateAction">updateAction</a></li><li><a href="global.html#updateReaction">updateReaction</a></li><li><a href="global.html#updateService">updateService</a></li><li><a href="global.html#updateUserServiceAccessToken">updateUserServiceAccessToken</a></li><li><a href="global.html#updateUserServiceRefreshToken">updateUserServiceRefreshToken</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Mon Dec 16 2024 22:12:34 GMT+0400 (Réunion Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

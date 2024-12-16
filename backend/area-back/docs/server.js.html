@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: server.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: server.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/**
+ * @file server.js
+ * @description Main server file for the application, setting up Express server and routes.
+ */
+
+const express = require('express');
+const session = require('express-session');
+const cors = require('cors');
+const cookieParser = require('cookie-parser');
+require('dotenv').config();
+const csrfProtection = require('./middlewares/csrfProtection');
+const youtubeAuth = require('./oauth2-youtube');
+const { onLike, subscribeToChannel } = require('./youtube-areas');
+const { fetchRepositories, compareRepositories, AonRepoCreation, AonRepoDeletion, RcreateRepo, RfollowUser, RfollowUsersFromFile } = require('./github-areas');
+const { getUsers } = require('./crud_users');
+const { getAccessTokenByEmailAndServiceName } = require('./crud_user_services');
+const areasFunctions = require('./areas_functions.json');
+
+const app = express();
+const port = 3000;
+let storedRepositories = [];
+
+app.use(express.json());
+app.use(cookieParser());
+app.use(cors({
+    origin: 'http://flowfy.duckdns.org',
+    credentials: true,
+}));
+app.use(session({
+    secret: process.env.SESSION_SECRET,
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict'
+    }
+}));
+
+const oauth2Routes = require('./oauth2-routes');
+const oauthGithub = require('./oauth2-github');
+const crudRoutes = require('./crud-routes');
+
+app.use(youtubeAuth);
+app.use(oauth2Routes);
+app.use(oauthGithub);
+app.use(crudRoutes);
+
+/**
+ * Route for handling YouTube like action.
+ * @name POST /api/youtube/on-like
+ * @function
+ * @memberof module:server
+ * @param {Object} req - The request object.
+ * @param {Object} req.body - The body of the request.
+ * @param {string} req.body.email - The email address of the user.
+ * @param {Object} res - The response object.
+ */
+app.post('/api/youtube/on-like', async (req, res) => {
+  const { email } = req.body;
+
+  try {
+    await onLike(email); // Ensure onLike handles all necessary logic
+    await subscribeToChannel(email); // Pass the oauth2Client directly
+    res.status(200).send('Action created for liked video and subscription initiated');
+  } catch (error) {
+    res.status(500).send('Error creating action for liked video or subscription initiation');
+  }
+});
+
+let isRunning = false;
+
+/**
+ * Function to run AREAS actions and reactions.
+ * @async
+ * @function runAREAS
+ * @memberof module:server
+ */
+async function runAREAS() {
+  if (isRunning) {
+    console.log('runAREAS is already running. Skipping this interval.');
+    return;
+  }
+
+  console.log('///Running AREAS...///');
+  isRunning = true;
+
+  try {
+    const users = await getUsers();
+    console.log(users);
+    for (const user of users) {
+      const { email, areas } = user;
+      for (const area of areas) {
+        const [actionId, reactionId] = area.split(':');
+        const action = areasFunctions.actions[actionId];
+        const reaction = areasFunctions.reactions[reactionId];
+
+        if (action &amp;&amp; reaction) {
+          const actionModule = require(action.file);
+          const reactionModule = require(reaction.file);
+          console.log('AREAS:', action, reaction);
+
+          if (typeof actionModule[action.function] === 'function' &amp;&amp; typeof reactionModule[reaction.function] === 'function') {
+            console.log('Running AREAS:', action, reaction);
+            await actionModule[action.function](email);
+            await reactionModule[reaction.function](email);
+          }
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Error running AREAS:', error);
+  } finally {
+    isRunning = false;
+  }
+}
+
+/**
+ * Route for fetching GitHub repositories.
+ * @name GET /api/github/fetch-repositories
+ * @function
+ * @memberof module:server
+ * @param {Object} req - The request object.
+ * @param {Object} req.query - The query parameters.
+ * @param {string} req.query.email - The email address of the user.
+ * @param {Object} res - The response object.
+ */
+app.get('/api/github/fetch-repositories', async (req, res) => {
+  const { email } = req.query;
+  const accessToken = process.env.GITHUB_ACCESS_TOKEN;
+  storedRepositories = await fetchRepositories(accessToken);
+  res.status(200).send('Repositories fetched');
+});
+
+/**
+ * Route for getting stored GitHub repositories.
+ * @name GET /api/github/repos
+ * @function
+ * @memberof module:server
+ * @param {Object} req - The request object.
+ * @param {Object} res - The response object.
+ */
+app.get('/api/github/repos', async (req, res) => {
+  console.log('repositories:', storedRepositories);
+  res.status(200).json(storedRepositories);
+});
+
+/**
+ * Route for handling GitHub repository creation action.
+ * @name GET /api/github/on-repo-creation
+ * @function
+ * @memberof module:server
+ * @param {Object} req - The request object.
+ * @param {Object} res - The response object.
+ */
+app.get('/api/github/on-repo-creation', async (req, res) => {
+  try {
+    // Ensure the comparison is awaited
+    const { newRepos } = await AonRepoCreation(storedRepositories);
+
+    if (newRepos.length > 0) {
+      // Update storedRepositories with the fetched ones
+      storedRepositories = await fetchRepositories(process.env.GITHUB_ACCESS_TOKEN);
+    }
+
+    // Return the results
+    res.status(200).json({ newRepos });
+  } catch (error) {
+    console.error('Error comparing repositories:', error);
+    res.status(500).json({ error: 'Failed to compare repositories' });
+  }
+});
+
+/**
+ * Route for handling GitHub repository deletion action.
+ * @name GET /api/github/on-repo-deletion
+ * @function
+ * @memberof module:server
+ * @param {Object} req - The request object.
+ * @param {Object} res - The response object.
+ */
+app.get('/api/github/on-repo-deletion', async (req, res) => {
+  try {
+    // Ensure the comparison is awaited
+    const { removedRepos } = await AonRepoDeletion(storedRepositories);
+
+    if (removedRepos.length > 0) {
+      // Update storedRepositories with the fetched ones
+      storedRepositories = fetchedRepos;
+    }
+
+    // Return the results
+    res.status(200).json({ removedRepos });
+  } catch (error) {
+    console.error('Error comparing repositories:', error);
+    res.status(500).json({ error: 'Failed to compare repositories' });
+  }
+});
+
+/**
+ * Route for comparing GitHub repositories.
+ * @name GET /api/github/compare-repos
+ * @function
+ * @memberof module:server
+ * @param {Object} req - The request object.
+ * @param {Object} res - The response object.
+ */
+app.get('/api/github/compare-repos', async (req, res) => {
+  try {
+    // Ensure the comparison is awaited
+    const { newRepos, removedRepos, fetchedRepos } = await compareRepositories(storedRepositories);
+
+    // Update storedRepositories with the fetched ones
+    storedRepositories = fetchedRepos;
+
+    // Return the results
+    res.status(200).json({ newRepos, removedRepos });
+  } catch (error) {
+    console.error('Error comparing repositories:', error);
+    res.status(500).json({ error: 'Failed to compare repositories' });
+  }
+});
+
+/**
+ * Route for creating a GitHub repository.
+ * @name GET /api/github/create-repo
+ * @function
+ * @memberof module:server
+ * @param {Object} req - The request object.
+ * @param {Object} res - The response object.
+ */
+app.get('/api/github/create-repo', async (req, res) => {
+  try {
+    const response = await RcreateRepo(process.env.GITHUB_ACCESS_TOKEN);
+    res.status(200).json(response);
+  } catch (error) {
+    console.error('Error creating repository:', error);
+    res.status(500).json({ error: 'Failed to create repository' });
+  }
+});
+
+/**
+ * Route for following users on GitHub.
+ * @name GET /api/github/follow-users
+ * @function
+ * @memberof module:server
+ * @param {Object} req - The request object.
+ * @param {Object} res - The response object.
+ */
+app.get('/api/github/follow-users', async (req, res) => {
+  try {
+    const response = await RfollowUsersFromFile(process.env.GITHUB_ACCESS_TOKEN);
+    res.status(200).json(response);
+  } catch (error) {
+    console.error('Error following user:', error);
+    res.status(500).json({ error: 'Failed to follow user' });
+  }
+});
+
+if (process.env.NODE_ENV !== 'test') {
+  setInterval(runAREAS, 10 * 1000);
+  app.listen(port, () => {
+    console.log(`Server is running on http://flowfy.duckdns.org:${port}`);
+  });
+}
+
+module.exports = app;</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Global</h3><ul><li><a href="global.html#AonLike">AonLike</a></li><li><a href="global.html#AonRepoCreation">AonRepoCreation</a></li><li><a href="global.html#AonRepoDeletion">AonRepoDeletion</a></li><li><a href="global.html#AonSubscribe">AonSubscribe</a></li><li><a href="global.html#RcreateRepo">RcreateRepo</a></li><li><a href="global.html#RfollowUser">RfollowUser</a></li><li><a href="global.html#RfollowUsersFromFile">RfollowUsersFromFile</a></li><li><a href="global.html#Rlike3latestvideo">Rlike3latestvideo</a></li><li><a href="global.html#RsubscribeToChannel">RsubscribeToChannel</a></li><li><a href="global.html#RunsubscribeFromChannel">RunsubscribeFromChannel</a></li><li><a href="global.html#checkUserExists">checkUserExists</a></li><li><a href="global.html#client">client</a></li><li><a href="global.html#compareRepositories">compareRepositories</a></li><li><a href="global.html#connectDb">connectDb</a></li><li><a href="global.html#connectUserToService">connectUserToService</a></li><li><a href="global.html#createAction">createAction</a></li><li><a href="global.html#createReaction">createReaction</a></li><li><a href="global.html#createService">createService</a></li><li><a href="global.html#createUserServiceEMAIL">createUserServiceEMAIL</a></li><li><a href="global.html#createUserServiceID">createUserServiceID</a></li><li><a href="global.html#deleteAction">deleteAction</a></li><li><a href="global.html#deleteReaction">deleteReaction</a></li><li><a href="global.html#deleteService">deleteService</a></li><li><a href="global.html#deleteUserService">deleteUserService</a></li><li><a href="global.html#deleteUserServiceByUserIdAndServiceId">deleteUserServiceByUserIdAndServiceId</a></li><li><a href="global.html#deleteUserServicesByServiceId">deleteUserServicesByServiceId</a></li><li><a href="global.html#deleteUserServicesByUserId">deleteUserServicesByUserId</a></li><li><a href="global.html#deserializeUser">deserializeUser</a></li><li><a href="global.html#disconnectDb">disconnectDb</a></li><li><a href="global.html#fetchRepositories">fetchRepositories</a></li><li><a href="global.html#followUser">followUser</a></li><li><a href="global.html#getActions">getActions</a></li><li><a href="global.html#getActionsByServiceId">getActionsByServiceId</a></li><li><a href="global.html#getReactions">getReactions</a></li><li><a href="global.html#getServices">getServices</a></li><li><a href="global.html#getUserServices">getUserServices</a></li><li><a href="global.html#getUserServicesByServiceId">getUserServicesByServiceId</a></li><li><a href="global.html#getUserServicesByUserId">getUserServicesByUserId</a></li><li><a href="global.html#getUserServicesByUserMail">getUserServicesByUserMail</a></li><li><a href="global.html#readChannelIdsFromFile">readChannelIdsFromFile</a></li><li><a href="global.html#readReposFromFile">readReposFromFile</a></li><li><a href="global.html#readUsernamesFromFile">readUsernamesFromFile</a></li><li><a href="global.html#serializeUser">serializeUser</a></li><li><a href="global.html#updateAction">updateAction</a></li><li><a href="global.html#updateReaction">updateReaction</a></li><li><a href="global.html#updateService">updateService</a></li><li><a href="global.html#updateUserServiceAccessToken">updateUserServiceAccessToken</a></li><li><a href="global.html#updateUserServiceRefreshToken">updateUserServiceRefreshToken</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Mon Dec 16 2024 22:12:34 GMT+0400 (Réunion Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

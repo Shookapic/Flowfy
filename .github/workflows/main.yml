@@ -33,6 +33,8 @@ jobs:
       env:
         GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
         GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+        CLIENT_ID_GITHUB: ${{ secrets.CLIENT_ID_GITHUB}}
+        CLIENT_SECRET_GITHUB: ${{ secrets.CLIENT_SECRET_GITHUB }}
         JWT_SECRET: ${{ secrets.JWT_SECRET }}
         SESSION_SECRET: ${{ secrets.SESSION_SECRET }}
       run: cd backend/area-back && npm test

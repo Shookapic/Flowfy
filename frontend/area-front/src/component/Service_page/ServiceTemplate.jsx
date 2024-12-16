@@ -14,6 +14,7 @@ const serviceApiEndpoints = {
   'twitch-service': '/api/auth/twitch',
   'twitter-service': '/api/auth/twitter',
   'github-service': '/api/auth/github',
+  'gmail-service': '/api/auth/gmail',
 };
 
 const serviceIds = {
@@ -23,6 +24,7 @@ const serviceIds = {
   'twitch-service': 4,
   'twitter-service': 5,
   'github-service': 6,
+  'gmail-service': 7,
 };
 
 export function ServiceTemplate() {

@@ -9,6 +9,11 @@
       "name": "On Subscribe",
       "function": "AonComment",
       "file": "./youtube-areas"
+    },
+    "3": {
+      "name": "On Mail Reception",
+      "function": "AlistEmails",
+      "file": "./gmail-areas"
     }
   },
   "reactions": {
@@ -26,6 +31,11 @@
       "name": "Like 3 latest videos from subscribed channels",
       "function": "Rlike3latestvideo",
       "file": "./youtube-areas"
+    },
+    "4": {
+      "name": "Reply Mail",
+      "function": "RsendReply",
+      "file": "./gmail-areas"
     }
   }
 }

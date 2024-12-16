@@ -34,7 +34,7 @@ CREATE TABLE users (
 CREATE TABLE user_services (
     id SERIAL PRIMARY KEY,
     user_id INT REFERENCES users(id) ON DELETE CASCADE,
-    service_id INT REFERENCES services(id) ON DELETE CASCADE UNIQUE,
+    service_id INT REFERENCES services(id) ON DELETE CASCADE,
     access_token TEXT NULL,
     refresh_token TEXT NULL,
     is_logged BOOLEAN NOT NULL
@@ -46,14 +46,13 @@ INSERT INTO services (name) VALUES ('Netflix');
 INSERT INTO services (name) VALUES ('Twitch');
 INSERT INTO services (name) VALUES ('Twitter');
 INSERT INTO services (name) VALUES ('Github');
+INSERT INTO services (name) VALUES ('Gmail');
 -- YOUTUBE AREAS
 INSERT INTO actions (service_id, description) VALUES (2, 'On Like');
 INSERT INTO actions (service_id, description) VALUES (2, 'On Subscribe');
 INSERT INTO reactions (service_id, description) VALUES (2, 'Subscribe to channel');
 INSERT INTO reactions (service_id, description) VALUES (2, 'Unsubscribe to channel');
 INSERT INTO reactions (service_id, description) VALUES (2, 'Like 3 latest videos from subscribed channels');
--- GITHUB AREAS
-INSERT INTO actions (service_id, description) VALUES (6, 'On Repo Creation');
-INSERT INTO actions (service_id, description) VALUES (6, 'On Repo Deletion');
-INSERT INTO reactions (service_id, description) VALUES (6, 'Repo Creation');
-INSERT INTO reactions (service_id, description) VALUES (6, 'Follow user');
+-- GMAIL AREAS
+INSERT INTO actions (service_id, description) VALUES (7, 'On Mail Reception');
+INSERT INTO reactions (service_id, description) VALUES (7, 'Reply Mail');

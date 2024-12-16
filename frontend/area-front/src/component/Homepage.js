@@ -7,7 +7,6 @@ import Footer from './Footer';
 import { motion } from 'framer-motion';
 import Navbar from './Navbar';
 
-
 function Homepage() {
     const [headerImage, setHeaderImage] = useState(darkImage);
 
@@ -51,42 +50,42 @@ function Homepage() {
             <div className="flex justify-center">
               <div className="flex overflow-y-hidden space-x-16 group mt-16 max-w-2xl">
                 <div className="flex space-x-16 animate-loop-scroll group-hover:paused">
-                  <a href="#">
+                  <a href="https://www.youtube.com" target="_blank" rel="noopener noreferrer">
                     <FontAwesomeIcon icon={['fab', 'youtube']} className="text-6xl text-red-600" />
                   </a>
-                  <a href="#">
+                  <a href="https://www.spotify.com" target="_blank" rel="noopener noreferrer">
                     <FontAwesomeIcon icon={['fab', 'spotify']} className="text-6xl text-green-500" />
                   </a>
-                  <a href="#">
+                  <a href="https://www.discord.com" target="_blank" rel="noopener noreferrer">
                     <FontAwesomeIcon icon={['fab', 'discord']} className="text-6xl text-purple-500" />
                   </a>
-                  <a href="#">
+                  <a href="https://www.github.com" target="_blank" rel="noopener noreferrer">
                     <FontAwesomeIcon icon={['fab', 'github']} className="text-6xl text-gray-600" />
                   </a>
-                  <a href="#">
+                  <a href="https://www.twitter.com" target="_blank" rel="noopener noreferrer">
                     <FontAwesomeIcon icon={['fab', 'x-twitter']} className="text-6xl text-black dark:text-white" />
                   </a>
-                  <a href="#">
+                  <a href="https://www.google.com" target="_blank" rel="noopener noreferrer">
                     <FontAwesomeIcon icon={['fab', 'google']} className="text-6xl text-blue-600" />
                   </a>
                 </div>
                 <div className="flex space-x-16 animate-loop-scroll group-hover:paused" aria-hidden="true">
-                  <a href="#">
+                  <a href="https://www.youtube.com" target="_blank" rel="noopener noreferrer">
                     <FontAwesomeIcon icon={['fab', 'youtube']} className="text-6xl text-red-600" />
                   </a>
-                  <a href="#">
+                  <a href="https://www.spotify.com" target="_blank" rel="noopener noreferrer">
                     <FontAwesomeIcon icon={['fab', 'spotify']} className="text-6xl text-green-500" />
                   </a>
-                  <a href="#">
+                  <a href="https://www.discord.com" target="_blank" rel="noopener noreferrer">
                     <FontAwesomeIcon icon={['fab', 'discord']} className="text-6xl text-purple-500" />
                   </a>
-                  <a href="#">
+                  <a href="https://www.github.com" target="_blank" rel="noopener noreferrer">
                     <FontAwesomeIcon icon={['fab', 'github']} className="text-6xl text-gray-600" />
                   </a>
-                  <a href="#">
+                  <a href="https://www.twitter.com" target="_blank" rel="noopener noreferrer">
                     <FontAwesomeIcon icon={['fab', 'x-twitter']} className="text-6xl text-black dark:text-white" />
                   </a>
-                  <a href="#">
+                  <a href="https://www.google.com" target="_blank" rel="noopener noreferrer">
                     <FontAwesomeIcon icon={['fab', 'google']} className="text-6xl text-blue-600" />
                   </a>
                 </div>

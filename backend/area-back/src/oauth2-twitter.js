@@ -10,7 +10,7 @@ const twitterClient = new TwitterApi({
   clientSecret: process.env.TWITTER_CLIENT_SECRET,
 });
 
-const callbackURL = 'http://localhost:3000/api/auth/twitter/callback';
+const callbackURL = 'http://flowfy.duckdns.org:3000/api/auth/twitter/callback';
 
 router.get('/api/auth/twitter', async (req, res) => {
   const { email } = req.query;

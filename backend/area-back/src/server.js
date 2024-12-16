@@ -18,7 +18,7 @@ let storedRepositories = [];
 app.use(express.json());
 app.use(cookieParser());
 app.use(cors({
-    origin: 'http://localhost:8000',
+    origin: 'http://flowfy.duckdns.org',
     credentials: true,
 }));
 app.use(session({
@@ -61,6 +61,7 @@ async function runAREAS() {
     return;
   }
 
+  console.log('///Running AREAS...///');
   isRunning = true;
 
   try {
@@ -182,7 +183,7 @@ app.get('/api/github/follow-users', async (req, res) => {
 
 if (process.env.NODE_ENV !== 'test') {
   app.listen(port, () => {
-    console.log(`Server is running on http://localhost:${port}`);
+    console.log(`Server is running on http://flowfy.duckdns.org:${port}`);
   });
 }
 

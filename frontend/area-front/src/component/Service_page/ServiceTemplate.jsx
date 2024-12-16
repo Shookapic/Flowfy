@@ -38,7 +38,7 @@ export function ServiceTemplate() {
   const [selectedReactions, setSelectedReactions] = useState({});
   const [isConnected, setIsConnected] = useState(true);
   const [notification, setNotification] = useState(null);
-  const [connectedServices, setConnectedServices] = useState({
+  const [connectedServices] = useState({
     twitter: false, discord: false, gmail: false,
     spotify: false, github: false
   });
@@ -49,11 +49,11 @@ export function ServiceTemplate() {
       if (!serviceId) return;
 
       try {
-        const actionsResponse = await fetch(`http://localhost:3000/get-actions-by-service-id?serviceId=${serviceId}`);
+        const actionsResponse = await fetch(`http://flowfy.duckdns.org:3000/get-actions-by-service-id?serviceId=${serviceId}`);
         const actionsData = await actionsResponse.json();
         setServiceActions(actionsData);
 
-        const reactionsResponse = await fetch(`http://localhost:3000/get-reactions-by-service-id?serviceId=${serviceId}`);
+        const reactionsResponse = await fetch(`http://flowfy.duckdns.org:3000/get-reactions-by-service-id?serviceId=${serviceId}`);
         const reactionsData = await reactionsResponse.json();
         setAvailableReactions(reactionsData);
       } catch (error) {
@@ -92,7 +92,7 @@ export function ServiceTemplate() {
       return;
     }
 
-    const url = `http://localhost:3000${endpoint}?email=${encodeURIComponent(email)}`;
+    const url = `http://flowfy.duckdns.org:3000${endpoint}?email=${encodeURIComponent(email)}`;
     window.location.href = url; // Redirect to the OAuth2 provider
   };
 

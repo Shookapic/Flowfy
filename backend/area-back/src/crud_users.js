@@ -82,9 +82,10 @@ async function createUser(email, areas, is_logged, access_token, refresh_token) 
     const checkRes = await client.query(checkQuery, [email]);
 
     if (checkRes.rows.length > 0) {
-      // Update the existing user
-      const updateQuery = 'UPDATE users SET areas = $2, is_logged = $3, access_token = $4, refresh_token = $5 WHERE email = $1 RETURNING *';
-      const updateValues = [email, areas, is_logged, access_token, refresh_token];
+      // Update the existing user without updating areas
+      console.log("UPDATING ALREADY EXISTING USER");
+      const updateQuery = 'UPDATE users SET is_logged = $2, access_token = $3, refresh_token = $4 WHERE email = $1 RETURNING *';
+      const updateValues = [email, is_logged, access_token, refresh_token];
       const updateRes = await client.query(updateQuery, updateValues);
       console.log('User Updated:', updateRes.rows[0]);
     } else {

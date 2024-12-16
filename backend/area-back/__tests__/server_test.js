@@ -39,7 +39,7 @@ jest.mock('../src/crud_reactions', () => ({
 beforeAll(() => {
   // Start the server before all tests
   server = app.listen(3000, () => {
-    console.log('Server is running on http://localhost:3000');
+    console.log('Server is running on http://flowfy.duckdns.org:3000');
   });
 });
 

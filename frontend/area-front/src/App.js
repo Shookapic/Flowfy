@@ -6,7 +6,6 @@ import { Services } from './component/services.jsx';
 import Homepage from './component/Homepage.js';
 import Profilepage from './component/Profilepage.js';
 import { ServiceTemplate } from './component/Service_page/ServiceTemplate.jsx';
-import Policy from './component/PolicyPage';
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
@@ -15,7 +14,7 @@ const ProtectedRoute = ({ children }) => {
   React.useEffect(() => {
     const email = localStorage.getItem('email');
     if (email) {
-      fetch(`http://localhost:3000/isUserLogged?email=${encodeURIComponent(email)}`, {
+      fetch(`http://flowfy.duckdns.org:3000/isUserLogged?email=${encodeURIComponent(email)}`, {
         method: 'GET',
       })
         .then((response) => response.json()) // Assumes the API returns plain `true` or `false`
@@ -49,7 +48,6 @@ function App() {
           <Route path="*" element={<Navigate to="/login" replace />} />
           <Route path="/" element={<ProtectedRoute> <Homepage /> </ProtectedRoute>} />
           <Route path="/profile" element={<ProtectedRoute> <Profilepage /> </ProtectedRoute>} />
-          <Route path="/policy" element={<Policy />} />
         </Routes>
       </div>
     </Router>

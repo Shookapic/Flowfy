@@ -7,8 +7,18 @@
     },
     "2": {
       "name": "On Subscribe",
-      "function": "AonComment",
+      "function": "AonSubscribe",
       "file": "./youtube-areas"
+    },
+    "3": {
+      "name": "On Repo Creation",
+      "function": "AonRepoCreation",
+      "file": "./github-areas"
+    },
+    "4": {
+      "name": "On Repo Deletion",
+      "function": "AonRepoDeletion",
+      "file": "./github-areas"
     }
   },
   "reactions": {
@@ -26,6 +36,16 @@
       "name": "Like 3 latest videos from subscribed channels",
       "function": "Rlike3latestvideo",
       "file": "./youtube-areas"
+    },
+    "4": {
+      "name": "Create Repo",
+      "function": "RcreateRepo",
+      "file": "./github-areas"
+    },
+    "5": {
+      "name": "Follow User",
+      "function": "RfollowUsersFromFile",
+      "file": "./github-areas"
     }
   }
 }

@@ -49,10 +49,10 @@ router.get(
         // Example: Save GitHub user info to the database with the provided email
         await createUserService(email, service_id, user.accessToken, null, true);
 
-        res.redirect('http://localhost:8000/github-service'); // Redirect after success
+        res.redirect('http://flowfy.duckdns.org/github-service'); // Redirect after success
       } catch (error) {
         console.error('Error in GitHub callback processing:', error);
-        res.redirect('http://localhost:8000/github-service'); // Redirect after success
+        res.redirect('http://flowfy.duckdns.org/github-service'); // Redirect after success
       }
     })(req, res, next);
   }

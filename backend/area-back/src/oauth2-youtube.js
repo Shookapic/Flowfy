@@ -9,7 +9,7 @@ const router = express.Router();
 const oauth2Client = new google.auth.OAuth2(
   process.env.YOUTUBE_CLIENT_ID,
   process.env.YOUTUBE_CLIENT_SECRET,
-  'http://localhost:3000/api/auth/youtube/callback'
+  'http://flowfy.duckdns.org:3000/api/auth/youtube/callback'
 );
 
 const scopes = [
@@ -49,10 +49,10 @@ router.get('/api/auth/youtube/callback', async (req, res) => {
   
       await createUserService(email, service_id, tokens.access_token, refreshToken, true);
       console.log('YouTube tokens:', tokens);
-      res.redirect('http://localhost/youtube-service');
+      res.redirect('http://flowfy.duckdns.org/youtube-service');
     } catch (error) {
       console.error('Error during YouTube OAuth2 callback:', error);
-      res.redirect('http://localhost/youtube-service');
+      res.redirect('http://flowfy.duckdns.org/youtube-service');
     }
   });  
 

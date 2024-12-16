@@ -1,3 +1,8 @@
+/**
+ * @file oauth2-routes.js
+ * @description Express router module for handling Google OAuth2 authentication.
+ */
+
 const express = require('express');
 const { google } = require('googleapis');
 const jwt = require('jsonwebtoken');
@@ -14,6 +19,14 @@ const oauth2Client = new google.auth.OAuth2(
 
 const jwtSecret = process.env.JWT_SECRET;
 
+/**
+ * Route for initiating Google authentication.
+ * @name GET /api/auth/google
+ * @function
+ * @memberof module:oauth2-routes
+ * @param {Object} req - The request object.
+ * @param {Object} res - The response object.
+ */
 router.get('/api/auth/google', (req, res) => {
     const url = oauth2Client.generateAuthUrl({
         access_type: 'offline',
@@ -26,6 +39,16 @@ router.get('/api/auth/google', (req, res) => {
     res.redirect(url);
 });
 
+/**
+ * Route for handling Google authentication callback.
+ * @name GET /api/auth/google/callback
+ * @function
+ * @memberof module:oauth2-routes
+ * @param {Object} req - The request object.
+ * @param {Object} req.query - The query parameters.
+ * @param {string} req.query.code - The authorization code returned by Google.
+ * @param {Object} res - The response object.
+ */
 router.get('/api/auth/google/callback', async (req, res) => {
     const { code } = req.query;
     try {
@@ -69,6 +92,14 @@ router.get('/api/auth/google/callback', async (req, res) => {
     }
 });
 
+/**
+ * Route for logging out the user.
+ * @name GET /api/auth/logout
+ * @function
+ * @memberof module:oauth2-routes
+ * @param {Object} req - The request object.
+ * @param {Object} res - The response object.
+ */
 router.get('/api/auth/logout', (req, res) => {
     req.logout((err) => {
         if (err) {

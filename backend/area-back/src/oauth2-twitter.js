@@ -1,3 +1,8 @@
+/**
+ * @file oauth2-twitter.js
+ * @description Express router module for handling Twitter OAuth2 authentication.
+ */
+
 const express = require('express');
 const { TwitterApi } = require('twitter-api-v2');
 const { getUserIdByEmail, createUserServiceID } = require('./crud_user_services'); // Import the functions
@@ -12,6 +17,16 @@ const twitterClient = new TwitterApi({
 
 const callbackURL = 'http://flowfy.duckdns.org:3000/api/auth/twitter/callback';
 
+/**
+ * Route for initiating Twitter authentication.
+ * @name GET /api/auth/twitter
+ * @function
+ * @memberof module:oauth2-twitter
+ * @param {Object} req - The request object.
+ * @param {Object} req.query - The query parameters.
+ * @param {string} req.query.email - The email address of the user.
+ * @param {Object} res - The response object.
+ */
 router.get('/api/auth/twitter', async (req, res) => {
   const { email } = req.query;
 
@@ -46,6 +61,17 @@ router.get('/api/auth/twitter', async (req, res) => {
   }
 });
 
+/**
+ * Route for handling Twitter authentication callback.
+ * @name GET /api/auth/twitter/callback
+ * @function
+ * @memberof module:oauth2-twitter
+ * @param {Object} req - The request object.
+ * @param {Object} req.query - The query parameters.
+ * @param {string} req.query.state - The state parameter returned by Twitter.
+ * @param {string} req.query.code - The authorization code returned by Twitter.
+ * @param {Object} res - The response object.
+ */
 router.get('/api/auth/twitter/callback', async (req, res) => {
   const { state, code } = req.query;
 
@@ -67,7 +93,7 @@ router.get('/api/auth/twitter/callback', async (req, res) => {
     const { data: user } = await loggedClient.v2.me();
 
     // Store accessToken and refreshToken in the database
-    const service_id = getServiceByName('Twitter');
+    const service_id = await getServiceByName('Twitter');
     console.log(`Service ID: ${service_id}`);
     await createUserServiceID(req.session.userId, service_id, accessToken, refreshToken, true);
     console.log(`User ${user.username} connected to Twitter`);

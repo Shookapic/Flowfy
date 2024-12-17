@@ -57,3 +57,8 @@ INSERT INTO actions (service_id, description) VALUES (6, 'On Repo Creation');
 INSERT INTO actions (service_id, description) VALUES (6, 'On Repo Deletion');
 INSERT INTO reactions (service_id, description) VALUES (6, 'Repo Creation');
 INSERT INTO reactions (service_id, description) VALUES (6, 'Follow user');
+--X AREAS
+INSERT INTO actions (service_id, description) VALUES (5, 'Like a post');
+INSERT INTO actions (service_id, description) VALUES (5, 'Retweet a post');
+INSERT INTO reactions (service_id, description) VALUES (5, 'Subscribe to user');
+INSERT INTO reactions (service_id, description) VALUES (5, 'Add Comment "Amazing" to the post');

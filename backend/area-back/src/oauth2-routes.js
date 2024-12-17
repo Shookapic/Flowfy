@@ -7,6 +7,7 @@ const express = require('express');
 const { google } = require('googleapis');
 const jwt = require('jsonwebtoken');
 const users = require('./crud_users');
+const passport = require('passport'); // Ensure Passport.js is required
 require('dotenv').config();
 
 const router = express.Router();
@@ -14,7 +15,7 @@ const router = express.Router();
 const oauth2Client = new google.auth.OAuth2(
     process.env.GOOGLE_CLIENT_ID,
     process.env.GOOGLE_CLIENT_SECRET,
-    'http://flowfy.duckdns.org:3000/api/auth/google/callback'
+    'http://localhost:3000/api/auth/google/callback'
 );
 
 const jwtSecret = process.env.JWT_SECRET;

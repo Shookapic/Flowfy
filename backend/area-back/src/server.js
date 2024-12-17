@@ -7,8 +7,10 @@ require('dotenv').config();
 const csrfProtection = require('./middlewares/csrfProtection');
 const youtubeAuth = require('./oauth2-youtube');
 const gmailAuth = require('./oauth2-gmail');
+const calendarAuth = require('./oauth2-calendar');
 const { onLike, subscribeToChannel } = require('./youtube-areas');
-const { AlistEmails, RsendReply } = require('./gmail-areas');
+const { AlistEmails, AonStarEmails, AonSentEmailWithEventPattern, RsendReply, RsendReplyStarredMail } = require('./gmail-areas');
+const { RcreateCalendarEvent } = require('./calendar-areas');
 const { fetchRepositoriesName, AfollowUser, fetchAndUpdateFollowing, RupdateFollowingRepo, fetchRepositories, fetchFollowing, fetch3LatestRepos, Rstar3LatestRepos, RaddReadme, compareRepositories, AonRepoCreation, AonRepoDeletion, RcreateRepo, RfollowUser, RfollowUsersFromFile} = require('./github-areas');
 const { getUsers } = require('./crud_users');
 const { getAccessTokenByEmailAndServiceName } = require('./crud_user_services');
@@ -40,6 +42,7 @@ const oauth2Routes = require('./oauth2-routes');
 const oauthGithub = require('./oauth2-github');
 const crudRoutes = require('./crud-routes');
 
+app.use(calendarAuth);
 app.use(youtubeAuth);
 app.use(gmailAuth);
 app.use(oauth2Routes);
@@ -290,7 +293,7 @@ app.get('/api/github/follow-users', async (req, res) => {
 app.get('/api/gmail/mails', async (req, res) => {
   try {
     const { email } = req.query;
-    const response = await listEmails(email);
+    const response = await AlistEmails(email);
     res.status(200).json(response);
   } catch (error) {
     console.error('Error:', error);
@@ -301,7 +304,51 @@ app.get('/api/gmail/mails', async (req, res) => {
 app.get('/api/gmail/reply', async (req, res) => {
   try {
     const { email } = req.query;
-    const response = await sendReply(email);
+    const response = await RsendReply(email);
+    res.status(200).json(response);
+  } catch (error) {
+    console.error('Error:', error);
+    res.status(500).json({ error: 'Failed' });
+  }
+});
+
+app.get('/api/gmail/events', async (req, res) => {
+  try {
+    const { email } = req.query;
+    const response = await AonSentEmailWithEventPattern(email);
+    res.status(200).json(response);
+  } catch (error) {
+    console.error('Error:', error);
+    res.status(500).json({ error: 'Failed' });
+  }
+});
+
+app.get('/api/gmail/calendar', async (req,res) => {
+  try {
+    const { email } = req.query;
+    const response = await RcreateCalendarEvent(email);
+    res.status(200).json(response);
+  } catch (error) {
+    console.error('Error:', error);
+    res.status(500).json({ error: 'Failed' });
+  }
+});
+
+app.get('/api/gmail/reply-starred', async (req,res) => {
+  try {
+    const { email } = req.query;
+    const response = await RsendReplyStarredMail(email);
+    res.status(200).json(response);
+  } catch (error) {
+    console.error('Error:', error);
+    res.status(500).json({ error: 'Failed' });
+  }
+});
+
+app.get('/api/gmail/starred', async (req,res) => {
+  try {
+    const { email } = req.query;
+    const response = await AonStarEmails(email);
     res.status(200).json(response);
   } catch (error) {
     console.error('Error:', error);

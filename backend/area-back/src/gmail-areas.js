@@ -15,6 +15,12 @@ const oauth2Client = new google.auth.OAuth2(
   'http://localhost:3000/api/auth/gmail/callback'
 );
 
+const calendarOauth2Client = new google.auth.OAuth2(
+  process.env.CALENDAR_CLIENT_ID,
+  process.env.CALENDAR_CLIENT_SECRET,
+  'http://localhost:3000/api/auth/calendar/callback'
+);
+
 const emailFilePath = './src/emails.json';
 // Function to list recent messages
 async function listMessages() {
@@ -91,6 +97,282 @@ async function AonMailSend(email) {
 
   } catch (error) {
     console.error('Error handling on like event:', error);
+  }
+}
+
+async function AonSentEmailWithEventPattern(email) {
+  const userServices = await getUserServicesByUserMail(email);
+  if (!userServices || userServices.length === 0) {
+    throw new Error('No services found for the user');
+  }
+  const gmailService = userServices.find(service => service.service_id === 7);
+  if (!gmailService) {
+    throw new Error('Gmail service not connected');
+  }
+
+  // Set OAuth2 credentials
+  oauth2Client.setCredentials({
+    access_token: gmailService.access_token,
+    refresh_token: gmailService.refresh_token,
+  });
+
+  const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
+  const query = `label:SENT subject:Event`;
+
+  try {
+    const res = await gmail.users.messages.list({
+      userId: 'me',
+      q: query,
+      maxResults: 10, // Adjust the number of results as needed
+    });
+
+    const messages = res.data.messages;
+
+    if (messages && messages.length > 0) {
+      console.log('Checking for emails with pattern in the subject...');
+      const regex = /Event (\d{2})\/(\d{2})\/(\d{2}) \[(.*?)\]/;
+
+      // Read existing email data from the JSON file
+      const filePath = path.resolve('./src/mails_event.json');
+      let emailData = [];
+      if (fs.existsSync(filePath)) {
+        const fileContent = fs.readFileSync(filePath, 'utf8');
+        emailData = fileContent ? JSON.parse(fileContent) : [];
+      }
+
+      for (const message of messages) {
+        const messageRes = await gmail.users.messages.get({
+          userId: 'me',
+          id: message.id,
+        });
+
+        const msg = messageRes.data;
+
+        // Extract the subject header
+        const subjectHeader = msg.payload.headers.find(header => header.name === 'Subject');
+        const subject = subjectHeader ? subjectHeader.value : '';
+
+        console.log(`Subject: ${subject}`);
+
+        const match = subject.match(regex);
+        if (match) {
+          const [, day, month, year, eventName] = match;
+          const eventDate = `20${year}-${month}-${day}T10:00:00Z`;
+
+          // Prepare the email object
+          const emailObject = {
+            messageId: message.id,
+            subject: subject,
+            eventName: eventName,
+            eventDate: eventDate,
+          };
+
+          // Check if the email object already exists in the file
+          const isDuplicate = emailData.some(item => item.messageId === emailObject.messageId);
+          if (isDuplicate) {
+            console.log(`Duplicate email found: "${subject}". Skipping.`);
+            continue;
+          }
+
+          // Add the new email object
+          emailData.push(emailObject);
+
+          console.log(`New email added: "${subject}"`);
+        }
+      }
+
+      // Write the updated data back to the file
+      fs.writeFileSync(filePath, JSON.stringify(emailData, null, 2));
+      console.log(`Updated file written to ${filePath}`);
+      return { found: true };
+    } else {
+      console.log('No emails found with "Event" in the subject.');
+      return { found: false };
+    }
+  } catch (err) {
+    console.error('Error checking sent emails:', err);
+    throw err;
+  }
+}
+
+async function AonStarEmails(email) {
+  const userServices = await getUserServicesByUserMail(email);
+  if (!userServices || userServices.length === 0) {
+    throw new Error('No services found for the user');
+  }
+
+  const gmailService = userServices.find(service => service.service_id === 7);
+  if (!gmailService) {
+    throw new Error('Gmail service not connected');
+  }
+
+  // Set OAuth2 credentials
+  oauth2Client.setCredentials({
+    access_token: gmailService.access_token,
+    refresh_token: gmailService.refresh_token,
+  });
+
+  const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
+
+  try {
+    console.log('Fetching recent starred emails...');
+    const res = await gmail.users.messages.list({
+      userId: 'me',
+      q: 'is:starred',
+      maxResults: 10, // Adjust the number of emails to fetch
+    });
+
+    const messages = res.data.messages;
+
+    if (messages && messages.length > 0) {
+      const starredEmails = [];
+
+      for (const message of messages) {
+        const messageRes = await gmail.users.messages.get({
+          userId: 'me',
+          id: message.id,
+        });
+
+        const msg = messageRes.data;
+
+        // Extract headers like Subject and From
+        const subjectHeader = msg.payload.headers.find(header => header.name === 'Subject');
+        const fromHeader = msg.payload.headers.find(header => header.name === 'From');
+
+        const subject = subjectHeader ? subjectHeader.value : 'No Subject';
+        const from = fromHeader ? fromHeader.value : 'Unknown Sender';
+
+        // Get the snippet
+        const snippet = msg.snippet || 'No Snippet Available';
+
+        // Add the email details to the result array
+        starredEmails.push({
+          messageId: message.id,
+          subject,
+          from,
+          snippet,
+        });
+      }
+
+      console.log('Recent starred emails fetched successfully:', starredEmails);
+
+      // Optional: Save to a JSON file
+      const filePath = path.join(__dirname, 'starred_emails.json');
+      fs.writeFileSync(filePath, JSON.stringify(starredEmails, null, 2));
+      console.log('Starred emails saved to starred_emails.json');
+
+      return starredEmails;
+    } else {
+      console.log('No starred emails found.');
+      return [];
+    }
+  } catch (err) {
+    console.error('Error fetching starred emails:', err);
+    throw err;
+  }
+}
+
+async function RsendReplyStarredMail(email) {
+  const userServices = await getUserServicesByUserMail(email);
+  if (!userServices || userServices.length === 0) {
+    throw new Error('No services found for the user');
+  }
+
+  const gmailService = userServices.find(service => service.service_id === 7);
+  if (!gmailService) {
+    throw new Error('Gmail service not connected');
+  }
+
+  // Set OAuth2 credentials
+  oauth2Client.setCredentials({
+    access_token: gmailService.access_token,
+    refresh_token: gmailService.refresh_token,
+  });
+
+  const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
+
+  // Path to the JSON files
+  const starredEmailsPath = path.join(__dirname, 'starred_emails.json');
+  const repliedEmailsPath = path.join(__dirname, 'replied_starred_emails.json');
+
+  try {
+    // Check if the JSON files exist
+    if (!fs.existsSync(starredEmailsPath)) {
+      throw new Error('No starred_emails.json file found.');
+    }
+
+    // Initialize replied emails file if it doesn't exist
+    if (!fs.existsSync(repliedEmailsPath)) {
+      fs.writeFileSync(repliedEmailsPath, JSON.stringify([]));
+    }
+
+    // Read the starred and replied emails
+    const starredEmails = JSON.parse(fs.readFileSync(starredEmailsPath, 'utf-8'));
+    const repliedEmails = JSON.parse(fs.readFileSync(repliedEmailsPath, 'utf-8'));
+
+    if (starredEmails.length === 0) {
+      console.log('No starred emails to reply to.');
+      return;
+    }
+
+    console.log('Sending replies to starred emails...');
+
+    for (const emailData of starredEmails) {
+      const { messageId, from } = emailData;
+
+      if (!from || !messageId) {
+        console.log('Missing email details. Skipping...');
+        continue;
+      }
+
+      // Check if the email has already been replied to
+      if (repliedEmails.includes(messageId)) {
+        console.log(`Email with ID ${messageId} has already been replied to. Skipping...`);
+        continue;
+      }
+
+      // Extract sender's email from "From" header
+      const senderEmail = from.match(/<(.+)>/)?.[1] || from;
+
+      const replySubject = 'Great mail';
+      const replyBody = `Thanks for the mail`;
+
+      // Create reply payload
+      const rawMessage = [
+        `To: ${senderEmail}`,
+        `Subject: ${replySubject}`,
+        `In-Reply-To: ${messageId}`,
+        `References: ${messageId}`,
+        ``,
+        replyBody,
+      ].join('\n');
+
+      const encodedMessage = Buffer.from(rawMessage)
+        .toString('base64')
+        .replace(/\+/g, '-')
+        .replace(/\//g, '_')
+        .replace(/=+$/, '');
+
+      // Send the reply
+      const res = await gmail.users.messages.send({
+        userId: 'me',
+        requestBody: {
+          raw: encodedMessage,
+        },
+      });
+
+      console.log(`Replied to ${senderEmail} with message ID: ${res.data.id}`);
+
+      // Add the messageId to replied emails
+      repliedEmails.push(messageId);
+
+      // Save updated replied emails list to file
+      fs.writeFileSync(repliedEmailsPath, JSON.stringify(repliedEmails, null, 2));
+    }
+
+    console.log('Replies sent successfully.');
+  } catch (err) {
+    console.error('Error replying to starred emails:', err);
   }
 }
 
@@ -226,4 +508,4 @@ function sendReplyToEmail(gmail, rawMessage) {
   });
 }
 
-module.exports = { AlistEmails, RsendReply };
+module.exports = { AlistEmails, AonStarEmails, AonSentEmailWithEventPattern, RsendReply, RsendReplyStarredMail };

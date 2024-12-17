@@ -14,6 +14,16 @@
       "name": "On Mail Reception",
       "function": "AlistEmails",
       "file": "./gmail-areas"
+    },
+    "4": {
+      "name": "On Star Emails",
+      "function": "AonStarEmails",
+      "file": "./gmail-areas"
+    },
+    "5": {
+      "name": "On Sent Email With Event Pattern",
+      "function": "AonSentEmailWithEventPattern",
+      "file": "./gmail-areas"
     }
   },
   "reactions": {
@@ -36,6 +46,16 @@
       "name": "Reply Mail",
       "function": "RsendReply",
       "file": "./gmail-areas"
+    },
+    "5": {
+      "name": "Send Reply Starred Mail",
+      "function": "RsendReplyStarredMail",
+      "file": "./gmail-areas"
+    },
+    "6": {
+      "name": "Create Calendar Event",
+      "function": "RcreateCalendarEvent",
+      "file": "./calendar-areas"
     }
   }
 }

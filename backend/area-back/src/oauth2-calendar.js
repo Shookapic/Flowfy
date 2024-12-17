@@ -10,16 +10,16 @@ require('dotenv').config();
 const router = express.Router();
 
 const oauth2Client = new google.auth.OAuth2(
-  process.env.GMAIL_CLIENT_ID,
-  process.env.GMAIL_CLIENT_SECRET,
-  'http://localhost:3000/api/auth/gmail/callback'
+  process.env.CALENDAR_CLIENT_ID,
+  process.env.CALENDAR_CLIENT_SECRET,
+  'http://localhost:3000/api/auth/calendar/callback'
 );
 
 // Scopes you want to request for Gmail API
-const SCOPES = ['https://www.googleapis.com/auth/gmail.send', 'https://www.googleapis.com/auth/gmail.readonly'];
+const SCOPES = ['https://www.googleapis.com/auth/calendar', 'https://www.googleapis.com/auth/calendar.events'];
 
 // Create an OAuth2 client
-router.get('/api/auth/gmail', (req, res) => {
+router.get('/api/auth/calendar', (req, res) => {
   const { email } = req.query;
   const url = oauth2Client.generateAuthUrl({
     access_type: 'offline',
@@ -30,7 +30,7 @@ router.get('/api/auth/gmail', (req, res) => {
   res.redirect(url);
 });
 
-router.get('/api/auth/gmail/callback', async (req, res) => {
+router.get('/api/auth/calendar/callback', async (req, res) => {
   const { code, state } = req.query;
   const { email } = JSON.parse(state);
 
@@ -39,7 +39,7 @@ router.get('/api/auth/gmail/callback', async (req, res) => {
     oauth2Client.setCredentials(tokens);
 
     // Retrieve existing user service record to check for an existing refresh token
-    const service_id = await getServiceByName('Gmail');
+    const service_id = await getServiceByName('Calendar');
     const existingUserService = await getUserIdByEmail(email);
 
     // Use the new access token and fallback to the stored refresh token if missing
@@ -50,10 +50,10 @@ router.get('/api/auth/gmail/callback', async (req, res) => {
     }
 
     await createUserService(email, service_id, tokens.access_token, refreshToken, true);
-    res.redirect('http://localhost:8000/gmail-service');
+    res.redirect('http://localhost:8000/services');
   } catch (error) {
-    console.error('Error during Gmail OAuth2 callback:', error);
-    res.redirect('http://localhost:8000/gmail-service');
+    console.error('Error during Calendar OAuth2 callback:', error);
+    res.redirect('http://localhost:8000/services');
   }
 });
 

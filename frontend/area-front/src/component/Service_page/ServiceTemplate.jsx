@@ -6,6 +6,8 @@ import { ActionModal } from './ActionModal';
 import { ReactionModal } from './ReactionModal';
 import { ActionCard } from './ActionCard';
 import { projects } from '../services';
+import Navbar from '../Navbar';
+import Footer from '../Footer';
 
 const serviceApiEndpoints = {
   'spotify-service': '/api/auth/spotify',
@@ -143,7 +145,9 @@ export function ServiceTemplate() {
   if (!service) return <div>Service not found</div>;
 
   return (
-    <div className="min-h-screen bg-gray-800">
+    <>
+    <Navbar />
+    <div className="min-h-screen">
       {notification && <Notification message={notification} />}
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -152,16 +156,16 @@ export function ServiceTemplate() {
             service={service}
             isConnected={isConnected}
             onConnect={handleConnect}
-          />
+            />
 
           <div className="mt-6">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-semibold text-white">Actions & Reactions</h2>
+              <h2 className="text-xl font-semibold text-black dark:text-white">Actions & Reactions</h2>
               <button
                 onClick={() => setIsActionModalOpen(true)}
                 className="px-4 py-2 text-white rounded-full transition-all duration-300 ease-in-out transform hover:opacity-80 hover:scale-110"
                 style={{ backgroundColor: service.bgColor }}
-              >
+                >
                 +
               </button>
             </div>
@@ -169,19 +173,19 @@ export function ServiceTemplate() {
             <div className="space-y-4">
               {selectedActions.map((action) => (
                 <ActionCard
-                  key={action.id}
-                  action={action}
-                  reactions={selectedReactions[action.id]}
-                  onAddReaction={() => {
-                    setCurrentAction(action.id);
-                    setIsReactionModalOpen(true);
+                key={action.id}
+                action={action}
+                reactions={selectedReactions[action.id]}
+                onAddReaction={() => {
+                  setCurrentAction(action.id);
+                  setIsReactionModalOpen(true);
                   }}
                   onDeleteAction={handleDeleteAction}
                   onDeleteReaction={handleDeleteReaction}
                   onServiceConnect={handleServiceConnect}
                   connectedServices={connectedServices}
-                />
-              ))}
+                  />
+                  ))}
             </div>
           </div>
         </div>
@@ -192,7 +196,7 @@ export function ServiceTemplate() {
         onClose={() => setIsActionModalOpen(false)}
         actions={serviceActions.map(action => action.description)} // Ensure actions are rendered correctly
         onSubmit={handleActionSubmit}
-      />
+        />
 
       <ReactionModal
         isOpen={isReactionModalOpen}
@@ -200,7 +204,9 @@ export function ServiceTemplate() {
         reactions={availableReactions.map(reaction => reaction.description)} // Ensure reactions are rendered correctly
         selectedReactions={selectedReactions[currentAction] || []}
         onSubmit={handleReactionSubmit}
-      />
+        />
     </div>
+    <Footer />
+    </>
   );
 }

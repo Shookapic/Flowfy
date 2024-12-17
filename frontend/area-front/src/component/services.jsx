@@ -2,12 +2,18 @@ import { HoverEffect } from "./hover-effect";
 import React from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faDiscord, faGithub, faSpotify, faYoutube, faGoogle, faXTwitter } from '@fortawesome/free-brands-svg-icons';
+import Navbar from "./Navbar";
+import Footer from "./Footer";
 
 export function Services() {
   return (
+    <>
+    <Navbar />
     <div className="max-w-5xl mx-auto px-8">
       <HoverEffect items={projects} />
     </div>
+    <Footer />
+    </>
   );
 }
 

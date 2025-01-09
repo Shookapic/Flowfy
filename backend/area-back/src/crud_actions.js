@@ -75,6 +75,14 @@ async function getActionsByServiceId(serviceId) {
   return res.rows;
 }
 
+async function getActionIdByDescription(description) {
+  const query = 'SELECT id FROM actions WHERE description = $1';
+  const values = [description];
+  const res = await client.query(query, values);
+  console.log('Action ID:', res.rows[0]);
+  return res.rows[0];
+}
+
 // Export the functions for use in other modules.
 module.exports = {
   createAction,

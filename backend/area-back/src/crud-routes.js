@@ -421,10 +421,9 @@ router.get('/get-actions-by-service-id', async (req, res) => {
  * @param {Object} req.query - The query parameters.
  * @param {number} req.query.serviceId - The ID of the service.
  */
-router.get('/get-reactions-by-service-id', async (req, res) => {
-    const { serviceId } = req.query;
+router.get('/get-reactions', async (req, res) => {
     try {
-        const result = await reactions.getReactionsByServiceId(serviceId);
+        const result = await reactions.getReactions();
         res.status(200).json(result);
     } catch (error) {
         console.error(error);
@@ -432,4 +431,32 @@ router.get('/get-reactions-by-service-id', async (req, res) => {
     }
 });
 
+router.post('/save-action-reaction', async (req, res) => {
+    console.log("///////////////////// GONNA SAVE ACTION REACTION///////////////////////////");
+    const { email, actionName, reactionDescription } = req.body;
+    console.log("request body: ", req.body);
+
+    if (!actionName || !reactionDescription) {
+        return res.status(400).send('Action name and reaction name are required.');
+    }
+
+    try {
+        // Retrieve action and reaction IDs based on names
+        const actionId = await actions.getActionIdByName(actionDescription);
+        const reactionId = await reactions.getReactionIdByDescription(reactionDescription);
+
+        if (!actionId || !reactionId) {
+            return res.status(404).send('Action or reaction not found.');
+        }
+
+        // Save the action-reaction pair
+        await users.setAreas(email, actionId, reactionId);
+        res.status(200).send('Action-reaction saved successfully.');
+    } catch (error) {
+        console.error('Error saving action-reaction:', error);
+        res.status(500).send('Internal server error.');
+    }
+});
+
 module.exports = router;
+

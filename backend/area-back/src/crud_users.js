@@ -141,6 +141,28 @@ async function setUserLoggedStatus(email, status) {
   console.log('User Updated:', res.rows[0]);
 }
 
+async function setAreas(email, actionID, reactionID) {
+  try {
+      // Construct the value to append
+      const areaValue = `${actionID}:${reactionID}`;
+
+      // Execute the parameterized query
+      const query = `
+          UPDATE users
+          SET areas = array_append(areas, $1)
+          WHERE email = $2;
+      `;
+      const values = [areaValue, email];
+
+      // Using the database connection pool to execute the query
+      await pool.query(query, values);
+
+      console.log(`Successfully appended area "${areaValue}" for user "${email}".`);
+  } catch (error) {
+      console.error('Error updating areas:', error);
+      throw new Error('Failed to update areas.');
+  }
+}
 
 // Export the functions for use in other modules.
 module.exports = {
@@ -150,5 +172,6 @@ module.exports = {
   deleteUser,
   getUserByEmail,
   isUserLogged,
-  setUserLoggedStatus
+  setUserLoggedStatus,
+  setAreas
 };

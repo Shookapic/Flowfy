@@ -39,23 +39,14 @@ export const ActionCard = ({
         <div className="flex flex-wrap gap-2">
           {reactions.map((reaction, index) => (
             <div key={index} className="flex items-center bg-gray-700 hover:bg-gray-600 rounded-full px-2 sm:px-3 py-1 sm:py-1.5 transition-colors gap-2">
-              <span className="text-white text-xs sm:text-sm">{reaction}</span>
+              <span className="text-white text-xs sm:text-sm">{reaction.description}</span>
               <button
                 onClick={() => onDeleteReaction(action.id, index)}
                 className="text-gray-400 hover:text-red-400 transition-colors"
               >
                 ×
               </button>
-              <button
-                onClick={() => onServiceConnect(reaction.toLowerCase().split(' ')[0])}
-                className={`px-2 py-0.5 rounded-full text-xs transition-colors ${
-                  connectedServices[reaction.toLowerCase().split(' ')[0]]
-                    ? 'bg-green-500 hover:bg-green-600'
-                    : 'bg-blue-500 hover:bg-blue-600'
-                } text-white`}
-              >
-                {connectedServices[reaction.toLowerCase().split(' ')[0]] ? 'Connected' : 'Connect'}
-              </button>
+              {connectedServices[reaction.description.toLowerCase().split(' ')[0]]}
             </div>
           ))}
         </div>

@@ -14,7 +14,7 @@ const router = express.Router();
 const oauth2Client = new google.auth.OAuth2(
     process.env.GOOGLE_CLIENT_ID,
     process.env.GOOGLE_CLIENT_SECRET,
-    'http://flowfy.duckdns.org:3000/api/auth/google/callback'
+    'http://localhost:3000/api/auth/google/callback'
 );
 
 const jwtSecret = process.env.JWT_SECRET;
@@ -101,17 +101,12 @@ router.get('/api/auth/google/callback', async (req, res) => {
  * @param {Object} res - The response object.
  */
 router.get('/api/auth/logout', (req, res) => {
-    req.logout((err) => {
+    req.session.destroy((err) => {
         if (err) {
             return res.status(500).json({ message: 'Logout failed' });
         }
-        req.session.regenerate((err) => {
-            if (err) {
-                return res.status(500).json({ message: 'Failed to regenerate session' });
-            }
-            res.clearCookie('connect.sid');
-            res.json({ message: 'Logged out successfully' });
-        });
+        res.clearCookie('connect.sid');
+        res.json({ message: 'Logged out successfully' });
     });
 });
 

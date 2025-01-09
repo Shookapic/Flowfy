@@ -45,4 +45,4 @@ To stop the running containers, use the following command:
 docker-compose down --volumes --remove-orphans
 ```
 
-# Flowfy is accessible at [Flowfy](http://flowfy.duckdns.org) and Flowfy doc is accessible at [Flowfy DOC](http://flowfy.duckdns.org:3000/doc) 
+# Flowfy is accessible at [Flowfy](http://localhost) and Flowfy doc is accessible at [Flowfy DOC](http://localhost:3000/doc) 

@@ -1,51 +1,101 @@
 {
   "actions": {
     "1": {
-      "name": "On Like",
+      "name": "Like a video",
       "function": "AonLike",
       "file": "./youtube-areas"
     },
     "2": {
-      "name": "On Subscribe",
-      "function": "AonSubscribe",
+      "name": "New video uploaded",
+      "function": "AonNewVideo",
       "file": "./youtube-areas"
     },
     "3": {
-      "name": "On Repo Creation",
-      "function": "AonRepoCreation",
+      "name": "New pull request created",
+      "function": "AonNewPullRequest",
       "file": "./github-areas"
     },
     "4": {
-      "name": "On Repo Deletion",
-      "function": "AonRepoDeletion",
+      "name": "New issue created",
+      "function": "AonNewIssue",
       "file": "./github-areas"
+    },
+    "5": {
+      "name": "New song added to a playlist",
+      "function": "AonNewSong",
+      "file": "./spotify-areas"
+    },
+    "6": {
+      "name": "New album released by a favorite artist",
+      "function": "AonNewAlbum",
+      "file": "./spotify-areas"
+    },
+    "7": {
+      "name": "New tweet liked",
+      "function": "AonNewTweet",
+      "file": "./twitter-areas"
+    },
+    "8": {
+      "name": "When Following a user",
+      "function": "AonFollow",
+      "file": "./twitter-areas"
+    },
+    "9": {
+      "name": "New friend added",
+      "function": "AonNewFriend",
+      "file": "./discord-areas"
+    },
+    "10": {
+      "name": "On Playlist Creation",
+      "function": "OnPlaylistCreation",
+      "file": "./spotify-areas"
     }
   },
   "reactions": {
     "1": {
-      "name": "Subscribe to channel",
-      "function": "RsubscribeToChannel",
+      "name": "Add songs from videos you liked to a Spotify playlist named Youtube",
+      "function": "RaddSongToSpotify",
       "file": "./youtube-areas"
     },
     "2": {
-      "name": "Unsubscribe from channel",
-      "function": "RunsubscribeFromChannel",
+      "name": "Tweet on X the video you liked",
+      "function": "RpostTweet",
       "file": "./youtube-areas"
     },
     "3": {
-      "name": "Like 3 latest videos from subscribed channels",
-      "function": "Rlike3latestvideo",
-      "file": "./youtube-areas"
+      "name": "Add a task on Google Calendar for the new pull request",
+      "function": "RaddTaskToGoogleCalendarPR",
+      "file": "./github-areas"
     },
     "4": {
-      "name": "Create Repo",
-      "function": "RcreateRepo",
+      "name": "Add a task on Google Calendar for the new issue",
+      "function": "RaddTaskToGoogleCalendarI",
       "file": "./github-areas"
     },
     "5": {
-      "name": "Follow User",
-      "function": "RfollowUsersFromFile",
-      "file": "./github-areas"
+      "name": "Share the song on Twitter",
+      "function": "RshareSong",
+      "file": "./spotify-areas"
+    },
+    "6": {
+      "name": "Post a tweet with the album link",
+      "function": "RpostTweetAlbum",
+      "file": "./spotify-areas"
+    },
+    "7": {
+      "name": "Create a Google Calendar with the tweet link",
+      "function": "RaddTaskToGoogleCalendarT",
+      "file": "./twitter-areas"
+    },
+    "8": {
+      "name": "Search for the user and follow him on YouTube",
+      "function": "RfollowUser",
+      "file": "./twitter-areas"
+    },
+    "9": {
+      "name": "Send an email to notify about new friend",
+      "function": "RsendEmail",
+      "file": "./discord-areas"
     }
   }
 }

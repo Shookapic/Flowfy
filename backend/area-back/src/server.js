@@ -15,6 +15,7 @@ const { fetchRepositories, compareRepositories, AonRepoCreation, AonRepoDeletion
 const { getUsers } = require('./crud_users');
 const { getAccessTokenByEmailAndServiceName } = require('./crud_user_services');
 const areasFunctions = require('./areas_functions.json');
+const spotifyAuth = require('./oauth2-spotify');
 
 const app = express();
 const port = 3000;
@@ -23,24 +24,27 @@ let storedRepositories = [];
 app.use(express.json());
 app.use(cookieParser());
 app.use(cors({
-    origin: 'http://flowfy.duckdns.org',
-    credentials: true,
+  origin: 'http://localhost',
+  credentials: true,
 }));
 app.use(session({
-    secret: process.env.SESSION_SECRET,
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict'
-    }
+  secret: process.env.SESSION_SECRET,
+  resave: true,
+  saveUninitialized: true,
+  name: 'flowfy.session',
+  cookie: {
+    httpOnly: true,
+    secure: false, // Set to false for development
+    sameSite: 'lax',
+    maxAge: 24 * 60 * 60 * 1000 // 24 hours
+  }
 }));
 
 const oauth2Routes = require('./oauth2-routes');
 const oauthGithub = require('./oauth2-github');
 const crudRoutes = require('./crud-routes');
 
+app.use(spotifyAuth);
 app.use(youtubeAuth);
 app.use(oauth2Routes);
 app.use(oauthGithub);
@@ -260,7 +264,7 @@ app.get('/api/github/follow-users', async (req, res) => {
 if (process.env.NODE_ENV !== 'test') {
   setInterval(runAREAS, 10 * 1000);
   app.listen(port, () => {
-    console.log(`Server is running on http://flowfy.duckdns.org:${port}`);
+    console.log(`Server is running on http://localhost:${port}`);
   });
 }
 

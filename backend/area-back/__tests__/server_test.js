@@ -40,7 +40,7 @@ jest.mock('../src/crud_reactions', () => ({
 beforeAll(async () => {
   await connectDb(); // Ensure DB connection is established before tests
   server = app.listen(3000, () => {
-    console.log('Server is running on http://localhost:3000');
+    console.log('Server is running on http://flowfy.duckdns.org:3000');
   });
 });
 

@@ -46,11 +46,11 @@ export function ServiceTemplate() {
       if (!serviceId) return;
 
       try {
-        const actionsResponse = await fetch(`http://localhost:3000/get-actions-by-service-id?serviceId=${serviceId}`);
+        const actionsResponse = await fetch(`http://flowfy.duckdns.org:3000/get-actions-by-service-id?serviceId=${serviceId}`);
         const actionsData = await actionsResponse.json();
         setServiceActions(actionsData);
 
-        const reactionsResponse = await fetch('http://localhost:3000/get-reactions');
+        const reactionsResponse = await fetch('http://flowfy.duckdns.org:3000/get-reactions');
         const reactionsData = await reactionsResponse.json();
         setAvailableReactions(reactionsData);
       } catch (error) {
@@ -64,7 +64,7 @@ export function ServiceTemplate() {
 
       try {
         const response = await fetch(
-          `http://localhost:3000/api/connection-status?email=${encodeURIComponent(email)}&serviceName=${serviceName}`
+          `http://flowfy.duckdns.org:3000/api/connection-status?email=${encodeURIComponent(email)}&serviceName=${serviceName}`
         );
         const data = await response.json();
         if (data.isConnected) {
@@ -146,7 +146,7 @@ export function ServiceTemplate() {
       return;
     }
 
-    const url = `http://localhost:3000${endpoint}?email=${encodeURIComponent(email)}`;
+    const url = `http://flowfy.duckdns.org:3000${endpoint}?email=${encodeURIComponent(email)}`;
     window.location.href = url;
   };
 
@@ -213,7 +213,7 @@ export function ServiceTemplate() {
     console.log('areas:', areas);
   
     try {
-      const response = await fetch('http://localhost:3000/save-action-reaction', {
+      const response = await fetch('http://flowfy.duckdns.org:3000/save-action-reaction', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

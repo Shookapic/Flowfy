@@ -14,7 +14,7 @@ const router = express.Router();
 const oauth2Client = new google.auth.OAuth2(
   process.env.YOUTUBE_CLIENT_ID,
   process.env.YOUTUBE_CLIENT_SECRET,
-  'http://localhost:3000/api/auth/youtube/callback'
+  'http://flowfy.duckdns.org:3000/api/auth/youtube/callback'
 );
 
 const scopes = [
@@ -63,14 +63,14 @@ router.get('/api/auth/youtube/callback', async (req, res) => {
     console.log(`Successfully connected YouTube service for email: ${email}`);
     
     // Send connection status back as a query parameter
-    res.redirect(`http://localhost/youtube-service?connected=true`);
+    res.redirect(`http://flowfy.duckdns.org/youtube-service?connected=true`);
   } catch (error) {
     console.error('Error during YouTube OAuth2 callback:', error);
 
     console.log(`Failed to connect YouTube service for email: ${email}`);
     
     // Handle errors and redirect with a failure status
-    res.redirect(`http://localhost/youtube-service?connected=false`);
+    res.redirect(`http://flowfy.duckdns.org/youtube-service?connected=false`);
   }
 });
 

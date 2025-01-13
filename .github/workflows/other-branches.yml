@@ -35,6 +35,13 @@ jobs:
         cd backend/area-back && npx prettier --write .
         cd ../../frontend/area-front && npx prettier --write .
 
+        - name: Set up environment variables
+      run: |
+        echo "CLIENT_ID_GITHUB=${{ secrets.CLIENT_ID_GITHUB }}" >> $GITHUB_ENV
+        echo "CLIENT_SECRET_GITHUB=${{ secrets.CLIENT_SECRET_GITHUB }}" >> $GITHUB_ENV
+        echo "GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}" >> $GITHUB_ENV
+        echo "GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}" >> $GITHUB_ENV
+
     - name: Run Backend Unit Tests
       working-directory: backend/area-back
       run: npm test

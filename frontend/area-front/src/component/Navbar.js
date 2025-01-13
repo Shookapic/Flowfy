@@ -70,10 +70,20 @@ const Navbar = () => {
         <a 
           href="/android/app/build/outputs/apk/debug/app-debug.apk" 
           download
-          className="btn btn-sm btn-primary"
+          className="btn btn-primary hidden md:inline-flex btn-sm lg:btn-md" // Desktop version
         >
           <FontAwesomeIcon icon={['fab', 'android']} className="mr-2" />
-          Download Apk
+          Download APK
+        </a>
+        
+        {/* Mobile version of download button */}
+        <a 
+          href="/android/app/build/outputs/apk/debug/app-debug.apk" 
+          download
+          className="btn btn-primary btn-circle btn-xs md:hidden" // Mobile version
+          title="Download APK"
+        >
+          <FontAwesomeIcon icon={['fab', 'android']} />
         </a>
       
         {/* Existing avatar code */}

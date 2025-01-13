@@ -89,5 +89,6 @@ module.exports = {
   getActions,
   updateAction,
   deleteAction,
-  getActionsByServiceId
+  getActionsByServiceId,
+  getActionIdByDescription
 };

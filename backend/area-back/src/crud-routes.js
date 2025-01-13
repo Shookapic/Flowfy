@@ -433,25 +433,37 @@ router.get('/get-reactions', async (req, res) => {
 
 router.post('/save-action-reaction', async (req, res) => {
     console.log("///////////////////// GONNA SAVE ACTION REACTION///////////////////////////");
-    const { email, actionName, reactionDescription } = req.body;
+    const { email, areas } = req.body;
     console.log("request body: ", req.body);
 
-    if (!actionName || !reactionDescription) {
-        return res.status(400).send('Action name and reaction name are required.');
+    if (!areas) {
+        return res.status(400).send('Areas field is required.');
     }
 
-    try {
-        // Retrieve action and reaction IDs based on names
-        const actionId = await actions.getActionIdByName(actionDescription);
-        const reactionId = await reactions.getReactionIdByDescription(reactionDescription);
+    const actionReactionPairs = areas.split(',');
+    const actionNames = [];
+    const reactionDescriptions = [];
 
-        if (!actionId || !reactionId) {
-            return res.status(404).send('Action or reaction not found.');
+    actionReactionPairs.forEach(pair => {
+        const [actionName, reactionDescription] = pair.split(':');
+        if (actionName && reactionDescription) {
+            actionNames.push(actionName.trim());
+            reactionDescriptions.push(reactionDescription.trim());
+        }
+    });
+
+    try {
+        const actionIds = await Promise.all(actionNames.map(name => actions.getActionIdByDescription(name).then(result => result.id)));
+        const reactionIds = await Promise.all(reactionDescriptions.map(description => reactions.getReactionIdByDescription(description).then(result => result.id)));
+
+        for (let i = 0; i < actionIds.length; i++) {
+            if (!actionIds[i] || !reactionIds[i]) {
+                return res.status(404).send('Action or reaction not found.');
+            }
+            await users.setAreas(email, actionIds[i], reactionIds[i]);
         }
 
-        // Save the action-reaction pair
-        await users.setAreas(email, actionId, reactionId);
-        res.status(200).send('Action-reaction saved successfully.');
+        res.status(200).send('Action-reaction pairs saved successfully.');
     } catch (error) {
         console.error('Error saving action-reaction:', error);
         res.status(500).send('Internal server error.');

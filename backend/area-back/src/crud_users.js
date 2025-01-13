@@ -3,6 +3,7 @@
  * @type {Object}
  */
 const client = require('./db');
+const pool = require('./db'); // Add this line to import the pool
 
 /**
  * Creates a new user in the database.
@@ -142,11 +143,28 @@ async function setUserLoggedStatus(email, status) {
 }
 
 async function setAreas(email, actionID, reactionID) {
+  console.log(`Setting areas for user "${email}"...`);
+  console.log(`Action ID: ${actionID}`);
+  console.log(`Reaction ID: ${reactionID}`);
   try {
       // Construct the value to append
       const areaValue = `${actionID}:${reactionID}`;
 
-      // Execute the parameterized query
+      // Check if the areaValue already exists for the user
+      const checkQuery = `
+          SELECT areas
+          FROM users
+          WHERE email = $1;
+      `;
+      const checkRes = await pool.query(checkQuery, [email]);
+      const existingAreas = checkRes.rows[0].areas;
+
+      if (existingAreas.includes(areaValue)) {
+          console.log(`Area "${areaValue}" already exists for user "${email}".`);
+          return 200;
+      }
+
+      // Execute the parameterized query to append the new areaValue
       const query = `
           UPDATE users
           SET areas = array_append(areas, $1)
@@ -158,6 +176,7 @@ async function setAreas(email, actionID, reactionID) {
       await pool.query(query, values);
 
       console.log(`Successfully appended area "${areaValue}" for user "${email}".`);
+      return 200;
   } catch (error) {
       console.error('Error updating areas:', error);
       throw new Error('Failed to update areas.');

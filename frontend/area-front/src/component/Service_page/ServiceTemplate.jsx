@@ -14,6 +14,7 @@ const serviceApiEndpoints = {
   'twitch-service': '/api/auth/twitch',
   'twitter-service': '/api/auth/twitter',
   'github-service': '/api/auth/github',
+  'discord-service': '/api/auth/discord',
 };
 
 const serviceIds = {
@@ -23,6 +24,7 @@ const serviceIds = {
   'twitch-service': 4,
   'twitter-service': 5,
   'github-service': 6,
+  'discord-service': 7,
 };
 
 export function ServiceTemplate() {
@@ -49,11 +51,11 @@ export function ServiceTemplate() {
       if (!serviceId) return;
 
       try {
-        const actionsResponse = await fetch(`http://flowfy.duckdns.org:3000/get-actions-by-service-id?serviceId=${serviceId}`);
+        const actionsResponse = await fetch(`http://localhost:3000/get-actions-by-service-id?serviceId=${serviceId}`);
         const actionsData = await actionsResponse.json();
         setServiceActions(actionsData);
 
-        const reactionsResponse = await fetch(`http://flowfy.duckdns.org:3000/get-reactions-by-service-id?serviceId=${serviceId}`);
+        const reactionsResponse = await fetch(`http://localhost:3000/get-reactions-by-service-id?serviceId=${serviceId}`);
         const reactionsData = await reactionsResponse.json();
         setAvailableReactions(reactionsData);
       } catch (error) {
@@ -92,7 +94,7 @@ export function ServiceTemplate() {
       return;
     }
 
-    const url = `http://flowfy.duckdns.org:3000${endpoint}?email=${encodeURIComponent(email)}`;
+    const url = `http://localhost:3000${endpoint}?email=${encodeURIComponent(email)}`;
     window.location.href = url; // Redirect to the OAuth2 provider
   };
 
@@ -145,7 +147,7 @@ export function ServiceTemplate() {
   return (
     <div className="min-h-screen bg-gray-800">
       {notification && <Notification message={notification} />}
-      
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
           <ServiceHeader 

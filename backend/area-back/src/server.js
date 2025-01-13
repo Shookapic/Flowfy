@@ -1,4 +1,4 @@
-/**
+  /**
  * @file server.js
  * @description Main server file for the application, setting up Express server and routes.
  */
@@ -10,8 +10,11 @@ const cookieParser = require('cookie-parser');
 require('dotenv').config();
 const csrfProtection = require('./middlewares/csrfProtection');
 const youtubeAuth = require('./oauth2-youtube');
+const discordAuth = require('./oauth2-discord');
 const { onLike, subscribeToChannel } = require('./youtube-areas');
+const { Client, Events, GatewayIntentBits } = require('discord.js');
 const { fetchRepositories, compareRepositories, AonRepoCreation, AonRepoDeletion, RcreateRepo, RfollowUser, RfollowUsersFromFile } = require('./github-areas');
+const { storeNewUser } = require('./discord-areas');
 const { getUsers } = require('./crud_users');
 const { getAccessTokenByEmailAndServiceName } = require('./crud_user_services');
 const areasFunctions = require('./areas_functions.json');
@@ -20,10 +23,20 @@ const app = express();
 const port = 3000;
 let storedRepositories = [];
 
+const client = new Client({
+  intents: [
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMembers, // Required for guildMemberAdd
+    GatewayIntentBits.GuildPresences,
+    GatewayIntentBits.GuildMessages,
+    GatewayIntentBits.MessageContent, // Required for reading message content
+  ],
+});
+
 app.use(express.json());
 app.use(cookieParser());
 app.use(cors({
-    origin: 'http://flowfy.duckdns.org',
+    origin: 'http://localhost:8000',
     credentials: true,
 }));
 app.use(session({
@@ -42,6 +55,7 @@ const oauthGithub = require('./oauth2-github');
 const crudRoutes = require('./crud-routes');
 
 app.use(youtubeAuth);
+app.use(discordAuth);
 app.use(oauth2Routes);
 app.use(oauthGithub);
 app.use(crudRoutes);
@@ -78,16 +92,16 @@ let isRunning = false;
  */
 async function runAREAS() {
   if (isRunning) {
-    console.log('runAREAS is already running. Skipping this interval.');
+    // console.log('runAREAS is already running. Skipping this interval.');
     return;
   }
 
-  console.log('///Running AREAS...///');
+  // console.log('///Running AREAS...///');
   isRunning = true;
 
   try {
     const users = await getUsers();
-    console.log(users);
+    // console.log(users);
     for (const user of users) {
       const { email, areas } = user;
       for (const area of areas) {
@@ -98,10 +112,10 @@ async function runAREAS() {
         if (action && reaction) {
           const actionModule = require(action.file);
           const reactionModule = require(reaction.file);
-          console.log('AREAS:', action, reaction);
+          // console.log('AREAS:', action, reaction);
 
           if (typeof actionModule[action.function] === 'function' && typeof reactionModule[reaction.function] === 'function') {
-            console.log('Running AREAS:', action, reaction);
+            // console.log('Running AREAS:', action, reaction);
             await actionModule[action.function](email);
             await reactionModule[reaction.function](email);
           }
@@ -256,11 +270,76 @@ app.get('/api/github/follow-users', async (req, res) => {
     res.status(500).json({ error: 'Failed to follow user' });
   }
 });
+// When the bot is ready
+client.once('ready', () => {
+  console.log(`Logged in as ${client.user.tag}`);
+});
+
+// Listen for messages
+client.on('messageCreate', (message) => {
+  if (message.author.bot) return; // Ignore bot messages
+
+  if (message.content === '!ping') {
+      message.reply('Pong!');
+  }
+});
+
+// Login to Discord
+client.login(process.env.DISCORD_BOT_TOKEN);
+
+// Listen for messages
+client.on('messageCreate', async (message) => {
+  if (message.author.bot) return; // Ignore bot messages
+
+  // Example command to fetch friend list
+  if (message.content === '!friends') {
+      // Fetch the user's friend list
+      try {
+        message.reply('Fetching your friends.');
+        const guild = await message.guild.members.fetch();
+        const friendList = guild.map(member => member.user.tag); // Simulating friends from guild members
+        message.channel.send(`Friends in this server: ${friendList.join(', ')}`);
+      } catch (error) {
+          console.error('Error fetching friends:', error);
+          message.reply('Sorry, there was an error fetching your friends.');
+      }
+  }
+});
+
+client.on('messageCreate', async (message) => {
+  if (message.content === '!getfriends') {
+    try {
+      // Fetch guild members (the bot must have access to the guild)
+      const guild = await message.guild.members.fetch();
+      const friendList = guild.map(member => member.user.tag); // Simulating friends from guild members
+      message.channel.send(`Friends in this server: ${friendList.join(', ')}`);
+    } catch (error) {
+      message.channel.send('Error fetching friends.');
+    }
+  }
+});
+
+// Trigger
+client.on('guildMemberAdd', async (member) => {
+  const guildName = member.guild.name; // Get the name of the guild
+  const guildId = member.guild.id; // Get the ID of the guild
+  const userTag = `${member.user.username}#${member.user.discriminator}`; // Get the user's tag
+
+  console.log(`New member joined: ${userTag}`);
+  console.log(`Joined Server: ${guildName} (ID: ${guildId})`);
+
+  // Pass member and guild info to the storeNewUser function
+  await storeNewUser(member, { guildName, guildId });
+});
+
+client.on('guildBanAdd', async (ban) => {
+  console.log(`User banned: ${ban.user.tag}`);
+});
 
 if (process.env.NODE_ENV !== 'test') {
   setInterval(runAREAS, 10 * 1000);
   app.listen(port, () => {
-    console.log(`Server is running on http://flowfy.duckdns.org:${port}`);
+    console.log(`Server is running on http://localhost:${port}`);
   });
 }
 

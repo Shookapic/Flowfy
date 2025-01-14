@@ -11,10 +11,10 @@ require('dotenv').config();
 const csrfProtection = require('./middlewares/csrfProtection');
 const youtubeAuth = require('./oauth2-youtube');
 const discordAuth = require('./oauth2-discord');
+const sheetsAuth = require('./oauth2-sheets');
 const { onLike, subscribeToChannel } = require('./youtube-areas');
-const { Client, Events, GatewayIntentBits } = require('discord.js');
 const { fetchRepositories, compareRepositories, AonRepoCreation, AonRepoDeletion, RcreateRepo, RfollowUser, RfollowUsersFromFile } = require('./github-areas');
-const { storeNewUser } = require('./discord-areas');
+const { storeNewUser, client, AonNewServerMember, AonServerCreation } = require('./discord-areas');
 const { getUsers } = require('./crud_users');
 const { getAccessTokenByEmailAndServiceName } = require('./crud_user_services');
 const areasFunctions = require('./areas_functions.json');
@@ -22,16 +22,6 @@ const areasFunctions = require('./areas_functions.json');
 const app = express();
 const port = 3000;
 let storedRepositories = [];
-
-const client = new Client({
-  intents: [
-    GatewayIntentBits.Guilds,
-    GatewayIntentBits.GuildMembers, // Required for guildMemberAdd
-    GatewayIntentBits.GuildPresences,
-    GatewayIntentBits.GuildMessages,
-    GatewayIntentBits.MessageContent, // Required for reading message content
-  ],
-});
 
 app.use(express.json());
 app.use(cookieParser());
@@ -56,6 +46,7 @@ const crudRoutes = require('./crud-routes');
 
 app.use(youtubeAuth);
 app.use(discordAuth);
+app.use(sheetsAuth);
 app.use(oauth2Routes);
 app.use(oauthGithub);
 app.use(crudRoutes);
@@ -273,6 +264,7 @@ app.get('/api/github/follow-users', async (req, res) => {
 // When the bot is ready
 client.once('ready', () => {
   console.log(`Logged in as ${client.user.tag}`);
+  AonNewServerMember('placeholder');
 });
 
 // Listen for messages
@@ -319,19 +311,6 @@ client.on('messageCreate', async (message) => {
   }
 });
 
-// Trigger
-client.on('guildMemberAdd', async (member) => {
-  const guildName = member.guild.name; // Get the name of the guild
-  const guildId = member.guild.id; // Get the ID of the guild
-  const userTag = `${member.user.username}#${member.user.discriminator}`; // Get the user's tag
-
-  console.log(`New member joined: ${userTag}`);
-  console.log(`Joined Server: ${guildName} (ID: ${guildId})`);
-
-  // Pass member and guild info to the storeNewUser function
-  await storeNewUser(member, { guildName, guildId });
-});
-
 client.on('guildBanAdd', async (ban) => {
   console.log(`User banned: ${ban.user.tag}`);
 });
@@ -342,5 +321,30 @@ if (process.env.NODE_ENV !== 'test') {
     console.log(`Server is running on http://localhost:${port}`);
   });
 }
+
+app.get('/api/discord/server-creation', async (req, res) => {
+  try {
+    const { email } = req.query;
+    console.log('email body is ',email);
+    const ownedServers = await AonServerCreation(email);
+    if (ownedServers) {
+      res.status(200).send('gotem');
+    } else {
+      res.status(200).send('nun');
+    }
+  } catch (error) {
+    res.status(500).send('Error with servs');
+  }
+})
+
+app.get('/api/discord/new_member', async (req, res) => {
+  try {
+    const { email } = req.query;
+    await AonNewServerMember(email);
+    res.status(200).send('aight');
+  } catch (error) {
+    res.status(500).send('Error with servs');
+  }
+})
 
 module.exports = app;

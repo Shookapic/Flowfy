@@ -6,9 +6,11 @@ const express = require("express");
 require('dotenv').config();
 const client = require('./db');
 const fs = require('fs');
+const { getAccessTokenByEmailAndServiceName } = require('./crud_user_services');
 const path = require('path');
+const { merge } = require("./oauth2-youtube");
 
-async function writeDataToFile(data, filePath = 'DISCORD_owned_servers.json') {
+async function writeDataToFile(data, filePath) {
   try {
     let existingData = [];
 
@@ -24,11 +26,16 @@ async function writeDataToFile(data, filePath = 'DISCORD_owned_servers.json') {
     const newData = Array.isArray(data) ? data : [data];
     const mergedData = [...existingData];
 
+    console.log("data", data);
+    console.log("newdata", newData);
+    console.log("mergeddata", mergedData);
+    
     for (const newItem of newData) {
       if (!mergedData.some(item => item.id === newItem.id)) {
         mergedData.push(newItem);
       }
     }
+    console.log("mergedData", mergedData);
 
     // Write the merged data back to the file
     fs.writeFileSync(filePath, JSON.stringify(mergedData, null, 2));
@@ -135,6 +142,7 @@ async function addServers(guilds, email) {
 async function addOwnedServersToDB(email, accessToken) {
   try {
     // Fetch the user's guilds
+    const accessToken = await getAccessTokenByEmailAndServiceName(email, 'Discord');
     const guilds = await getUserGuilds(accessToken);
 
     // Filter for owned servers
@@ -192,16 +200,6 @@ async function getUserFriends(accessToken) {
   }
 }
 
-async function AonServerCreation(email) {
-  // try {
-  //   const newGuilds = await getOwnedServers(email);
-
-  //   if (newGuilds) {
-
-  //   }
-  // }
-}
-
 // Export the functions for use in other modules.
 module.exports = {
   getServers,
@@ -210,5 +208,6 @@ module.exports = {
   addOwnedServersToDB,
   getUserGuilds,
   getUserFriends,
-  getOwnedUserGuilds
+  getOwnedUserGuilds,
+  writeDataToFile
 };

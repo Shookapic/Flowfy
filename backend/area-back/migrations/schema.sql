@@ -18,7 +18,9 @@ CREATE TABLE actions (
 CREATE TABLE reactions (
     id SERIAL PRIMARY KEY,
     service_id INT REFERENCES services(id) ON DELETE CASCADE,
-    description TEXT NOT NULL
+    description TEXT NOT NULL,
+    required_service_id INT REFERENCES services(id) ON DELETE CASCADE,
+    required_service_name TEXT NOT NULL
 );
 
 CREATE TABLE users (
@@ -47,6 +49,16 @@ CREATE TABLE DISCORD_servers (
     reactions_id TEXT[]
 );
 
+CREATE TABLE DISCORD_servers_members (
+    id SERIAL PRIMARY KEY,
+    server_id TEXT NOT NULL,
+    server_name TEXT NOT NULL,
+    user_name TEXT NOT NULL,
+    user_id TEXT NOT NULL,
+    joined_at TIMESTAMP NOT NULL,
+    reactions_id TEXT[]
+);
+
 -- Insert services
 INSERT INTO services (name) VALUES ('Spotify');
 INSERT INTO services (name) VALUES ('YouTube');
@@ -55,6 +67,9 @@ INSERT INTO services (name) VALUES ('Twitch');
 INSERT INTO services (name) VALUES ('Twitter');
 INSERT INTO services (name) VALUES ('Github');
 INSERT INTO services (name) VALUES ('Discord');
+INSERT INTO services (name) VALUES ('Google');
+INSERT INTO services (name) VALUES ('Notion');
+INSERT INTO services (name) VALUES ('Outlook');
 
 -- Insert actions
 INSERT INTO actions (service_id, description) VALUES (2, 'Like a video');
@@ -65,15 +80,16 @@ INSERT INTO actions (service_id, description) VALUES (1, 'New song added to a pl
 INSERT INTO actions (service_id, description) VALUES (1, 'New album released by a favorite artist');
 INSERT INTO actions (service_id, description) VALUES (5, 'New tweet liked');
 INSERT INTO actions (service_id, description) VALUES (5, 'When Following a user');
-INSERT INTO actions (service_id, description) VALUES (7, 'New friend added');
+INSERT INTO actions (service_id, description) VALUES (7, 'New server created');
+INSERT INTO actions (service_id, description) VALUES (7, 'New member in server');
 
 -- Insert reactions
-INSERT INTO reactions (service_id, description) VALUES (2, 'Add songs from videos you liked to a Spotify playlist named Youtube');
-INSERT INTO reactions (service_id, description) VALUES (2, 'Tweet on X the video you liked');
-INSERT INTO reactions (service_id, description) VALUES (6, 'Add a task on Google Calendar for the new pull request');
-INSERT INTO reactions (service_id, description) VALUES (6, 'Add a task on Google Calendar for the new issue');
-INSERT INTO reactions (service_id, description) VALUES (1, 'Share the song on Twitter');
-INSERT INTO reactions (service_id, description) VALUES (1, 'Post a tweet with the album link');
-INSERT INTO reactions (service_id, description) VALUES (5, 'Create a Google Calendar with the tweet link');
-INSERT INTO reactions (service_id, description) VALUES (5, 'Search for the user and follow him on YouTube');
-INSERT INTO reactions (service_id, description) VALUES (7, 'Send an email to notify about new friend');
+INSERT INTO reactions (service_id, description, required_service_id, required_service_name) VALUES (2, 'Add songs from videos you liked to a Spotify playlist named Youtube', 1, 'Spotify');
+INSERT INTO reactions (service_id, description, required_service_id, required_service_name) VALUES (2, 'Tweet on X the video you liked', 5, 'Twitter');
+INSERT INTO reactions (service_id, description, required_service_id, required_service_name) VALUES (6, 'Add a task on Notion', 9, 'Notion');
+INSERT INTO reactions (service_id, description, required_service_id, required_service_name) VALUES (6, 'Send an email on Outlook to notify', 10, 'Outlook');
+INSERT INTO reactions (service_id, description, required_service_id, required_service_name) VALUES (1, 'Share the song on Twitter', 5, 'Twitter');
+INSERT INTO reactions (service_id, description, required_service_id, required_service_name) VALUES (1, 'Post a tweet with the album link', 5, 'Twitter');
+INSERT INTO reactions (service_id, description, required_service_id, required_service_name) VALUES (5, 'Create a Google Calendar with the tweet link', 8, 'Google');
+INSERT INTO reactions (service_id, description, required_service_id, required_service_name) VALUES (5, 'Search for the user and follow him on YouTube', 2, 'YouTube');
+INSERT INTO reactions (service_id, description, required_service_id, required_service_name) VALUES (7, 'Send an email to notify about new friend', 10, 'Outlook');

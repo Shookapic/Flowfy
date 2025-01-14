@@ -1,52 +1,53 @@
-const { OnPlaylistCreation, RpostPlaylistToReddit } = require('./spotify-areas');
-const readline = require('readline');
+const { OnSongLike, RpostPlaylistToReddit } = require('./spotify-areas');
 
-const rl = readline.createInterface({
-  input: process.stdin,
-  output: process.stdout
-});
-
-async function testSpotifyReddit() {
+async function testSpotifyLikeToReddit() {
   const testEmail = 'mazeauarthur7@gmail.com';
+  const CHECK_INTERVAL = 6000; // 60 seconds = 1 minute
 
-  try {
-    console.log('Testing OnPlaylistCreation...');
-    const playlistResult = await OnPlaylistCreation(testEmail);
-    console.log('Playlist detection result:', playlistResult);
+  console.log('Starting Spotify like detection service...');
+  console.log('Waiting for new liked songs...');
 
-    if (playlistResult) {
-      console.log('\nTesting RpostPlaylistToReddit...');
-      const result = await RpostPlaylistToReddit(testEmail);
+  // Run the check every minute
+  setInterval(async () => {
+    try {
+      console.log('\nChecking for new liked songs...');
+      const likeResult = await OnSongLike(testEmail);
       
-      if (result.requiresAuth) {
-        console.log(`Reddit authentication required. Please visit: ${result.redirectUrl}`);
-        
-        await new Promise((resolve) => {
-          rl.question('Press Enter after completing Reddit authentication...', () => {
-            resolve();
-          });
+      if (likeResult) {
+        console.log('New liked song detected:', {
+          name: likeResult.name,
+          artist: likeResult.artist,
+          url: likeResult.url
         });
-        
-        console.log('Retrying Reddit post...');
-        const retryResult = await RpostPlaylistToReddit(testEmail);
-        
-        if (retryResult.status === 'success') {
-          console.log('Posted to Reddit:', retryResult);
-        } else {
-          console.error('Error:', retryResult.message);
-        }
-      } else if (result.status === 'success') {
-        console.log('Posted to Reddit:', result);
-      } else {
-        console.error('Error:', result.message);
-      }
-    }
 
-  } catch (error) {
-    console.error('Test failed:', error.message);
-  } finally {
-    rl.close();
-  }
+        // Post to Reddit only if a new song was liked
+        console.log('\nPosting liked song to Reddit...');
+        const postResult = await RpostPlaylistToReddit(testEmail, 'like', {
+          type: 'track',
+          name: likeResult.name,
+          artist: likeResult.artist,
+          url: likeResult.url
+        });
+
+        console.log('Reddit post result:', postResult);
+      } else {
+        console.log('No new liked songs detected');
+      }
+
+    } catch (error) {
+      console.error('Test failed:', error);
+    }
+  }, CHECK_INTERVAL);
+
+  // Keep the script running
+  console.log('Monitoring for liked songs. Press Ctrl+C to stop.');
 }
 
-testSpotifyReddit();
+// Run the test
+testSpotifyLikeToReddit();
+
+// Handle graceful shutdown
+process.on('SIGINT', () => {
+  console.log('\nStopping Spotify like detection service...');
+  process.exit(0);
+});

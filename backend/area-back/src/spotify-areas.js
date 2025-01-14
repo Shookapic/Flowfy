@@ -83,39 +83,130 @@ const spotifyApi = new SpotifyWebApi({
     }
   }
 
+/**
+ * Detects when a song is liked on Spotify
+ * @async
+ * @function OnSongLike
+ * @param {string} email - The email address of the user
+ */
+async function OnSongLike(email) {
+  try {
+    const existingService = await getUserServiceByEmailAndServiceName(email, 'Spotify');
+    if (!existingService) {
+      throw new Error('Spotify service not connected');
+    }
+
+    // Set tokens
+    spotifyApi.setAccessToken(existingService.access_token);
+    spotifyApi.setRefreshToken(existingService.refresh_token);
+
+    // Get user's saved tracks with retry logic
+    const response = await fetchWithRetry(() => spotifyApi.getMySavedTracks({ limit: 1 }), 3000, 2000);
+    console.log('User saved tracks fetched successfully');
+
+    if (response.body.items.length === 0) {
+      console.log('No saved tracks found');
+      return null;
+    }
+
+    const latestTrack = response.body.items[0].track;
+    const lastChecked = lastCheckTimes.get(email);
+
+    // If this is the first check, just store the latest track without triggering
+    if (!lastChecked) {
+      console.log('First check - storing current liked song as reference');
+      lastCheckTimes.set(email, {
+        id: latestTrack.id,
+        name: latestTrack.name,
+        artist: latestTrack.artists[0].name,
+        url: latestTrack.external_urls.spotify,
+        timestamp: Date.now()
+      });
+      return null;
+    }
+
+    // Only trigger if we find a different song than last check
+    if (lastChecked.id !== latestTrack.id) {
+      console.log('New liked song detected:', {
+        name: latestTrack.name,
+        artist: latestTrack.artists[0].name,
+        url: latestTrack.external_urls.spotify
+      });
+
+      // Update last checked track
+      lastCheckTimes.set(email, {
+        id: latestTrack.id,
+        name: latestTrack.name,
+        artist: latestTrack.artists[0].name,
+        url: latestTrack.external_urls.spotify,
+        timestamp: Date.now()
+      });
+
+      return {
+        id: latestTrack.id,
+        name: latestTrack.name,
+        artist: latestTrack.artists[0].name,
+        url: latestTrack.external_urls.spotify
+      };
+    }
+    return null; // No new liked song found
+  } catch (error) {
+    console.error('Error detecting liked song:', error);
+    throw error;
+  }
+}
+
 const snoowrap = require('snoowrap'); // Add this at the top with other imports
 
 /**
- * Posts the latest Spotify playlist to Reddit
+ * Posts Spotify content to Reddit
  * @async
  * @function RpostPlaylistToReddit
  * @param {string} email - The email address of the user
+ * @param {string} type - The type of content ('playlist' or 'like')
+ * @param {Object} content - The content to post (optional)
  */
-async function RpostPlaylistToReddit(email) {
+async function RpostPlaylistToReddit(email, type = 'playlist', content = null) {
   try {
-    // Get Spotify service info with shorter retry
+    // Get Spotify service info
     const spotifyService = await fetchWithRetry(async () => {
       const service = await getUserServiceByEmailAndServiceName(email, 'Spotify');
       if (!service) throw new Error('Spotify service not connected');
       return service;
     }, 3, 2000);
 
-    // Get latest playlist with Spotify API
+    // Set Spotify tokens
     spotifyApi.setAccessToken(spotifyService.access_token);
     spotifyApi.setRefreshToken(spotifyService.refresh_token);
 
-    const response = await fetchWithRetry(() => spotifyApi.getUserPlaylists(), 300, 2000);
-    if (!response?.body?.items?.length) {
-      throw new Error('No playlists found');
+    // Get content based on type if not provided
+    if (!content) {
+      if (type === 'playlist') {
+        const response = await fetchWithRetry(() => spotifyApi.getUserPlaylists(), 3, 2000);
+        if (!response?.body?.items?.length) {
+          throw new Error('No playlists found');
+        }
+        content = {
+          type: 'playlist',
+          name: response.body.items[0].name,
+          url: response.body.items[0].external_urls.spotify
+        };
+      } else if (type === 'like') {
+        const response = await fetchWithRetry(() => spotifyApi.getMySavedTracks({ limit: 1 }), 3, 2000);
+        if (!response?.body?.items?.length) {
+          throw new Error('No liked songs found');
+        }
+        const track = response.body.items[0].track;
+        content = {
+          type: 'track',
+          name: track.name,
+          artist: track.artists[0].name,
+          url: track.external_urls.spotify
+        };
+      }
     }
 
-    const latestPlaylist = response.body.items[0];
-    console.log('Latest Spotify playlist:', {
-      name: latestPlaylist.name,
-      url: latestPlaylist.external_urls.spotify
-    });
-
-    // Get Reddit service
+    // Rest of the Reddit posting logic...
     const redditService = await Promise.race([
       getUserServiceByEmailAndServiceName(email, 'Reddit'),
       new Promise((_, reject) => setTimeout(() => reject(new Error('Reddit service timeout')), 5000))
@@ -131,7 +222,7 @@ async function RpostPlaylistToReddit(email) {
       };
     }
 
-    // Initialize Reddit API
+    // Initialize Reddit API and post with appropriate title based on content type
     const reddit = new snoowrap({
       userAgent: 'Flowfy/1.0.0',
       accessToken: redditService.access_token,
@@ -140,63 +231,51 @@ async function RpostPlaylistToReddit(email) {
       clientSecret: process.env.REDDIT_CLIENT_SECRET
     });
 
-    // Get subreddit and flair templates with timeout
-    const subreddit = await Promise.race([
-      reddit.getSubreddit('spotify'),
-      new Promise((_, reject) => setTimeout(() => reject(new Error('Subreddit fetch timeout')), 10000))
-    ]);
+    const subreddit = await reddit.getSubreddit('spotify');
+    const flairs = await subreddit.getLinkFlairTemplates();
 
-    // Get available flairs
-    const flairs = await Promise.race([
-      subreddit.getLinkFlairTemplates(),
-      new Promise((_, reject) => setTimeout(() => reject(new Error('Flair fetch timeout')), 10000))
-    ]);
-
-    console.log('Available flairs:', flairs);
-
-    // Find a suitable flair (prefer 'Self Promo' or 'Random' flairs)
-    const flair = flairs.find(f => 
-      f.flair_text === 'Self Promo' || 
-      f.flair_text === 'Theme/Setting  (Party, Study, Covers, etc)'
-    );
+    // Select appropriate flair based on content type
+    const flair = content.type === 'playlist' ?
+      flairs.find(f => f.flair_text === 'Theme/Setting  (Party, Study, Covers, etc)') :
+      flairs.find(f => f.flair_text === 'Self Promo');
 
     if (!flair) {
       throw new Error('No suitable flair found');
     }
 
-    // Submit post with flair using correct field names
-    const post = await Promise.race([
-      subreddit.submitLink({
-        title: `Check out my Spotify playlist: ${latestPlaylist.name}`,
-        url: latestPlaylist.external_urls.spotify,
-        resubmit: true,
-        sendReplies: true,
-        flair_id: flair.flair_template_id,
-        flair_text: flair.flair_text
-      }),
-      new Promise((_, reject) => setTimeout(() => reject(new Error('Post submission timeout')), 15000))
-    ]);
+    const title = content.type === 'playlist' ?
+      `Check out my Spotify playlist: ${content.name}` :
+      `Check out this song: ${content.name} by ${content.artist}`;
+
+    const post = await subreddit.submitLink({
+      title,
+      url: content.url,
+      resubmit: true,
+      sendReplies: true,
+      flair_id: flair.flair_template_id,
+      flair_text: flair.flair_text
+    });
 
     return {
       status: 'success',
       postId: post.id,
       url: post.url,
       title: post.title,
-      flair: flair.flair_text
+      contentType: content.type
     };
 
   } catch (error) {
-    console.error('Error posting playlist to Reddit:', error);
+    console.error('Error posting to Reddit:', error);
     return {
       status: 'error',
-      message: error.message || 'Reddit connection timeout'
+      message: error.message
     };
   }
 }
 
-// Add to module exports
+// Update module exports
 module.exports = {
   OnPlaylistCreation,
-  RcreatePlaylist,
+  OnSongLike,
   RpostPlaylistToReddit
 };

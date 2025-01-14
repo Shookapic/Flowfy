@@ -71,8 +71,10 @@ async function createUserServiceEMAIL(userMail, serviceId, accessToken, refreshT
         const values = [userId, serviceId, accessToken, refreshToken, isLogged];
         const res = await client.query(query, values);
         console.log('User Service Created:', res.rows[0]);
+        return 200;
     } catch (error) {
         console.error('Error creating user service:', error);
+        return 400;
     }
 }
 
@@ -141,6 +143,7 @@ async function getUserServicesByServiceId(serviceId) {
     const values = [serviceId];
     const res = await client.query(query, values);
     console.log('User Services for Service ID:', serviceId, res.rows);
+    return res.rows;
 }
 
 /**

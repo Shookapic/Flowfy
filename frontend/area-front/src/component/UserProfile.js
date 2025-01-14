@@ -4,7 +4,7 @@ import {jwtDecode} from 'jwt-decode';
 const UserProfile = () => {
     const token = localStorage.getItem('token');
     if (!token) {
-        return <div>You need to login first</div>;
+        return;
     }
 
     const decodedToken = jwtDecode(token);

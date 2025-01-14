@@ -17,7 +17,7 @@ passport.use(
       clientID: process.env.MICROSOFT_CLIENT_ID,
       responseType: 'code',
       responseMode: 'query',
-      redirectUrl: 'http://localhost:3000/api/microsoft/callback',
+      redirectUrl: 'http://flowfy.duckdns.org:3000/api/microsoft/callback',
       clientSecret: process.env.MICROSOFT_CLIENT_SECRET,
       scope: ['openid', 'profile', 'email'],
     },

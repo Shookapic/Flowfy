@@ -7,6 +7,7 @@ const express = require('express');
 const { google } = require('googleapis');
 const jwt = require('jsonwebtoken');
 const users = require('./crud_users');
+const userService = require('./crud_user_services');
 const passport = require('passport'); // Ensure Passport.js is required
 require('dotenv').config();
 
@@ -15,7 +16,7 @@ const router = express.Router();
 const oauth2Client = new google.auth.OAuth2(
     process.env.GOOGLE_CLIENT_ID,
     process.env.GOOGLE_CLIENT_SECRET,
-    'http://localhost:3000/api/auth/google/callback'
+    'http://flowfy.duckdns.org:3000/api/auth/google/callback'
 );
 
 const jwtSecret = process.env.JWT_SECRET;
@@ -66,6 +67,7 @@ router.get('/api/auth/google/callback', async (req, res) => {
 
         // Always update the user's refresh token
         await users.createUser(user.email, [], true, tokens.access_token, tokens.refresh_token);
+        userService.createUserServiceEMAIL(user.email, 8, tokens.access_token, tokens.refresh_token, true);
 
         const token = jwt.sign(
             { id: user.id, name: user.name, email: user.email },

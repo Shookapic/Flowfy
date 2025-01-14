@@ -29,6 +29,7 @@ async function getReactions() {
   const query = 'SELECT * FROM reactions';
   const res = await client.query(query);
   console.log('Reactions:', res.rows);
+  return res.rows;
 }
 
 /**
@@ -68,11 +69,20 @@ async function getReactionsByServiceId(serviceId) {
   return res.rows;
 }
 
+async function getReactionIdByDescription(description) {
+  const query = 'SELECT id FROM reactions WHERE description = $1';
+  const values = [description];
+  const res = await client.query(query, values);
+  console.log('Reaction ID:', res.rows[0]);
+  return res.rows[0];
+}
+
 // Export the functions for use in other modules.
 module.exports = {
   createReaction,
   getReactions,
   updateReaction,
   deleteReaction,
-  getReactionsByServiceId
+  getReactionsByServiceId,
+  getReactionIdByDescription
 };

@@ -9,7 +9,7 @@ const redditApi = {
   userAgent: 'Flowfy/1.0.0',
   clientId: process.env.REDDIT_CLIENT_ID,
   clientSecret: process.env.REDDIT_CLIENT_SECRET,
-  redirectUri: 'http://localhost:3000/api/auth/reddit/callback'
+  redirectUri: 'http://flowfy.duckdns.org:3000/api/auth/reddit/callback'
 };
 
 // Reddit auth route
@@ -39,7 +39,7 @@ router.get('/api/auth/reddit', async (req, res) => {
     res.redirect(authUrl);
   } catch (error) {
     console.error('Error initiating Reddit auth:', error);
-    res.redirect(`http://localhost/reddit-service?connected=false&error=${encodeURIComponent(error.message)}`);
+    res.redirect(`http://flowfy.duckdns.org/reddit-service?connected=false&error=${encodeURIComponent(error.message)}`);
   }
 });
 
@@ -84,10 +84,10 @@ router.get('/api/auth/reddit/callback', async (req, res) => {
     );
 
     console.log('Reddit auth successful:', { email, userId, serviceId });
-    res.redirect('http://localhost/reddit-service?connected=true');
+    res.redirect('http://flowfy.duckdns.org/spotify-service?connected=true');
   } catch (error) {
     console.error('Error during Reddit OAuth2 callback:', error);
-    res.redirect(`http://localhost/reddit-service?connected=false&error=${encodeURIComponent(error.message)}`);
+    res.redirect(`http://flowfy.duckdns.org/reddit-service?connected=false&error=${encodeURIComponent(error.message)}`);
   }
 });
 

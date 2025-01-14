@@ -17,7 +17,7 @@ const lastCheckedPlaylists = new Map();
 const spotifyApi = new SpotifyWebApi({
     clientId: process.env.SPOTIFY_CLIENT_ID,
     clientSecret: process.env.SPOTIFY_CLIENT_SECRET,
-    redirectUri: 'http://localhost:3000/api/auth/spotify/callback'
+    redirectUri: 'http://flowfy.duckdns.org:3000/api/auth/spotify/callback'
   });
   
   async function fetchWithRetry(fn, maxRetries = 3000, delay = 1000) {
@@ -32,56 +32,73 @@ const spotifyApi = new SpotifyWebApi({
     }
   }
   
-  async function OnPlaylistCreation(email) {
-    try {
-      const existingService = await getUserServiceByEmailAndServiceName(email, 'Spotify');
-      if (!existingService) {
-        throw new Error('Spotify service not connected');
-      }
-  
-      // Set tokens
-      spotifyApi.setAccessToken(existingService.access_token);
-      spotifyApi.setRefreshToken(existingService.refresh_token);
-  
-      // Get user's playlists with retry logic
-      const response = await fetchWithRetry(() => spotifyApi.getUserPlaylists(), 3000, 2000);
-      console.log('User playlists fetched successfully');
-  
-      if (response.body.items.length === 0) {
-        console.log('No playlists found');
-        return null;
-      }
-  
-      const latestPlaylist = response.body.items[0];
-      const lastChecked = lastCheckedPlaylists.get(email);
-  
-      // Check if this is a new playlist
-      if (!lastChecked || lastChecked.id !== latestPlaylist.id) {
-        console.log('New playlist detected:', {
-          name: latestPlaylist.name,
-          url: latestPlaylist.external_urls.spotify
-        });
-  
-        // Update last checked playlist
-        lastCheckedPlaylists.set(email, {
-          id: latestPlaylist.id,
-          name: latestPlaylist.name,
-          url: latestPlaylist.external_urls.spotify,
-          timestamp: Date.now()
-        });
-  
-        return {
-          id: latestPlaylist.id,
-          name: latestPlaylist.name,
-          url: latestPlaylist.external_urls.spotify
-        };
-      }
-      return null; // No new playlist found
-    } catch (error) {
-      console.error('Error detecting playlist:', error);
-      throw error;
+async function OnPlaylistCreation(email) {
+  try {
+    const existingService = await getUserServiceByEmailAndServiceName(email, 'Spotify');
+    if (!existingService) {
+      throw new Error('Spotify service not connected');
     }
+
+    // Set tokens
+    spotifyApi.setAccessToken(existingService.access_token);
+    spotifyApi.setRefreshToken(existingService.refresh_token);
+
+    // Get user's playlists with retry logic 
+    const response = await fetchWithRetry(() => spotifyApi.getUserPlaylists({ limit: 1 }), 30, 2000);
+    console.log('User playlists fetched successfully');
+
+    if (response.body.items.length === 0) {
+      console.log('No playlists found');
+      return null;
+    }
+
+    const latestPlaylist = response.body.items[0];
+    const lastChecked = lastCheckedPlaylists.get(email);
+
+    // First run - store the latest playlist without triggering
+    if (!lastChecked) {
+      console.log('First check - storing current playlist as reference');
+      lastCheckedPlaylists.set(email, {
+        id: latestPlaylist.id,
+        name: latestPlaylist.name,
+        url: latestPlaylist.external_urls.spotify,
+        timestamp: Date.now()
+      });
+      return null;
+    }
+
+    // Only trigger if we find a different playlist than last check
+    if (lastChecked.id !== latestPlaylist.id) {
+      console.log('New playlist detected:', {
+        name: latestPlaylist.name,
+        url: latestPlaylist.external_urls.spotify
+      });
+
+      // Update last checked playlist
+      lastCheckedPlaylists.set(email, {
+        id: latestPlaylist.id,
+        name: latestPlaylist.name,
+        url: latestPlaylist.external_urls.spotify,
+        timestamp: Date.now()
+      });
+
+      return {
+        type: 'playlist', // Added type field
+        id: latestPlaylist.id,
+        name: latestPlaylist.name,
+        url: latestPlaylist.external_urls.spotify,
+        description: latestPlaylist.description || '',
+        title: latestPlaylist.name // Added title field for Reddit post
+      };
+    }
+
+    console.log('No new playlists since last check');
+    return null;
+  } catch (error) {
+    console.error('Error detecting playlist:', error);
+    throw error;
   }
+}
 
 /**
  * Detects when a song is liked on Spotify
@@ -143,19 +160,20 @@ async function OnSongLike(email) {
       });
 
       return {
+        type: 'track', // Add type field for Reddit posting
         id: latestTrack.id,
         name: latestTrack.name,
         artist: latestTrack.artists[0].name,
-        url: latestTrack.external_urls.spotify
+        url: latestTrack.external_urls.spotify,
+        title: `${latestTrack.name} by ${latestTrack.artists[0].name}` // Add title for Reddit post
       };
     }
-    return null; // No new liked song found
+    return null;
   } catch (error) {
     console.error('Error detecting liked song:', error);
     throw error;
   }
 }
-
 const snoowrap = require('snoowrap'); // Add this at the top with other imports
 
 /**
@@ -166,63 +184,21 @@ const snoowrap = require('snoowrap'); // Add this at the top with other imports
  * @param {string} type - The type of content ('playlist' or 'like')
  * @param {Object} content - The content to post (optional)
  */
-async function RpostPlaylistToReddit(email, type = 'playlist', content = null) {
+async function RpostPlaylistToReddit(email, actionResult) {
   try {
-    // Get Spotify service info
-    const spotifyService = await fetchWithRetry(async () => {
-      const service = await getUserServiceByEmailAndServiceName(email, 'Spotify');
-      if (!service) throw new Error('Spotify service not connected');
+    // Get Reddit service info with timeout and retries
+    const redditService = await fetchWithRetry(async () => {
+      const service = await getUserServiceByEmailAndServiceName(email, 'Reddit');
+      if (!service) throw new Error('Reddit service not connected');
       return service;
-    }, 3, 2000);
+    }, 30, 2000);
 
-    // Set Spotify tokens
-    spotifyApi.setAccessToken(spotifyService.access_token);
-    spotifyApi.setRefreshToken(spotifyService.refresh_token);
-
-    // Get content based on type if not provided
-    if (!content) {
-      if (type === 'playlist') {
-        const response = await fetchWithRetry(() => spotifyApi.getUserPlaylists(), 3, 2000);
-        if (!response?.body?.items?.length) {
-          throw new Error('No playlists found');
-        }
-        content = {
-          type: 'playlist',
-          name: response.body.items[0].name,
-          url: response.body.items[0].external_urls.spotify
-        };
-      } else if (type === 'like') {
-        const response = await fetchWithRetry(() => spotifyApi.getMySavedTracks({ limit: 1 }), 3, 2000);
-        if (!response?.body?.items?.length) {
-          throw new Error('No liked songs found');
-        }
-        const track = response.body.items[0].track;
-        content = {
-          type: 'track',
-          name: track.name,
-          artist: track.artists[0].name,
-          url: track.external_urls.spotify
-        };
-      }
+    // Validate action result
+    if (!actionResult || !actionResult.type) {
+      throw new Error('Invalid action result data');
     }
 
-    // Rest of the Reddit posting logic...
-    const redditService = await Promise.race([
-      getUserServiceByEmailAndServiceName(email, 'Reddit'),
-      new Promise((_, reject) => setTimeout(() => reject(new Error('Reddit service timeout')), 5000))
-    ]);
-
-    if (!redditService) {
-      return {
-        status: 'error',
-        message: 'Reddit service not connected',
-        requiresAuth: true,
-        service: 'reddit',
-        redirectUrl: `http://localhost:3000/api/auth/reddit?email=${encodeURIComponent(email)}`
-      };
-    }
-
-    // Initialize Reddit API and post with appropriate title based on content type
+    // Initialize Reddit API with proper error handling
     const reddit = new snoowrap({
       userAgent: 'Flowfy/1.0.0',
       accessToken: redditService.access_token,
@@ -231,38 +207,64 @@ async function RpostPlaylistToReddit(email, type = 'playlist', content = null) {
       clientSecret: process.env.REDDIT_CLIENT_SECRET
     });
 
-    const subreddit = await reddit.getSubreddit('spotify');
-    const flairs = await subreddit.getLinkFlairTemplates();
-
-    // Select appropriate flair based on content type
-    const flair = content.type === 'playlist' ?
-      flairs.find(f => f.flair_text === 'Theme/Setting  (Party, Study, Covers, etc)') :
-      flairs.find(f => f.flair_text === 'Self Promo');
-
-    if (!flair) {
-      throw new Error('No suitable flair found');
-    }
-
-    const title = content.type === 'playlist' ?
-      `Check out my Spotify playlist: ${content.name}` :
-      `Check out this song: ${content.name} by ${content.artist}`;
-
-    const post = await subreddit.submitLink({
-      title,
-      url: content.url,
-      resubmit: true,
-      sendReplies: true,
-      flair_id: flair.flair_template_id,
-      flair_text: flair.flair_text
+    // Set longer timeout for Reddit API calls
+    reddit.config({
+      requestTimeout: 30000,
+      continueAfterRatelimitError: true,
+      retryErrorCodes: [502, 503, 504, 522],
+      maxRetryAttempts: 3
     });
 
-    return {
-      status: 'success',
-      postId: post.id,
-      url: post.url,
-      title: post.title,
-      contentType: content.type
-    };
+    try {
+      // Get subreddit with retry
+      const subreddit = await fetchWithRetry(() => reddit.getSubreddit('spotify'), 300, 2000);
+      
+      // Get flairs with retry
+      const flairs = await fetchWithRetry(() => subreddit.getLinkFlairTemplates(), 300, 2000);
+
+      if (!flairs || flairs.length === 0) {
+        throw new Error('No flairs available');
+      }
+
+      // Select flair based on content type
+      const flair = actionResult.type === 'playlist' ?
+        flairs.find(f => f.flair_text === 'Theme/Setting  (Party, Study, Covers, etc)') :
+        flairs.find(f => f.flair_text === 'Self Promo');
+
+      if (!flair) {
+        console.warn('No matching flair found, proceeding without flair');
+      }
+
+      const title = actionResult.type === 'playlist' ?
+        `Check out my Spotify playlist: ${actionResult.name}` :
+        `Check out this song: ${actionResult.name}`;
+
+      // Submit post with retry
+      const post = await fetchWithRetry(() => 
+        subreddit.submitLink({
+          title,
+          url: actionResult.url,
+          resubmit: true,
+          sendReplies: true,
+          ...(flair && {
+            flair_id: flair.flair_template_id,
+            flair_text: flair.flair_text
+          })
+        })
+      , 30, 2000);
+
+      return {
+        status: 'success',
+        postId: post.id,
+        url: post.url,
+        title: post.title,
+        contentType: actionResult.type
+      };
+
+    } catch (redditError) {
+      console.error('Reddit API error:', redditError);
+      throw new Error(`Reddit API error: ${redditError.message}`);
+    }
 
   } catch (error) {
     console.error('Error posting to Reddit:', error);

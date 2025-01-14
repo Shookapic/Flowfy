@@ -41,8 +41,13 @@
       "file": "./twitter-areas"
     },
     "9": {
-      "name": "New friend added",
-      "function": "AonNewFriend",
+      "name": "New server created",
+      "function": "AonServerCreation",
+      "file": "./discord-areas"
+    },
+    "10": {
+      "name": "New member in server",
+      "function": "AonNewServerMember",
       "file": "./discord-areas"
     }
   },

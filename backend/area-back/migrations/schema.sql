@@ -3,6 +3,8 @@ DROP TABLE IF EXISTS reactions CASCADE;
 DROP TABLE IF EXISTS actions CASCADE;
 DROP TABLE IF EXISTS services CASCADE;
 DROP TABLE IF EXISTS user_services CASCADE;
+DROP TABLE IF EXISTS discord_servers CASCADE;
+DROP TABLE IF EXISTS discord_servers_members CASCADE;
 
 CREATE TABLE services (
     id SERIAL PRIMARY KEY,
@@ -41,7 +43,7 @@ CREATE TABLE user_services (
     is_logged BOOLEAN NOT NULL
 );
 
-CREATE TABLE DISCORD_servers (
+CREATE TABLE discord_servers (
     id SERIAL PRIMARY KEY,
     server_id TEXT NOT NULL UNIQUE,
     server_name TEXT NOT NULL,
@@ -49,7 +51,7 @@ CREATE TABLE DISCORD_servers (
     reactions_id TEXT[]
 );
 
-CREATE TABLE DISCORD_servers_members (
+CREATE TABLE discord_servers_members (
     id SERIAL PRIMARY KEY,
     server_id TEXT NOT NULL,
     server_name TEXT NOT NULL,

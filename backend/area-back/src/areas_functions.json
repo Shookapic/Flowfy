@@ -49,6 +49,11 @@
       "name": "On Playlist Creation",
       "function": "OnPlaylistCreation",
       "file": "./spotify-areas"
+    },
+    "11": {
+      "name": "On Song Liked",
+      "function": "OnSongLike",
+      "file": "./spotify-areas"
     }
   },
   "reactions": {

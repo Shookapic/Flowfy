@@ -96,6 +96,16 @@
       "name": "Send an email to notify about new friend",
       "function": "RsendEmail",
       "file": "./discord-areas"
+    },
+    "10": {
+      "name": "Create a playlist on Youtube with the same name",
+      "function": "RcreatePlaylist",
+      "file": "./spotify-areas"
+    },
+    "11": {
+      "name": "Create a post with the new playlist",
+      "function": "RpostPlaylistToReddit",
+      "file": "./spotify-areas"
     }
   }
 }

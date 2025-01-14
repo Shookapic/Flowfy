@@ -62,7 +62,6 @@ router.get('/api/auth/youtube/callback', async (req, res) => {
     const { tokens } = await oauth2Client.getToken(code);
     oauth2Client.setCredentials(tokens);
 
-    // Retrieve existing user service record to check for an existing refresh token
     const service_id = await getServiceByName('YouTube');
     const existingUserService = await getUserIdByEmail(email);
 
@@ -75,10 +74,10 @@ router.get('/api/auth/youtube/callback', async (req, res) => {
 
     await createUserServiceEMAIL(email, service_id, tokens.access_token, refreshToken, true);
     console.log('YouTube tokens:', tokens);
-    res.redirect('http://localhost/youtube-service');
+    res.redirect('http://localhost/youtube-service?connected=true');
   } catch (error) {
     console.error('Error during YouTube OAuth2 callback:', error);
-    res.redirect('http://localhost/youtube-service');
+    res.redirect('http://localhost/youtube-service?connected=false&error=' + encodeURIComponent(error.message));
   }
 });
 

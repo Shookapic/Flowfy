@@ -7,6 +7,7 @@ const express = require('express');
 const { google } = require('googleapis');
 const jwt = require('jsonwebtoken');
 const users = require('./crud_users');
+const passport = require('passport'); // Ensure Passport.js is required
 require('dotenv').config();
 
 const router = express.Router();

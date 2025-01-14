@@ -16,6 +16,9 @@ const { getUsers } = require('./crud_users');
 const { getAccessTokenByEmailAndServiceName } = require('./crud_user_services');
 const areasFunctions = require('./areas_functions.json');
 const spotifyAuth = require('./oauth2-spotify');
+const discordAuth = require('./oauth2-discord');
+const redditAuth = require('./oauth2-reddit');
+const authRateLimiter = require('./middlewares/rateLimiter'); // Import the rate limiter middleware
 
 const app = express();
 const port = 3000;
@@ -23,10 +26,16 @@ let storedRepositories = [];
 
 app.use(express.json());
 app.use(cookieParser());
+// CORS configuration
 app.use(cors({
-  origin: 'http://localhost',
+  origin: ['http://localhost', 'http://localhost:80', 'https://x.com'],
   credentials: true,
+  methods: ['GET', 'POST', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 }));
+
+// Session configuration
+// Session configuration
 app.use(session({
   secret: process.env.SESSION_SECRET,
   resave: true,
@@ -37,14 +46,50 @@ app.use(session({
     secure: false, // Set to false for development
     sameSite: 'lax',
     maxAge: 24 * 60 * 60 * 1000 // 24 hours
-  }
+  },
+  store: new (require('connect-pg-simple')(session))({
+    conString: 'postgres://toto:l3_m04_d3_P3SS@localhost:5432/flowfy.db',
+    createTableIfMissing: true,
+    schemaName: 'public'
+  })
 }));
 
+
+// Add Trust Proxy if behind a reverse proxy
+app.set('trust proxy', 1);
+
+// Routes
 const oauth2Routes = require('./oauth2-routes');
 const oauthGithub = require('./oauth2-github');
 const crudRoutes = require('./crud-routes');
 
+// Apply rate limiter after session middleware
+app.use('/api/auth', authRateLimiter);
+
+// Apply routes
+app.use(youtubeAuth);
+app.use(oauth2Routes);
+app.use(oauthGithub);
+app.use(crudRoutes);
+app.use(redditAuth);
+
+// Session configuration
+app.use(session({
+  secret: process.env.SESSION_SECRET,
+  resave: true,
+  saveUninitialized: true,
+  cookie: {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    maxAge: 24 * 60 * 60 * 1000 // 24 hours
+  }
+}));
+
+
+app.use('/api/auth', authRateLimiter); // Apply the rate limiter middleware to the /api/auth route
 app.use(spotifyAuth);
+app.use(discordAuth);
 app.use(youtubeAuth);
 app.use(oauth2Routes);
 app.use(oauthGithub);
@@ -262,7 +307,6 @@ app.get('/api/github/follow-users', async (req, res) => {
 });
 
 if (process.env.NODE_ENV !== 'test') {
-  setInterval(runAREAS, 10 * 1000);
   app.listen(port, () => {
     console.log(`Server is running on http://localhost:${port}`);
   });

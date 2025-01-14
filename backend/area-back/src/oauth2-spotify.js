@@ -82,7 +82,7 @@ router.get('/api/auth/spotify/callback', async (req, res) => {
   try {
     if (!req.session?.spotifyAuth) {
       console.error('No session data found');
-      return res.redirect('http://localhost/services?error=auth_failed&message=session_expired');
+      return res.redirect('http://localhost/spotify-service?connected=false&error=session_expired');
     }
 
     if (state !== req.session.spotifyAuth.state) {
@@ -90,17 +90,15 @@ router.get('/api/auth/spotify/callback', async (req, res) => {
         received: state,
         expected: req.session.spotifyAuth.state
       });
-      return res.redirect('http://localhost/services?error=auth_failed&message=state_mismatch');
+      return res.redirect('http://localhost/spotify-service?connected=false&error=state_mismatch');
     }
 
     const { userId, email } = req.session.spotifyAuth;
 
     try {
-      // Get existing service connection first
       const existingService = await getUserServiceByEmailAndServiceName(email, 'Spotify');
       
       if (existingService && existingService.refresh_token) {
-        // If we have an existing refresh token, use it to get new access token
         spotifyApi.setRefreshToken(existingService.refresh_token);
         const refreshData = await spotifyApi.refreshAccessToken();
         const { access_token } = refreshData.body;
@@ -108,7 +106,6 @@ router.get('/api/auth/spotify/callback', async (req, res) => {
         await updateUserServiceTokens(existingService.id, access_token, existingService.refresh_token);
         console.log('Updated existing Spotify connection using refresh token');
       } else {
-        // No existing connection or refresh token, exchange code for new tokens
         const data = await spotifyApi.authorizationCodeGrant(code);
         const { access_token, refresh_token } = data.body;
 
@@ -119,30 +116,27 @@ router.get('/api/auth/spotify/callback', async (req, res) => {
 
         if (existingService) {
           await updateUserServiceTokens(existingService.id, access_token, refresh_token);
-          console.log('Updated existing Spotify connection');
         } else {
           await createUserServiceID(userId, service_id, access_token, refresh_token, true);
-          console.log('Created new Spotify connection');
         }
       }
 
       // Clear session
       delete req.session.spotifyAuth;
       await new Promise((resolve, reject) => {
-        req.session.save(err => {
-          if (err) reject(err);
-          else resolve();
-        });
+        req.session.save(err => err ? reject(err) : resolve());
       });
 
-      return res.redirect('http://localhost/spotify-service'); // Changed redirect URL
+      // Redirect with connected=true parameter to port 8000
+      return res.redirect('http://localhost/spotify-service?connected=true');
+
     } catch (error) {
       console.error('Spotify API error:', error);
-      throw new Error(`Authentication failed: ${error.message}`);
+      return res.redirect('http://localhost/spotify-service?connected=false&error=api_error');
     }
   } catch (error) {
     console.error('Final error:', error);
-    return res.redirect(`http://localhost/spotify-service?error=auth_failed&message=${encodeURIComponent(error.message)}`); // Changed error redirect URL
+    return res.redirect(`http://localhost/spotify-service?connected=false&error=${encodeURIComponent(error.message)}`);
   }
 });
 module.exports = router;

@@ -143,7 +143,7 @@ export function ServiceTemplate() {
   if (!service) return <div>Service not found</div>;
 
   return (
-    <div className="min-h-screen bg-gray-800">
+    <div className="min-h-screen bg-gray-900">
       {notification && <Notification message={notification} />}
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">

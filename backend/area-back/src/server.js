@@ -23,7 +23,7 @@ let storedRepositories = [];
 app.use(express.json());
 app.use(cookieParser());
 app.use(cors({
-    origin: 'http://flowfy.duckdns.org',
+    origin: 'http://localhost',
     credentials: true,
 }));
 app.use(session({
@@ -40,11 +40,13 @@ app.use(session({
 const oauth2Routes = require('./oauth2-routes');
 const oauthGithub = require('./oauth2-github');
 const crudRoutes = require('./crud-routes');
+const oauthNotion = require('./oauth2-notion');
 
 app.use(youtubeAuth);
 app.use(oauth2Routes);
 app.use(oauthGithub);
 app.use(crudRoutes);
+app.use(oauthNotion);
 
 /**
  * Route for handling YouTube like action.
@@ -273,7 +275,7 @@ app.get('/about.json', (req, res) => {
         }
       }
     }
-    return '127.0.0.1'; // Fallback to flowfy.duckdns.org if no external IP found
+    return '127.0.0.1'; // Fallback to localhost if no external IP found
   };
 
   const serverHost = getServerIP(); // Fetch the server's IP address
@@ -337,9 +339,9 @@ app.get('/about.json', (req, res) => {
 
 
 if (process.env.NODE_ENV !== 'test') {
-  setInterval(runAREAS, 3600 * 1000);
+  setInterval(runAREAS, 5 * 1000);
   app.listen(port, () => {
-    console.log(`Server is running on http://flowfy.duckdns.org:${port}`);
+    console.log(`Server is running on http://localhost:${port}`);
   });
 }
 

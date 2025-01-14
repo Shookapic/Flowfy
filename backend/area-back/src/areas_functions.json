@@ -58,13 +58,13 @@
       "file": "./youtube-areas"
     },
     "3": {
-      "name": "Add a task on Google Calendar for the new pull request",
-      "function": "RaddTaskToGoogleCalendarPR",
+      "name": "Add a task on Notion",
+      "function": "RaddTaskToNotion",
       "file": "./github-areas"
     },
     "4": {
-      "name": "Add a task on Google Calendar for the new issue",
-      "function": "RaddTaskToGoogleCalendarI",
+      "name": "Send an email on Outlook",
+      "function": "RsendEmail",
       "file": "./github-areas"
     },
     "5": {

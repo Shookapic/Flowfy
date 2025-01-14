@@ -14,6 +14,10 @@ const serviceApiEndpoints = {
   'twitch-service': '/api/auth/twitch',
   'twitter-service': '/api/auth/twitter',
   'github-service': '/api/auth/github',
+  'discord-service': '/api/auth/discord',
+  'google-service': '/api/auth/google',
+  'notion-service': '/api/auth/notion',
+  'outlook-service': '/api/auth/outlook',
 };
 
 const serviceIds = {
@@ -23,6 +27,10 @@ const serviceIds = {
   'twitch-service': 4,
   'twitter-service': 5,
   'github-service': 6,
+  'discord-service': 7,
+  'google-service': 8,
+  'notion-service': 9,
+  'outlook-service': 10,
 };
 
 export function ServiceTemplate() {
@@ -46,11 +54,11 @@ export function ServiceTemplate() {
       if (!serviceId) return;
 
       try {
-        const actionsResponse = await fetch(`http://flowfy.duckdns.org:3000/get-actions-by-service-id?serviceId=${serviceId}`);
+        const actionsResponse = await fetch(`http://localhost:3000/get-actions-by-service-id?serviceId=${serviceId}`);
         const actionsData = await actionsResponse.json();
         setServiceActions(actionsData);
 
-        const reactionsResponse = await fetch('http://flowfy.duckdns.org:3000/get-reactions');
+        const reactionsResponse = await fetch(`http://localhost:3000/get-reactions-by-service-id?serviceId=${serviceId}`);
         const reactionsData = await reactionsResponse.json();
         setAvailableReactions(reactionsData);
       } catch (error) {
@@ -64,7 +72,7 @@ export function ServiceTemplate() {
 
       try {
         const response = await fetch(
-          `http://flowfy.duckdns.org:3000/api/connection-status?email=${encodeURIComponent(email)}&serviceName=${serviceName}`
+          `http://localhost:3000/api/connection-status?email=${encodeURIComponent(email)}&serviceName=${serviceName}`
         );
         const data = await response.json();
         if (data.isConnected) {
@@ -146,7 +154,7 @@ export function ServiceTemplate() {
       return;
     }
 
-    const url = `http://flowfy.duckdns.org:3000${endpoint}?email=${encodeURIComponent(email)}`;
+    const url = `http://localhost:3000${endpoint}?email=${encodeURIComponent(email)}`;
     window.location.href = url;
   };
 
@@ -167,53 +175,83 @@ export function ServiceTemplate() {
     saveToLocalStorage(newActions, newReactions);
   };
 
-  const handleReactionSubmit = (reactions) => {
+  const handleReactionSubmit = async (reactions) => {
     if (!currentAction) {
       setNotification('Action missing');
       setTimeout(() => setNotification(null), 3000);
       return;
     }
-
+  
     const newReactions = {
       ...selectedReactions,
       [currentAction]: reactions,
     };
-
+  
     const serviceNames = reactions
       .filter((r) => typeof r === 'string')
       .map((r) => r.match(/\((.*?)\)/)?.[1]?.toLowerCase() || '');
-
+  
     const notConnectedServices = serviceNames.filter((name) => name && !connectedServices[name]);
-
+  
     if (notConnectedServices.length > 0) {
       setNotification(`Connect to (${notConnectedServices.join('), (')}) to activate this reaction`);
       setTimeout(() => setNotification(null), 3000);
-    } else {
-      setSelectedReactions(newReactions);
-      setIsReactionModalOpen(false);
-      saveToLocalStorage(selectedActions, newReactions);
+      return;
     }
-
-    setSelectedReactions(newReactions); // Update state immediately
+  
+    const currentServiceId = serviceIds[serviceName];
+    const email = localStorage.getItem('email');
+  
+    for (const reaction of reactions) {
+      const reactionServiceId = availableReactions.find((r) => r.description === reaction)?.required_service_id;
+      if (reactionServiceId && reactionServiceId !== currentServiceId) {
+                try {
+          const response = await fetch(`http://localhost:3000/is_user_logged_service?email=${encodeURIComponent(email)}&service_id=${reactionServiceId}`, {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          });
+        
+          if (response.status === 200) {
+            console.log('User is logged in for this service');
+          } else if (response.status === 404) {
+            setNotification(`Connect to ${reactionServiceId} to activate this reaction`);
+            setTimeout(() => setNotification(null), 3000);
+            window.location.href = `http://localhost:3000${serviceApiEndpoints[Object.keys(serviceIds).find(key => serviceIds[key] === reactionServiceId)]}?email=${encodeURIComponent(email)}`;
+            return;
+          } else {
+            console.error('Unexpected response status:', response.status);
+            setNotification('Failed to check user login status');
+            setTimeout(() => setNotification(null), 3000);
+            return;
+          }
+        } catch (error) {
+          console.error('Error checking user login status:', error);
+          setNotification('Failed to check user login status');
+          setTimeout(() => setNotification(null), 3000);
+          return;
+        }
+      }
+    }
+  
+    setSelectedReactions(newReactions);
     setIsReactionModalOpen(false);
     setCurrentAction(null);
     saveToLocalStorage(selectedActions, newReactions);
-    saveActionReaction();
+    await saveActionReaction();
   };
 
-    const saveActionReaction = async () => {
+  const saveActionReaction = async () => {
     const email = localStorage.getItem('email');
     if (!email) {
       setNotification('Email not found in localStorage');
       setTimeout(() => setNotification(null), 3000);
       return;
     }
-      // Read the 'areas' from localStorage
     const areas = localStorage.getItem('areas');
-    console.log('areas:', areas);
-  
     try {
-      const response = await fetch('http://flowfy.duckdns.org:3000/save-action-reaction', {
+      const response = await fetch('http://localhost:3000/save-action-reaction', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -240,11 +278,9 @@ export function ServiceTemplate() {
   return (
     <div className="min-h-screen bg-gray-800">
       {notification && <Notification message={notification} />}
-
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
           <ServiceHeader service={service} isConnected={isConnected} onConnect={handleConnect} />
-
           <div className="mt-6">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-semibold text-white">Actions & Reactions</h2>
@@ -256,7 +292,6 @@ export function ServiceTemplate() {
                 +
               </button>
             </div>
-
             <div className="space-y-4">
               {selectedActions.map((action) => (
                 <ActionCard
@@ -290,14 +325,12 @@ export function ServiceTemplate() {
           </div>
         </div>
       </div>
-
       <ActionModal
         isOpen={isActionModalOpen}
         onClose={() => setIsActionModalOpen(false)}
         actions={serviceActions.map((action) => action.description)}
         onSubmit={handleActionSubmit}
       />
-
       <ReactionModal
         isOpen={isReactionModalOpen}
         onClose={() => setIsReactionModalOpen(false)}

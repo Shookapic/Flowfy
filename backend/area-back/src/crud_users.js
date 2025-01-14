@@ -2,6 +2,7 @@
  * Database client instance for performing CRUD operations.
  * @type {Object}
  */
+const { getUserIdByEmail } = require('./crud_user_services');
 const client = require('./db');
 const pool = require('./db'); // Add this line to import the pool
 
@@ -17,6 +18,7 @@ async function createUser(email, areas) {
   const values = [email, areas];
   const res = await client.query(query, values);
   console.log('User Created:', res.rows[0]);
+  return 200;
 }
 
 /**

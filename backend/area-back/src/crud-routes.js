@@ -8,6 +8,7 @@ const users = require('./crud_users');
 const services = require('./crud_services');
 const actions = require('./crud_actions');
 const reactions = require('./crud_reactions');
+const serviceUser = require('./crud_user_services');
 
 const router = express.Router();
 
@@ -421,11 +422,13 @@ router.get('/get-actions-by-service-id', async (req, res) => {
  * @param {Object} req.query - The query parameters.
  * @param {number} req.query.serviceId - The ID of the service.
  */
-router.get('/get-reactions', async (req, res) => {
+router.get('/get-reactions-by-service-id', async (req, res) => {
+    const { serviceId } = req.query;
     try {
-        const result = await reactions.getReactions();
+        const result = await reactions.getReactionsByServiceId(serviceId);
         res.status(200).json(result);
-    } catch (error) {
+    }
+    catch (error) {
         console.error(error);
         res.status(500).send('Error fetching reactions');
     }
@@ -470,5 +473,26 @@ router.post('/save-action-reaction', async (req, res) => {
     }
 });
 
-module.exports = router;
 
+/**
+ * Checks if the user is logged in for a specific service.
+ *
+ * @param {string} userID - The ID of the user to check.
+ * @param {string} service_id - The ID of the service to check.
+ * @returns {Promise<boolean>} - A promise that resolves to a boolean indicating whether the user is logged in.
+ */
+router.get('/is_user_logged_service', async (req, res) => {
+    console.log("PASSSSSSSSSSSSSSSSSSSSSSSSINNNNNNNNNNNNNNNNNNNNNNNGGGGGGGGGGGGG");
+    const { email, service_id } = req.query;
+    console.log("email: ", email);
+    console.log("service_id: ", service_id);
+    const userID = await serviceUser.getUserIdByEmail(email);
+    const result = await serviceUser.isUserLogged(userID, service_id);
+    if (result === true) {
+        res.status(200).send('User is logged in for this service');
+    } else {
+        res.status(404).send('User is not logged in for this service');
+    }
+});
+
+module.exports = router;

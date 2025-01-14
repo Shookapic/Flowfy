@@ -1,316 +1,127 @@
-/**
- * @file github-areas.js
- * @description Module for interacting with GitHub API to manage repositories and follow users.
- */
-
 const axios = require('axios');
 const fs = require('fs');
-const readline = require('readline');
-require('dotenv').config();
-const GITHUB_API_URL = 'https://api.github.com';
+const { getUserServicesByUserMail } = require('./crud_user_services');
 
-/**
- * Fetches repositories from GitHub and stores them.
- * @async
- * @function fetchRepositories
- * @param {string} accessToken - The GitHub access token.
- * @returns {Promise<Array<string>>} A promise that resolves with an array of repository full names.
- */
-const fetchRepositories = async (accessToken) => {
-  const url = 'https://api.github.com/user/repos';
-  let page = 1;
-  let allRepos = [];
+async function AonNewPullRequest(email) {
+  console.log('Fetching recent pull requests...');
+  await new Promise(resolve => setTimeout(resolve, 2000));
 
   try {
-    while (true) {
-      const response = await axios.get(url, {
-        headers: { Authorization: `Bearer ${accessToken}` },
-        params: { per_page: 100, page },
-      });
+    // Get user services by email
+    const userServices = await getUserServicesByUserMail(email);
+    const githubService = userServices.find(service => service.service_id === 6);
 
-      const repos = response.data;
-      if (repos.length === 0) break;
-
-      allRepos = allRepos.concat(repos);
-      page++;
+    if (!githubService) {
+      throw new Error('GitHub service not found for this user');
     }
 
-    // Store fetched repositories locally (in memory) with only full_name
-    const storedRepositories = allRepos.map(repo => repo.full_name);
-
-    console.log('Stored Repositories:', storedRepositories);
-    return storedRepositories;
-  } catch (error) {
-    console.error('Error fetching repositories:', error.response?.data || error.message);
-  }
-};
-
-/**
- * Compares fetched and stored repositories.
- * @async
- * @function compareRepositories
- * @param {Array<string>} storedRepos - The stored repository full names.
- * @returns {Promise<Object>} A promise that resolves with an object containing new, removed, and fetched repositories.
- */
-const compareRepositories = async (storedRepos) => {
-  const fetchedRepos = await fetchRepositories(process.env.GITHUB_ACCESS_TOKEN);
-
-  const newRepos = fetchedRepos.filter(fetchedRepo => {
-    // Check if the repository is new (i.e., not in storedRepos)
-    return !storedRepos.includes(fetchedRepo);
-  });
-
-  const removedRepos = storedRepos.filter(storedRepo => {
-    // Check if the repository was removed (i.e., not in fetchedRepos)
-    return !fetchedRepos.includes(storedRepo);
-  });
-
-  console.log('New Repositories:', newRepos);
-  console.log('Removed Repositories:', removedRepos);
-
-  return { newRepos, removedRepos, fetchedRepos };
-};
-
-/**
- * Checks for new repository creations.
- * @async
- * @function AonRepoCreation
- * @param {Array<string>} storedRepos - The stored repository full names.
- * @returns {Promise<Object>} A promise that resolves with an object containing new repositories.
- */
-const AonRepoCreation = async (storedRepos) => {
-  const fetchedRepos = await fetchRepositories(process.env.GITHUB_ACCESS_TOKEN);
-
-  const newRepos = fetchedRepos.filter(fetchedRepo => {
-    // Check if the repository is new (i.e., not in storedRepos)
-    return !storedRepos.includes(fetchedRepo);
-  });
-
-  console.log('New Repositories:', newRepos);
-
-  return { newRepos };
-};
-
-/**
- * Checks for repository deletions.
- * @async
- * @function AonRepoDeletion
- * @param {Array<string>} storedRepos - The stored repository full names.
- * @returns {Promise<Object>} A promise that resolves with an object containing removed repositories.
- */
-const AonRepoDeletion = async (storedRepos) => {
-  const fetchedRepos = await fetchRepositories(process.env.GITHUB_ACCESS_TOKEN);
-
-  const removedRepos = storedRepos.filter(storedRepo => {
-    // Check if the repository was removed (i.e., not in fetchedRepos)
-    return !fetchedRepos.includes(storedRepo);
-  });
-
-  console.log('Removed Repositories:', removedRepos);
-
-  return { removedRepos };
-};
-
-/**
- * Creates repositories on GitHub based on a configuration file.
- * @async
- * @function RcreateRepo
- * @param {string} githubToken - The GitHub access token.
- */
-async function RcreateRepo(githubToken) {
-  try {
-    // Read repository details from a file
-    const reposToCreate = await readReposFromFile('./src/repos_to_create.txt');
-    console.log('Repositories to create:', reposToCreate);
-
-    // Create each repository on GitHub
-    for (const repo of reposToCreate) {
-      try {
-        await axios.post(
-          `${GITHUB_API_URL}/user/repos`,
-          {
-            name: repo.name,
-            description: repo.description || '',
-            private: repo.private, // Use the parsed value directly
-          },
-          {
-            headers: {
-              Authorization: `Bearer ${githubToken}`,
-              'Content-Type': 'application/json',
-            },
-          }
-        );
-        console.log(`Repository created: ${repo.name}`);
-      } catch (error) {
-        if (error.response?.status === 422) {
-          console.log(`Repository already exists: ${repo.name}`);
-        } else {
-          console.error(`Error creating repository: ${repo.name}`, error.response?.data || error.message);
-        }
-      }
+    if (!githubService.access_token) {
+      throw new Error('GitHub access token is undefined');
     }
-  } catch (error) {
-    console.error('Error creating repositories:', error);
-  }
-}
 
-/**
- * Reads repository details from a file.
- * @async
- * @function readReposFromFile
- * @param {string} filePath - The path to the file containing repository details.
- * @returns {Promise<Array<Object>>} A promise that resolves with an array of repository objects.
- */
-async function readReposFromFile(filePath) {
-  // Check if the file exists, if not create it
-  if (!fs.existsSync(filePath)) {
-    fs.writeFileSync(filePath, '', 'utf8');
-    console.log(`File created: ${filePath}`);
-  }
+    console.log(`Using access token: ${githubService.access_token}`);
 
-  const repos = [];
-  const fileStream = fs.createReadStream(filePath);
-  const rl = readline.createInterface({
-    input: fileStream,
-    crlfDelay: Infinity,
-  });
-
-  for await (const line of rl) {
-    const match = line.match(/name: (.+), description: (.*), private: (true|false)/);
-    if (match) {
-      repos.push({
-        name: match[1],
-        description: match[2] || '',
-        private: match[3] === 'true', // Convert "true"/"false" to booleans
-      });
-    }
-  }
-
-  return repos;
-}
-
-/**
- * Follows a user on GitHub.
- * @async
- * @function RfollowUser
- * @param {string} githubToken - The GitHub access token.
- * @param {string} targetUsername - The username of the user to follow.
- */
-async function RfollowUser(githubToken, targetUsername) {
-  try {
-    // Check if the user exists by querying their profile
-    const userExists = await checkUserExists(targetUsername, githubToken);
-    
-    if (!userExists) {
-      console.log(`User ${targetUsername} does not exist.`);
-      return;
-    }
-    
-    // If the user exists, follow them
-    await followUser(targetUsername, githubToken);
-    console.log(`Successfully followed ${targetUsername}`);
-    
-  } catch (error) {
-    console.error('Error following user:', error.message);
-  }
-}
-
-/**
- * Checks if a user exists on GitHub.
- * @async
- * @function checkUserExists
- * @param {string} username - The username to check.
- * @param {string} githubToken - The GitHub access token.
- * @returns {Promise<boolean>} A promise that resolves with a boolean indicating if the user exists.
- */
-async function checkUserExists(username, githubToken) {
-  try {
-    const response = await axios.get(`${GITHUB_API_URL}/users/${username}`, {
+    // Make a call to GitHub API to get the authenticated user's details (including their username)
+    const userResponse = await axios.get('https://api.github.com/user', {
       headers: {
-        Authorization: `Bearer ${githubToken}`,
-      },
-    });
-    return response.status === 200;  // Status 200 means user exists
-  } catch (error) {
-    if (error.response?.status === 404) {
-      return false;  // User not found
-    }
-    throw new Error('Error checking user existence');
-  }
-}
-
-/**
- * Follows a user on GitHub.
- * @async
- * @function followUser
- * @param {string} username - The username of the user to follow.
- * @param {string} githubToken - The GitHub access token.
- */
-async function followUser(username, githubToken) {
-  try {
-    await axios.put(
-      `${GITHUB_API_URL}/user/following/${username}`,
-      {},
-      {
-        headers: {
-          Authorization: `Bearer ${githubToken}`,
-        },
+        Authorization: `token ${githubService.access_token}`
       }
-    );
+    });
+
+    const githubUsername = userResponse.data.login;
+    console.log(`Authenticated GitHub username: ${githubUsername}`);
+
+    // Make a call to GitHub API to search for open pull requests authored by the user
+    const pullRequestResponse = await axios.get('https://api.github.com/search/issues', {
+      headers: {
+        Authorization: `token ${githubService.access_token}`
+      },
+      params: {
+        q: `state:open author:${githubUsername} type:pr`
+      }
+    });
+
+    // Write the data to a file named "recent pull request"
+    fs.writeFileSync('recent_pull_requests.json', JSON.stringify(pullRequestResponse.data, null, 2));
+    console.log('Recent pull requests have been saved.');
+
   } catch (error) {
-    console.error(`Error following user: ${username}`, error.response?.data || error.message);
-    throw new Error(`Error following ${username}`);
+    console.error('Error fetching pull requests:', error.response ? error.response.data : error.message);
   }
 }
 
-/**
- * Follows users from a file.
- * @async
- * @function RfollowUsersFromFile
- * @param {string} githubToken - The GitHub access token.
- */
-async function RfollowUsersFromFile(githubToken) {
-  const usernames = await readUsernamesFromFile('./src/users_to_follow.txt');  // Read usernames from file
-  console.log('Usernames to follow:', usernames);
-  for (const username of usernames) {
-    await RfollowUser(githubToken, username);
+// Function to add tasks to the "Github Tasks" Notion calendar
+async function RaddTaskToNotion(email) {
+  try {
+    // Get user services by email
+    const userServices = await getUserServicesByUserMail(email);
+    const notionService = userServices.find(service => service.service_id === 9);
+
+    if (!notionService) {
+      throw new Error('Notion service not found for this user');
+    }
+
+    if (!notionService.access_token) {
+      throw new Error('Notion access token is undefined');
+    }
+
+    console.log(`Using Notion access token: ${notionService.access_token}`);
+
+    // Read the recent_pull_requests.json file to get the latest PR data
+    const rawData = fs.readFileSync('recent_pull_requests.json');
+    const prData = JSON.parse(rawData);
+
+    // Check if there are any pull requests
+    if (prData.items.length === 0) {
+      throw new Error('No pull requests found.');
+    }
+
+    // Get the Notion database ID for the "Github Tasks" calendar
+    const notionDatabaseId = "17bc1900f49980099436fac478d94086";
+
+    // Iterate through the pull requests and add them to the Notion calendar
+    for (let pr of prData.items) {
+      // Prepare the task content for each PR
+      const taskTitle = pr.title;
+      const taskDate = pr.created_at;
+      const prUrl = pr.html_url;
+
+      console.log(`Adding task for PR: ${taskTitle} created at ${taskDate}`);
+
+      // Make a call to Notion API to add the task to the "Github Tasks" calendar
+      const response = await axios.post('https://api.notion.com/v1/pages', {
+        parent: { database_id: notionDatabaseId }, // Use the found DATABASE_ID
+        properties: {
+          title: {
+            title: [
+              {
+                text: {
+                  content: `PR: ${taskTitle}`
+                }
+              }
+            ]
+          },
+          date: {
+            date: {
+              start: taskDate // You can format this as needed (e.g., '2025-01-14T20:45:12Z')
+            }
+          },
+          url: {
+            url: prUrl
+          }
+        }
+      }, {
+        headers: {
+          Authorization: `Bearer ${notionService.access_token}`,
+          'Notion-Version': '2021-05-13', // Ensure you are using the correct Notion API version
+        }
+      });
+
+      console.log('Task has been added to Notion:', response.data);
+    }
+  } catch (error) {
+    console.error('Error adding task to Notion:', error.response ? error.response.data : error.message);
   }
 }
 
-/**
- * Reads usernames from a file.
- * @async
- * @function readUsernamesFromFile
- * @param {string} filePath - The path to the file containing usernames.
- * @returns {Promise<Array<string>>} A promise that resolves with an array of usernames.
- */
-async function readUsernamesFromFile(filePath) {
-  // Check if the file exists, if not create it
-  if (!fs.existsSync(filePath)) {
-    fs.writeFileSync(filePath, '', 'utf8');
-    console.log(`File created: ${filePath}`);
-  }
-
-  const usernames = [];
-  const fileStream = fs.createReadStream(filePath);
-  const rl = readline.createInterface({
-    input: fileStream,
-    crlfDelay: Infinity,
-  });
-
-  for await (const line of rl) {
-    usernames.push(line.trim());
-  }
-
-  return usernames;
-}
-
-module.exports = {
-  fetchRepositories,
-  compareRepositories,
-  AonRepoCreation,
-  AonRepoDeletion,
-  RcreateRepo,
-  RfollowUser,
-  RfollowUsersFromFile
-};
+module.exports = { AonNewPullRequest, RaddTaskToNotion };

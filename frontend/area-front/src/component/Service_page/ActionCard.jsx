@@ -1,4 +1,3 @@
-// components/ActionCard/ActionCard.jsx
 import React from 'react';
 
 export const ActionCard = ({ 
@@ -45,16 +44,6 @@ export const ActionCard = ({
                 className="text-gray-400 hover:text-red-400 transition-colors"
               >
                 ×
-              </button>
-              <button
-                onClick={() => onServiceConnect(reaction.toLowerCase().split(' ')[0])}
-                className={`px-2 py-0.5 rounded-full text-xs transition-colors ${
-                  connectedServices[reaction.toLowerCase().split(' ')[0]]
-                    ? 'bg-green-500 hover:bg-green-600'
-                    : 'bg-blue-500 hover:bg-blue-600'
-                } text-white`}
-              >
-                {connectedServices[reaction.toLowerCase().split(' ')[0]] ? 'Connected' : 'Connect'}
               </button>
             </div>
           ))}

@@ -1,7 +1,7 @@
 import { HoverEffect } from "./hover-effect";
 import React from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faDiscord, faGithub, faSpotify, faYoutube, faGoogle, faXTwitter } from '@fortawesome/free-brands-svg-icons';
+import { faDiscord, faGithub, faSpotify, faYoutube, faGoogle, faXTwitter, faReddit } from '@fortawesome/free-brands-svg-icons';
 
 export function Services() {
   return (
@@ -60,4 +60,12 @@ export const projects = [
     bgColor: "#FF0000",
     textColor: "#FFFFFF",
   },
+  {
+    title: "Reddit",
+    description: "Reddit",
+    link: "/reddit-service",
+    icon: <FontAwesomeIcon icon={faReddit} className="w-20 h-20" style={{ color: "#FFFFFF" }} />,
+    bgColor: "#FF0000",
+    textColor: "#FFFFFF",
+  }
 ];

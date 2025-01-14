@@ -8,6 +8,7 @@ const users = require('./crud_users');
 const services = require('./crud_services');
 const actions = require('./crud_actions');
 const reactions = require('./crud_reactions');
+const serviceUser = require('./crud_user_services');
 
 const router = express.Router();
 
@@ -426,9 +427,71 @@ router.get('/get-reactions-by-service-id', async (req, res) => {
     try {
         const result = await reactions.getReactionsByServiceId(serviceId);
         res.status(200).json(result);
-    } catch (error) {
+    }
+    catch (error) {
         console.error(error);
         res.status(500).send('Error fetching reactions');
+    }
+});
+
+router.post('/save-action-reaction', async (req, res) => {
+    console.log("///////////////////// GONNA SAVE ACTION REACTION///////////////////////////");
+    const { email, areas } = req.body;
+    console.log("request body: ", req.body);
+
+    if (!areas) {
+        return res.status(400).send('Areas field is required.');
+    }
+
+    const actionReactionPairs = areas.split(',');
+    const actionNames = [];
+    const reactionDescriptions = [];
+
+    actionReactionPairs.forEach(pair => {
+        const [actionName, reactionDescription] = pair.split(':');
+        if (actionName && reactionDescription) {
+            actionNames.push(actionName.trim());
+            reactionDescriptions.push(reactionDescription.trim());
+        }
+    });
+
+    try {
+        const actionIds = await Promise.all(actionNames.map(name => actions.getActionIdByDescription(name).then(result => result.id)));
+        const reactionIds = await Promise.all(reactionDescriptions.map(description => reactions.getReactionIdByDescription(description).then(result => result.id)));
+
+        for (let i = 0; i < actionIds.length; i++) {
+            if (!actionIds[i] || !reactionIds[i]) {
+                return res.status(404).send('Action or reaction not found.');
+            }
+            await users.setAreas(email, actionIds[i], reactionIds[i]);
+        }
+
+        res.status(200).send('Action-reaction pairs saved successfully.');
+    } catch (error) {
+        console.error('Error saving action-reaction:', error);
+        res.status(500).send('Internal server error.');
+    }
+});
+
+
+/**
+ * Checks if the user is logged in for a specific service.
+ *
+ * @param {string} userID - The ID of the user to check.
+ * @param {string} service_id - The ID of the service to check.
+ * @returns {Promise<boolean>} - A promise that resolves to a boolean indicating whether the user is logged in.
+ */
+router.get('/is_user_logged_service', async (req, res) => {
+    console.log("PASSSSSSSSSSSSSSSSSSSSSSSSINNNNNNNNNNNNNNNNNNNNNNNGGGGGGGGGGGGG");
+    const { email, service_id } = req.query;
+    console.log("email: ", email);
+    console.log("service_id: ", service_id);
+    const userID = await serviceUser.getUserIdByEmail(email);
+    const result = await serviceUser.isUserLogged(userID, service_id);
+    if (result === true) {
+        res.status(200).send('User is logged in for this service');
+    } else {
+        res.status(404).send('User is not logged in for this service');
     }
 });
 

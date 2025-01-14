@@ -71,8 +71,10 @@ async function createUserServiceEMAIL(userMail, serviceId, accessToken, refreshT
         const values = [userId, serviceId, accessToken, refreshToken, isLogged];
         const res = await client.query(query, values);
         console.log('User Service Created:', res.rows[0]);
+        return 200;
     } catch (error) {
         console.error('Error creating user service:', error);
+        return 400;
     }
 }
 
@@ -141,6 +143,7 @@ async function getUserServicesByServiceId(serviceId) {
     const values = [serviceId];
     const res = await client.query(query, values);
     console.log('User Services for Service ID:', serviceId, res.rows);
+    return res.rows;
 }
 
 /**
@@ -315,6 +318,57 @@ async function isUserLogged(userId, serviceId) {
     return result.rows[0]?.is_logged;
 }
 
+const { Pool } = require('pg');
+require('dotenv').config();
+
+// Create a pool using environment variables
+const pool = new Pool({
+  host: process.env.DB_HOST,
+  port: process.env.DB_PORT,
+  user: process.env.DB_USER.replace(/"/g, ''), // Remove quotes
+  password: process.env.DB_PASSWORD.replace(/"/g, ''), // Remove quotes
+  database: process.env.DB_DATABASE
+});
+
+// Add error handler
+pool.on('error', (err) => {
+  console.error('Unexpected error on idle client', err);
+});
+
+// Replace the existing client with pool
+async function getUserServiceByEmailAndServiceName(email, serviceName) {
+  const query = `
+    SELECT us.id, us.access_token, us.refresh_token
+    FROM user_services us
+    JOIN users u ON us.user_id = u.id
+    JOIN services s ON us.service_id = s.id
+    WHERE u.email = $1 AND s.name = $2
+  `;
+  const values = [email, serviceName];
+  try {
+    const result = await pool.query(query, values);
+    return result.rows[0];
+  } catch (error) {
+    console.error('Database error:', error);
+    throw error;
+  }
+}
+
+async function updateUserServiceTokens(userServiceId, accessToken, refreshToken) {
+  const query = `
+    UPDATE user_services
+    SET access_token = $1, refresh_token = $2
+    WHERE id = $3
+  `;
+  const values = [accessToken, refreshToken, userServiceId];
+  try {
+    await pool.query(query, values);
+  } catch (error) {
+    console.error('Database error:', error);
+    throw error;
+  }
+}
+
 module.exports = {
     createUserServiceID,
     createUserServiceEMAIL,
@@ -331,5 +385,7 @@ module.exports = {
     storeTokens,
     getUserServicesByUserMail,
     getAccessTokenByEmailAndServiceName,
-    isUserLogged
+    isUserLogged,
+    getUserServiceByEmailAndServiceName,
+    updateUserServiceTokens
 };

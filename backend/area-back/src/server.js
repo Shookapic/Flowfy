@@ -15,6 +15,10 @@ const { fetchRepositories, compareRepositories, AonRepoCreation, AonRepoDeletion
 const { getUsers } = require('./crud_users');
 const { getAccessTokenByEmailAndServiceName } = require('./crud_user_services');
 const areasFunctions = require('./areas_functions.json');
+const spotifyAuth = require('./oauth2-spotify');
+const discordAuth = require('./oauth2-discord');
+const redditAuth = require('./oauth2-reddit');
+const authRateLimiter = require('./middlewares/rateLimiter'); // Import the rate limiter middleware
 
 const app = express();
 const port = 3000;
@@ -22,29 +26,74 @@ let storedRepositories = [];
 
 app.use(express.json());
 app.use(cookieParser());
+// CORS configuration
 app.use(cors({
     origin: 'http://flowfy.duckdns.org',
     credentials: true,
 }));
+
+// Session configuration
+// Session configuration
 app.use(session({
-    secret: process.env.SESSION_SECRET,
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict'
-    }
+  secret: process.env.SESSION_SECRET,
+  resave: true,
+  saveUninitialized: true,
+  name: 'flowfy.session',
+  cookie: {
+    httpOnly: true,
+    secure: false, // Set to false for development
+    sameSite: 'lax',
+    maxAge: 24 * 60 * 60 * 1000 // 24 hours
+  },
+  store: new (require('connect-pg-simple')(session))({
+    conString: 'postgres://toto:l3_m04_d3_P3SS@flowfy.duckdns.org:5432/flowfy.db',
+    createTableIfMissing: true,
+    schemaName: 'public'
+  })
 }));
 
+
+// Add Trust Proxy if behind a reverse proxy
+app.set('trust proxy', 1);
+
+// Routes
 const oauth2Routes = require('./oauth2-routes');
 const oauthGithub = require('./oauth2-github');
 const crudRoutes = require('./crud-routes');
+const oauthNotion = require('./oauth2-notion');
 
+// Apply rate limiter after session middleware
+app.use('/api/auth', authRateLimiter);
+
+// Apply routes
 app.use(youtubeAuth);
 app.use(oauth2Routes);
 app.use(oauthGithub);
 app.use(crudRoutes);
+app.use(redditAuth);
+
+// Session configuration
+app.use(session({
+  secret: process.env.SESSION_SECRET,
+  resave: true,
+  saveUninitialized: true,
+  cookie: {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    maxAge: 24 * 60 * 60 * 1000 // 24 hours
+  }
+}));
+
+
+app.use('/api/auth', authRateLimiter); // Apply the rate limiter middleware to the /api/auth route
+app.use(spotifyAuth);
+app.use(discordAuth);
+app.use(youtubeAuth);
+app.use(oauth2Routes);
+app.use(oauthGithub);
+app.use(crudRoutes);
+app.use(oauthNotion);
 
 /**
  * Route for handling YouTube like action.
@@ -101,9 +150,16 @@ async function runAREAS() {
           console.log('AREAS:', action, reaction);
 
           if (typeof actionModule[action.function] === 'function' && typeof reactionModule[reaction.function] === 'function') {
-            console.log('Running AREAS:', action, reaction);
-            await actionModule[action.function](email);
-            await reactionModule[reaction.function](email);
+            console.log('Running action:', action.name);
+            const actionResult = await actionModule[action.function](email);
+
+            // Only trigger reaction if action returns a result
+            if (actionResult) {
+              console.log('Action detected change, running reaction:', reaction.name);
+              await reactionModule[reaction.function](email, actionResult);
+            } else {
+              console.log('No changes detected, skipping reaction');
+            }
           }
         }
       }
@@ -257,8 +313,87 @@ app.get('/api/github/follow-users', async (req, res) => {
   }
 });
 
+const services = require('./areas_functions.json');
+
+const os = require('os');
+
+app.get('/about.json', (req, res) => {
+  // Function to get the server's IP address
+  const getServerIP = () => {
+    const interfaces = os.networkInterfaces();
+    for (const name of Object.keys(interfaces)) {
+      for (const iface of interfaces[name]) {
+        // Skip over internal (i.e., 127.0.0.1) and non-IPv4 addresses
+        if (iface.family === 'IPv4' && !iface.internal) {
+          return iface.address;
+        }
+      }
+    }
+    return '127.0.0.1'; // Fallback to flowfy.duckdns.org if no external IP found
+  };
+
+  const serverHost = getServerIP(); // Fetch the server's IP address
+  const currentTime = Math.floor(Date.now() / 1000);
+
+  const formattedServices = Object.entries(services.actions).reduce((acc, [actionId, action]) => {
+    const serviceId = action.file.split('/')[1].split('-')[0];
+    const serviceName = serviceId.charAt(0).toUpperCase() + serviceId.slice(1);
+
+    let service = acc.find(s => s.name === serviceName);
+    if (!service) {
+      service = {
+        name: serviceName,
+        actions: [],
+        reactions: []
+      };
+      acc.push(service);
+    }
+
+    service.actions.push({
+      name: action.function,
+      description: action.name,
+    });
+
+    return acc;
+  }, []);
+
+  Object.entries(services.reactions).forEach(([reactionId, reaction]) => {
+    const serviceId = reaction.file.split('/')[1].split('-')[0];
+    const serviceName = serviceId.charAt(0).toUpperCase() + serviceId.slice(1);
+
+    let service = formattedServices.find(s => s.name === serviceName);
+    if (!service) {
+      service = {
+        name: serviceName,
+        actions: [],
+        reactions: []
+      };
+      formattedServices.push(service);
+    }
+
+    service.reactions.push({
+      name: reaction.function,
+      description: reaction.name,
+    });
+  });
+
+  const response = {
+    client: {
+      host: serverHost, // Use server's IP instead of client's IP
+    },
+    server: {
+      current_time: currentTime,
+      services: formattedServices,
+    },
+  };
+
+  res.setHeader('Content-Type', 'application/json');
+  res.send(JSON.stringify(response, null, 2)); // Format the JSON with 2 spaces for indentation
+});
+
+
 if (process.env.NODE_ENV !== 'test') {
-  setInterval(runAREAS, 10 * 1000);
+  setInterval(runAREAS, 5 * 1000);
   app.listen(port, () => {
     console.log(`Server is running on http://flowfy.duckdns.org:${port}`);
   });

@@ -7,6 +7,8 @@ const express = require('express');
 const { google } = require('googleapis');
 const jwt = require('jsonwebtoken');
 const users = require('./crud_users');
+const userService = require('./crud_user_services');
+const passport = require('passport'); // Ensure Passport.js is required
 require('dotenv').config();
 
 const router = express.Router();
@@ -71,7 +73,11 @@ router.get('/api/auth/google/callback', async (req, res) => {
         const user = userInfo.data;
 
         await users.createUser(user.email, [], true, tokens.access_token, tokens.refresh_token);
+<<<<<<< HEAD
         console.log('Utilisateur créé ou mis à jour dans la base de données');
+=======
+        userService.createUserServiceEMAIL(user.email, 8, tokens.access_token, tokens.refresh_token, true);
+>>>>>>> origin/39-feat-spotify-areas
 
         // Check for mobile client with multiple conditions
         const isMobileClient = req.headers['user-agent'] && (
@@ -121,20 +127,16 @@ router.get('/api/auth/google/callback', async (req, res) => {
  * @param {Object} res - The response object.
  */
 router.get('/api/auth/logout', (req, res) => {
-    req.logout((err) => {
+    req.session.destroy((err) => {
         if (err) {
             return res.status(500).json({ message: 'Logout failed' });
         }
-        req.session.regenerate((err) => {
-            if (err) {
-                return res.status(500).json({ message: 'Failed to regenerate session' });
-            }
-            res.clearCookie('connect.sid');
-            res.json({ message: 'Logged out successfully' });
-        });
+        res.clearCookie('connect.sid');
+        res.json({ message: 'Logged out successfully' });
     });
 });
 
+<<<<<<< HEAD
 router.post('/api/auth/google/mobile-callback', async (req, res) => {
     const { code } = req.body;
     
@@ -171,3 +173,6 @@ router.post('/api/auth/google/mobile-callback', async (req, res) => {
 });
 
 module.exports = router;
+=======
+module.exports = router;
+>>>>>>> origin/39-feat-spotify-areas

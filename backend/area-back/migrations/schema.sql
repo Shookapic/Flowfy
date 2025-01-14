@@ -23,6 +23,9 @@ CREATE TABLE reactions (
     description TEXT NOT NULL,
     required_service_id INT REFERENCES services(id) ON DELETE CASCADE,
     required_service_name TEXT NOT NULL
+    description TEXT NOT NULL,
+    required_service_id INT REFERENCES services(id) ON DELETE CASCADE,
+    required_service_name TEXT NOT NULL
 );
 
 CREATE TABLE users (

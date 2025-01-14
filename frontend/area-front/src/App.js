@@ -17,7 +17,7 @@ const ProtectedRoute = ({ children }) => {
       fetch(`http://localhost:3000/isUserLogged?email=${encodeURIComponent(email)}`, {
         method: 'GET',
       })
-        .then((response) => response.json()) // Assumes the API returns plain `true` or `false`
+        .then((response) => response.json())
         .then((data) => setIsLogged(data))
         .catch((error) => {
           console.error('Error checking login status:', error);
@@ -46,7 +46,7 @@ function App() {
           <Route path="/services" element={<ProtectedRoute><Services /></ProtectedRoute>} />
           <Route path="/:serviceName" element={<ProtectedRoute><ServiceTemplate /></ProtectedRoute>} />
           <Route path="*" element={<Navigate to="/login" replace />} />
-          <Route path="/" element={<ProtectedRoute> <Homepage /> </ProtectedRoute>} />
+          <Route path="/" element={<Homepage />} />
           <Route path="/profile" element={<ProtectedRoute> <Profilepage /> </ProtectedRoute>} />
         </Routes>
       </div>

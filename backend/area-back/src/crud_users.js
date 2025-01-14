@@ -2,7 +2,9 @@
  * Database client instance for performing CRUD operations.
  * @type {Object}
  */
+const { getUserIdByEmail } = require('./crud_user_services');
 const client = require('./db');
+const pool = require('./db'); // Add this line to import the pool
 
 /**
  * Creates a new user in the database.
@@ -16,6 +18,7 @@ async function createUser(email, areas) {
   const values = [email, areas];
   const res = await client.query(query, values);
   console.log('User Created:', res.rows[0]);
+  return 200;
 }
 
 /**
@@ -141,6 +144,46 @@ async function setUserLoggedStatus(email, status) {
   console.log('User Updated:', res.rows[0]);
 }
 
+async function setAreas(email, actionID, reactionID) {
+  console.log(`Setting areas for user "${email}"...`);
+  console.log(`Action ID: ${actionID}`);
+  console.log(`Reaction ID: ${reactionID}`);
+  try {
+      // Construct the value to append
+      const areaValue = `${actionID}:${reactionID}`;
+
+      // Check if the areaValue already exists for the user
+      const checkQuery = `
+          SELECT areas
+          FROM users
+          WHERE email = $1;
+      `;
+      const checkRes = await pool.query(checkQuery, [email]);
+      const existingAreas = checkRes.rows[0].areas;
+
+      if (existingAreas.includes(areaValue)) {
+          console.log(`Area "${areaValue}" already exists for user "${email}".`);
+          return 200;
+      }
+
+      // Execute the parameterized query to append the new areaValue
+      const query = `
+          UPDATE users
+          SET areas = array_append(areas, $1)
+          WHERE email = $2;
+      `;
+      const values = [areaValue, email];
+
+      // Using the database connection pool to execute the query
+      await pool.query(query, values);
+
+      console.log(`Successfully appended area "${areaValue}" for user "${email}".`);
+      return 200;
+  } catch (error) {
+      console.error('Error updating areas:', error);
+      throw new Error('Failed to update areas.');
+  }
+}
 
 // Export the functions for use in other modules.
 module.exports = {
@@ -150,5 +193,6 @@ module.exports = {
   deleteUser,
   getUserByEmail,
   isUserLogged,
-  setUserLoggedStatus
+  setUserLoggedStatus,
+  setAreas
 };

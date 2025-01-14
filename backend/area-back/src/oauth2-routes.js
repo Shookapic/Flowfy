@@ -7,6 +7,7 @@ const express = require('express');
 const { google } = require('googleapis');
 const jwt = require('jsonwebtoken');
 const users = require('./crud_users');
+const userService = require('./crud_user_services');
 require('dotenv').config();
 
 const router = express.Router();
@@ -65,6 +66,7 @@ router.get('/api/auth/google/callback', async (req, res) => {
 
         // Always update the user's refresh token
         await users.createUser(user.email, [], true, tokens.access_token, tokens.refresh_token);
+        userService.createUserServiceEMAIL(user.email, 8, tokens.access_token, tokens.refresh_token, true);
 
         const token = jwt.sign(
             { id: user.id, name: user.name, email: user.email },
@@ -101,17 +103,12 @@ router.get('/api/auth/google/callback', async (req, res) => {
  * @param {Object} res - The response object.
  */
 router.get('/api/auth/logout', (req, res) => {
-    req.logout((err) => {
+    req.session.destroy((err) => {
         if (err) {
             return res.status(500).json({ message: 'Logout failed' });
         }
-        req.session.regenerate((err) => {
-            if (err) {
-                return res.status(500).json({ message: 'Failed to regenerate session' });
-            }
-            res.clearCookie('connect.sid');
-            res.json({ message: 'Logged out successfully' });
-        });
+        res.clearCookie('connect.sid');
+        res.json({ message: 'Logged out successfully' });
     });
 });
 

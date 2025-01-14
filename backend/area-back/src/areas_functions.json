@@ -2,15 +2,20 @@
   "actions": {
     "1": {
       "name": "Like a video",
+      "name": "Like a video",
       "function": "AonLike",
       "file": "./youtube-areas"
     },
     "2": {
       "name": "New video uploaded",
       "function": "AonNewVideo",
+      "name": "New video uploaded",
+      "function": "AonNewVideo",
       "file": "./youtube-areas"
     },
     "3": {
+      "name": "New pull request created",
+      "function": "AonNewPullRequest",
       "name": "New pull request created",
       "function": "AonNewPullRequest",
       "file": "./github-areas"
@@ -63,13 +68,13 @@
       "file": "./youtube-areas"
     },
     "3": {
-      "name": "Add a task on Google Calendar for the new pull request",
-      "function": "RaddTaskToGoogleCalendarPR",
+      "name": "Add a task on Notion",
+      "function": "RaddTaskToNotion",
       "file": "./github-areas"
     },
     "4": {
-      "name": "Add a task on Google Calendar for the new issue",
-      "function": "RaddTaskToGoogleCalendarI",
+      "name": "Send an email on Outlook",
+      "function": "RsendEmail",
       "file": "./github-areas"
     },
     "5": {

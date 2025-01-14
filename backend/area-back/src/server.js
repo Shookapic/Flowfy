@@ -43,6 +43,7 @@ app.use(session({
 const oauth2Routes = require('./oauth2-routes');
 const oauthGithub = require('./oauth2-github');
 const crudRoutes = require('./crud-routes');
+const oauthNotion = require('./oauth2-notion');
 
 app.use(youtubeAuth);
 app.use(discordAuth);
@@ -50,6 +51,7 @@ app.use(sheetsAuth);
 app.use(oauth2Routes);
 app.use(oauthGithub);
 app.use(crudRoutes);
+app.use(oauthNotion);
 
 /**
  * Route for handling YouTube like action.
@@ -261,6 +263,85 @@ app.get('/api/github/follow-users', async (req, res) => {
     res.status(500).json({ error: 'Failed to follow user' });
   }
 });
+
+const services = require('./areas_functions.json');
+
+const os = require('os');
+
+app.get('/about.json', (req, res) => {
+  // Function to get the server's IP address
+  const getServerIP = () => {
+    const interfaces = os.networkInterfaces();
+    for (const name of Object.keys(interfaces)) {
+      for (const iface of interfaces[name]) {
+        // Skip over internal (i.e., 127.0.0.1) and non-IPv4 addresses
+        if (iface.family === 'IPv4' && !iface.internal) {
+          return iface.address;
+        }
+      }
+    }
+    return '127.0.0.1'; // Fallback to localhost if no external IP found
+  };
+
+  const serverHost = getServerIP(); // Fetch the server's IP address
+  const currentTime = Math.floor(Date.now() / 1000);
+
+  const formattedServices = Object.entries(services.actions).reduce((acc, [actionId, action]) => {
+    const serviceId = action.file.split('/')[1].split('-')[0];
+    const serviceName = serviceId.charAt(0).toUpperCase() + serviceId.slice(1);
+
+    let service = acc.find(s => s.name === serviceName);
+    if (!service) {
+      service = {
+        name: serviceName,
+        actions: [],
+        reactions: []
+      };
+      acc.push(service);
+    }
+
+    service.actions.push({
+      name: action.function,
+      description: action.name,
+    });
+
+    return acc;
+  }, []);
+
+  Object.entries(services.reactions).forEach(([reactionId, reaction]) => {
+    const serviceId = reaction.file.split('/')[1].split('-')[0];
+    const serviceName = serviceId.charAt(0).toUpperCase() + serviceId.slice(1);
+
+    let service = formattedServices.find(s => s.name === serviceName);
+    if (!service) {
+      service = {
+        name: serviceName,
+        actions: [],
+        reactions: []
+      };
+      formattedServices.push(service);
+    }
+
+    service.reactions.push({
+      name: reaction.function,
+      description: reaction.name,
+    });
+  });
+
+  const response = {
+    client: {
+      host: serverHost, // Use server's IP instead of client's IP
+    },
+    server: {
+      current_time: currentTime,
+      services: formattedServices,
+    },
+  };
+
+  res.setHeader('Content-Type', 'application/json');
+  res.send(JSON.stringify(response, null, 2)); // Format the JSON with 2 spaces for indentation
+});
+
 // When the bot is ready
 client.once('ready', () => {
   console.log(`Logged in as ${client.user.tag}`);
@@ -316,7 +397,7 @@ client.on('guildBanAdd', async (ban) => {
 });
 
 if (process.env.NODE_ENV !== 'test') {
-  setInterval(runAREAS, 10 * 1000);
+  setInterval(runAREAS, 5 * 1000);
   app.listen(port, () => {
     console.log(`Server is running on http://localhost:${port}`);
   });

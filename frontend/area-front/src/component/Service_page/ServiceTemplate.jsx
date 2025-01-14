@@ -175,53 +175,71 @@ export function ServiceTemplate() {
     saveToLocalStorage(newActions, newReactions);
   };
 
-  const handleReactionSubmit = (reactions) => {
+  const handleReactionSubmit = async (reactions) => {
     if (!currentAction) {
       setNotification('Action missing');
       setTimeout(() => setNotification(null), 3000);
       return;
     }
-
+  
     const newReactions = {
       ...selectedReactions,
       [currentAction]: reactions,
     };
-
+  
     const serviceNames = reactions
       .filter((r) => typeof r === 'string')
       .map((r) => r.match(/\((.*?)\)/)?.[1]?.toLowerCase() || '');
-
+  
     const notConnectedServices = serviceNames.filter((name) => name && !connectedServices[name]);
-
+  
     if (notConnectedServices.length > 0) {
       setNotification(`Connect to (${notConnectedServices.join('), (')}) to activate this reaction`);
       setTimeout(() => setNotification(null), 3000);
-    } else {
-      setSelectedReactions(newReactions);
-      setIsReactionModalOpen(false);
-      saveToLocalStorage(selectedActions, newReactions);
+      return;
     }
-
+  
     const currentServiceId = serviceIds[serviceName];
-    const reactionsNeedingConnection = reactions.filter((reaction) => {
+    const email = localStorage.getItem('email');
+  
+    for (const reaction of reactions) {
       const reactionServiceId = availableReactions.find((r) => r.description === reaction)?.required_service_id;
-      return reactionServiceId && reactionServiceId !== currentServiceId;
-    });
-
-    if (reactionsNeedingConnection.length > 0) {
-      const reactionServiceId = availableReactions.find((r) => reactionsNeedingConnection.includes(r.description))?.required_service_id;
-      if (currentServiceId !== reactionServiceId) {
-        setNotification(`Connect to ${reactionServiceId} to activate this reaction`);
-        setTimeout(() => setNotification(null), 3000);
-        window.location.href = `http://localhost:3000${serviceApiEndpoints[Object.keys(serviceIds).find(key => serviceIds[key] === reactionServiceId)]}`;
+      if (reactionServiceId && reactionServiceId !== currentServiceId) {
+                try {
+          const response = await fetch(`http://localhost:3000/is_user_logged_service?email=${encodeURIComponent(email)}&service_id=${reactionServiceId}`, {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          });
+        
+          if (response.status === 200) {
+            console.log('User is logged in for this service');
+          } else if (response.status === 404) {
+            setNotification(`Connect to ${reactionServiceId} to activate this reaction`);
+            setTimeout(() => setNotification(null), 3000);
+            window.location.href = `http://localhost:3000${serviceApiEndpoints[Object.keys(serviceIds).find(key => serviceIds[key] === reactionServiceId)]}?email=${encodeURIComponent(email)}`;
+            return;
+          } else {
+            console.error('Unexpected response status:', response.status);
+            setNotification('Failed to check user login status');
+            setTimeout(() => setNotification(null), 3000);
+            return;
+          }
+        } catch (error) {
+          console.error('Error checking user login status:', error);
+          setNotification('Failed to check user login status');
+          setTimeout(() => setNotification(null), 3000);
+          return;
+        }
       }
     }
-
+  
     setSelectedReactions(newReactions);
     setIsReactionModalOpen(false);
     setCurrentAction(null);
     saveToLocalStorage(selectedActions, newReactions);
-    saveActionReaction();
+    await saveActionReaction();
   };
 
   const saveActionReaction = async () => {

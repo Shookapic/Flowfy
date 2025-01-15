@@ -8,6 +8,8 @@ const fs = require('fs');
 const readline = require('readline');
 require('dotenv').config();
 const GITHUB_API_URL = 'https://api.github.com';
+const {addReactionIdToServer, fetchFilteredServers, fetchFilteredMembers, addReactionIdToMember } = require('./crud_discord_queries');
+const {getAccessTokenByEmailAndServiceName} = require('./crud_user_services');
 
 /**
  * Fetches repositories from GitHub and stores them.
@@ -112,49 +114,6 @@ const AonRepoDeletion = async (storedRepos) => {
 };
 
 /**
- * Creates repositories on GitHub based on a configuration file.
- * @async
- * @function RcreateRepo
- * @param {string} githubToken - The GitHub access token.
- */
-async function RcreateRepo(githubToken) {
-  try {
-    // Read repository details from a file
-    const reposToCreate = await readReposFromFile('./src/repos_to_create.txt');
-    console.log('Repositories to create:', reposToCreate);
-
-    // Create each repository on GitHub
-    for (const repo of reposToCreate) {
-      try {
-        await axios.post(
-          `${GITHUB_API_URL}/user/repos`,
-          {
-            name: repo.name,
-            description: repo.description || '',
-            private: repo.private, // Use the parsed value directly
-          },
-          {
-            headers: {
-              Authorization: `Bearer ${githubToken}`,
-              'Content-Type': 'application/json',
-            },
-          }
-        );
-        console.log(`Repository created: ${repo.name}`);
-      } catch (error) {
-        if (error.response?.status === 422) {
-          console.log(`Repository already exists: ${repo.name}`);
-        } else {
-          console.error(`Error creating repository: ${repo.name}`, error.response?.data || error.message);
-        }
-      }
-    }
-  } catch (error) {
-    console.error('Error creating repositories:', error);
-  }
-}
-
-/**
  * Reads repository details from a file.
  * @async
  * @function readReposFromFile
@@ -187,56 +146,6 @@ async function readReposFromFile(filePath) {
   }
 
   return repos;
-}
-
-/**
- * Follows a user on GitHub.
- * @async
- * @function RfollowUser
- * @param {string} githubToken - The GitHub access token.
- * @param {string} targetUsername - The username of the user to follow.
- */
-async function RfollowUser(githubToken, targetUsername) {
-  try {
-    // Check if the user exists by querying their profile
-    const userExists = await checkUserExists(targetUsername, githubToken);
-    
-    if (!userExists) {
-      console.log(`User ${targetUsername} does not exist.`);
-      return;
-    }
-    
-    // If the user exists, follow them
-    await followUser(targetUsername, githubToken);
-    console.log(`Successfully followed ${targetUsername}`);
-    
-  } catch (error) {
-    console.error('Error following user:', error.message);
-  }
-}
-
-/**
- * Checks if a user exists on GitHub.
- * @async
- * @function checkUserExists
- * @param {string} username - The username to check.
- * @param {string} githubToken - The GitHub access token.
- * @returns {Promise<boolean>} A promise that resolves with a boolean indicating if the user exists.
- */
-async function checkUserExists(username, githubToken) {
-  try {
-    const response = await axios.get(`${GITHUB_API_URL}/users/${username}`, {
-      headers: {
-        Authorization: `Bearer ${githubToken}`,
-      },
-    });
-    return response.status === 200;  // Status 200 means user exists
-  } catch (error) {
-    if (error.response?.status === 404) {
-      return false;  // User not found
-    }
-    throw new Error('Error checking user existence');
-  }
 }
 
 /**
@@ -305,12 +214,188 @@ async function readUsernamesFromFile(filePath) {
   return usernames;
 }
 
+/**
+ * Creates repositories on GitHub based on a configuration file.
+ * @async
+ * @function RcreateRepo
+ * @param {string} githubToken - The GitHub access token.
+ */
+async function RcreateRepo(githubToken) {
+  try {
+    // Read repository details from a file
+    const reposToCreate = await readReposFromFile('./src/repos_to_create.txt');
+    console.log('Repositories to create:', reposToCreate);
+
+    // Create each repository on GitHub
+    for (const repo of reposToCreate) {
+      try {
+        await axios.post(
+          `${GITHUB_API_URL}/user/repos`,
+          {
+            name: repo.name,
+            description: repo.description || '',
+            private: repo.private, // Use the parsed value directly
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${githubToken}`,
+              'Content-Type': 'application/json',
+            },
+          }
+        );
+        console.log(`Repository created: ${repo.name}`);
+      } catch (error) {
+        if (error.response?.status === 422) {
+          console.log(`Repository already exists: ${repo.name}`);
+        } else {
+          console.error(`Error creating repository: ${repo.name}`, error.response?.data || error.message);
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Error creating repositories:', error);
+  }
+}
+
+/**
+ * Create a repository on GitHub for each owned Discord server.
+ * @param {string} email - The email of the user.
+ * @param {Array} ownedServers - List of servers owned by the user.
+ * @returns {Promise<void>}
+ */
+async function RcreateRepositoryFromDiscordServers(email) {
+  try {
+    // Retrieve the GitHub access token for the user
+    const githubAccessToken = await getAccessTokenByEmailAndServiceName(email, 'Github');
+
+    if (!githubAccessToken) {
+      throw new Error('No GitHub access token found for this user.');
+    }
+    const ownedServers = await fetchFilteredServers('10');
+    if (!ownedServers) {
+      throw new Error('No Server found.');
+    }
+    for (const server of ownedServers) {
+      // Define the repository name and settings
+      const repoData = {
+        name: server.server_name.replace(/\s+/g, '-').toLowerCase(), // Convert spaces to dashes for repo name
+        description: `Repository for Discord server: ${server.server_name}`,
+        private: true, // Set to `true` if you want the repo to be private
+      };
+
+      // Create the repository via GitHub API
+        const response = await axios.post(
+          `${GITHUB_API_URL}/user/repos`,
+          {
+            name: repoData.name,
+            description: repoData.description || '',
+            private: repoData.private,
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${githubAccessToken}`,
+              'Content-Type': 'application/json',
+            },
+          }
+        );
+
+        console.log(`Repository created for server ${server.server_name}: ${response.data.html_url}`);
+        addReactionIdToServer(server.server_id, 10);
+
+      if (!response.ok) {
+        const errorDetails = await response.text();
+        // console.error(`Error creating repository for server ${server.server_name}:`, errorDetails);
+        continue; // Skip to the next server
+      }
+
+    }
+  } catch (error) {
+    // console.error('Error creating repositories:', error);
+    throw error;
+  }
+}
+
+/**
+ * Follows a user on GitHub.
+ * @async
+ * @function RfollowUser
+ * @param {string} githubToken - The GitHub access token.
+ * @param {string} targetUsername - The username of the user to follow.
+ */
+async function RfollowNewServerMembers(email) {
+  try {
+    const githubAccessToken = await getAccessTokenByEmailAndServiceName(email, 'Github');
+
+    if (!githubAccessToken) {
+      throw new Error('No GitHub access token found for this user.');
+    }
+    const members = await fetchFilteredMembers('11');
+    if (!members) {
+      throw new Error('No Server found.');
+    }
+    for (const member of members) {
+      const userExists = await checkUserExists(member.user_name, githubAccessToken);
+      addReactionIdToMember(member.user_name, member.server_id, '11');
+      if (!userExists) {
+        console.log(`User ${member.user_name} does not exist.`);
+        continue;
+      }
+      console.log(`User ${member.user_name} does exist.`);
+      // If the user exists, follow them
+      try {
+        await axios.put(
+          `${GITHUB_API_URL}/user/following/${username}`,
+          {},
+          {
+            headers: {
+              Authorization: `Bearer ${githubToken}`,
+            },
+          }
+        );
+      } catch (error) {
+        console.error(`Error following user: ${username}`, error.response?.data || error.message);
+        throw new Error(`Error following ${username}`);
+      }
+    }
+
+
+  } catch (error) {
+    console.error('Error following user:', error.message);
+  }
+}
+
+/**
+ * Checks if a user exists on GitHub.
+ * @async
+ * @function checkUserExists
+ * @param {string} username - The username to check.
+ * @param {string} githubToken - The GitHub access token.
+ * @returns {Promise<boolean>} A promise that resolves with a boolean indicating if the user exists.
+ */
+async function checkUserExists(username, githubToken) {
+  try {
+    const response = await axios.get(`${GITHUB_API_URL}/users/${username}`, {
+      headers: {
+        Authorization: `Bearer ${githubToken}`,
+      },
+    });
+    return response.status === 200;  // Status 200 means user exists
+  } catch (error) {
+    if (error.response?.status === 404) {
+      return false;  // User not found
+    }
+    throw new Error('Error checking user existence');
+  }
+}
+
+
 module.exports = {
   fetchRepositories,
   compareRepositories,
   AonRepoCreation,
   AonRepoDeletion,
   RcreateRepo,
-  RfollowUser,
-  RfollowUsersFromFile
+  RfollowNewServerMembers,
+  RfollowUsersFromFile,
+  RcreateRepositoryFromDiscordServers
 };

@@ -63,14 +63,14 @@ router.get('/api/auth/youtube/callback', async (req, res) => {
     console.log(`Successfully connected YouTube service for email: ${email}`);
     
     // Send connection status back as a query parameter
-    res.redirect(`http://localhost/youtube-service?connected=true`);
+    res.redirect(`http://localhost:8000/youtube-service?connected=true`);
   } catch (error) {
     console.error('Error during YouTube OAuth2 callback:', error);
 
     console.log(`Failed to connect YouTube service for email: ${email}`);
     
     // Handle errors and redirect with a failure status
-    res.redirect(`http://localhost/youtube-service?connected=false`);
+    res.redirect(`http://localhost:8000/youtube-service?connected=false`);
   }
 });
 

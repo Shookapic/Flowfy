@@ -23,9 +23,6 @@ CREATE TABLE reactions (
     description TEXT NOT NULL,
     required_service_id INT REFERENCES services(id) ON DELETE CASCADE,
     required_service_name TEXT NOT NULL
-    description TEXT NOT NULL,
-    required_service_id INT REFERENCES services(id) ON DELETE CASCADE,
-    required_service_name TEXT NOT NULL
 );
 
 CREATE TABLE users (
@@ -50,18 +47,19 @@ CREATE TABLE discord_servers (
     id SERIAL PRIMARY KEY,
     server_id TEXT NOT NULL UNIQUE,
     server_name TEXT NOT NULL,
-    user_email TEXT NOT NULL,
+    owner_email TEXT NOT NULL,
     reactions_id TEXT[]
 );
 
 CREATE TABLE discord_servers_members (
-    id SERIAL PRIMARY KEY,
-    server_id TEXT NOT NULL,
-    server_name TEXT NOT NULL,
-    user_name TEXT NOT NULL,
-    user_id TEXT NOT NULL,
-    joined_at TIMESTAMP NOT NULL,
-    reactions_id TEXT[]
+  id SERIAL PRIMARY KEY,
+  server_id TEXT NOT NULL,
+  server_name TEXT NOT NULL,
+  user_name TEXT NOT NULL,
+  user_id TEXT NOT NULL,
+  joined_at TIMESTAMP NOT NULL,
+  reactions_id TEXT[],
+  UNIQUE (server_id, user_name)
 );
 
 -- Insert services
@@ -98,3 +96,5 @@ INSERT INTO reactions (service_id, description, required_service_id, required_se
 INSERT INTO reactions (service_id, description, required_service_id, required_service_name) VALUES (5, 'Create a Google Calendar with the tweet link', 8, 'Google');
 INSERT INTO reactions (service_id, description, required_service_id, required_service_name) VALUES (5, 'Search for the user and follow him on YouTube', 2, 'YouTube');
 INSERT INTO reactions (service_id, description, required_service_id, required_service_name) VALUES (7, 'Send an email to notify about new friend', 10, 'Outlook');
+INSERT INTO reactions (service_id, description, required_service_id, required_service_name) VALUES (7, 'Create a repository after creating a Discord server', 6, 'Github');
+INSERT INTO reactions (service_id, description, required_service_id, required_service_name) VALUES (7, 'Follow a user after they joined a Discord server', 6, 'Github');

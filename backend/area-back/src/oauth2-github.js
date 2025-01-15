@@ -5,7 +5,7 @@
 
 const express = require('express');
 const { google } = require('googleapis');
-const { getUserIdByEmail, createUserServiceEMAIL } = require('./crud_user_services');
+const { getUserIdByEmail, createUserServiceEMAIL, getAccessTokenByEmailAndServiceName } = require('./crud_user_services');
 const { getServiceByName } = require('./crud_services');
 require('dotenv').config();
 
@@ -37,7 +37,7 @@ router.get('/api/auth/github', (req, res, next) => {
   }
 
   passport.authenticate('github', {
-    scope: ['user:email'], // Request email access from GitHub
+    scope: ['user:email', 'user:follow', 'repo'], // Request email access from GitHub
     state: JSON.stringify({ email }), // Embed email in state
   })(req, res, next);
 });
@@ -79,14 +79,15 @@ router.get(
           throw new Error('Error creating user service');
         }
 
-        res.redirect('http://localhost/github-service?connected=true'); // Redirect after success
+        res.redirect('http://localhost:8000/github-service?connected=true'); // Redirect after success
       } catch (error) {
         console.error('Error in GitHub callback processing:', error);
-        res.redirect('http://localhost/github-service?connected=false'); // Redirect after error
+        res.redirect('http://localhost:8000/github-service?connected=false'); // Redirect after error
       }
     })(req, res, next);
   }
 );
+
 
 /**
  * Route for logging out the user.

@@ -67,14 +67,14 @@ router.get('/api/auth/notion/callback', async (req, res) => {
         console.log(`Successfully connected Notion service for email: ${email}`);
         
         // Send connection status back as a query parameter
-        res.redirect(`http://localhost/github-service?connected=true`);
+        res.redirect(`http://localhost:8000/github-service?connected=true`);
     } catch (error) {
         console.error('Error during Notion OAuth2 callback:', error);
 
         console.log(`Failed to connect Notion service for email: ${email}`);
         
         // Handle errors and redirect with a failure status
-        res.redirect(`http://localhost/github-service?connected=false`);
+        res.redirect(`http://localhost:8000/github-service?connected=false`);
     }
 });
 

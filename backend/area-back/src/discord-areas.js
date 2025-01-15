@@ -99,7 +99,7 @@ async function AonServerCreation(email) {
 }
 
 async function AonNewServerMember(email) {
-  client.on('guildMemberAdd', async (member) => {
+  client.once('guildMemberAdd', async (member) => {
     const guildName = member.guild.name; // Get the name of the guild
     const guildId = member.guild.id; // Get the ID of the guild
     const userTag = `${member.user.username}#${member.user.discriminator}`; // Get the user's tag
@@ -117,17 +117,16 @@ async function AonNewServerMember(email) {
 
     userInfo.server_name = guildName;
     userInfo.server_id = guildId;
-    console.log('userinfo', userInfo);
     console.log('userTag', userTag);
     console.log('guildId', guildId);
     console.log('guildName', guildName);
     // Pass member and guild info to the storeNewUser function
     try {
-
       await writeDataToFile(userInfo, './DISCORD_new_server_members.json');
       await db.query(
         `INSERT INTO discord_servers_members (server_id, server_name, user_name, user_id, joined_at)
-      VALUES ($1, $2, $3, $4, $5)`,
+        VALUES ($1, $2, $3, $4, $5)
+        ON CONFLICT (server_id, user_name) DO NOTHING;`,
         [guildId, guildName, userInfo.username, userInfo.discordId, userInfo.joinedAt]
       );
 

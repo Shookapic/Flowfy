@@ -11,12 +11,12 @@ require('dotenv').config();
 const csrfProtection = require('./middlewares/csrfProtection');
 const youtubeAuth = require('./oauth2-youtube');
 const discordAuth = require('./oauth2-discord');
-const sheetsAuth = require('./oauth2-sheets');
 const { onLike, subscribeToChannel } = require('./youtube-areas');
 const { fetchRepositories, compareRepositories, AonRepoCreation, AonRepoDeletion, RcreateRepo, RfollowUser, RfollowUsersFromFile } = require('./github-areas');
 const { storeNewUser, client, AonNewServerMember, AonServerCreation } = require('./discord-areas');
 const { getUsers } = require('./crud_users');
 const { getAccessTokenByEmailAndServiceName } = require('./crud_user_services');
+const { fetchFilteredServers, addReactionIdToServer } = require('./crud_discord_queries');
 const areasFunctions = require('./areas_functions.json');
 
 const app = express();
@@ -47,7 +47,6 @@ const oauthNotion = require('./oauth2-notion');
 
 app.use(youtubeAuth);
 app.use(discordAuth);
-app.use(sheetsAuth);
 app.use(oauth2Routes);
 app.use(oauthGithub);
 app.use(crudRoutes);
@@ -94,7 +93,7 @@ async function runAREAS() {
 
   try {
     const users = await getUsers();
-    // console.log(users);
+    console.log(users);
     for (const user of users) {
       const { email, areas } = user;
       for (const area of areas) {
@@ -105,10 +104,10 @@ async function runAREAS() {
         if (action && reaction) {
           const actionModule = require(action.file);
           const reactionModule = require(reaction.file);
-          // console.log('AREAS:', action, reaction);
+          console.log('AREAS:', action, reaction);
 
           if (typeof actionModule[action.function] === 'function' && typeof reactionModule[reaction.function] === 'function') {
-            // console.log('Running AREAS:', action, reaction);
+            console.log('Running AREAS:', action, reaction);
             await actionModule[action.function](email);
             await reactionModule[reaction.function](email);
           }
@@ -417,6 +416,57 @@ app.get('/api/discord/server-creation', async (req, res) => {
     res.status(500).send('Error with servs');
   }
 })
+
+/**
+ * @name GET /api/github/test
+ * @description Route to test the GitHub API using the authenticated user's access token.
+ * @function
+ * @memberof module:oauth2-github
+ * @param {Object} req - The request object.
+ * @param {Object} req.query - The query parameters.
+ * @param {string} req.query.email - The email address of the user.
+ * @param {Object} res - The response object.
+ */
+app.get('/api/github/test', async (req, res) => {
+  const { email } = req.query;
+
+  if (!email) {
+    return res.status(400).json({ error: 'Email is required' });
+  }
+
+  try {
+    // Retrieve the user's access token from the database
+    const accessToken = await getAccessTokenByEmailAndServiceName(email, 'Github');
+
+    if (!accessToken) {
+      return res.status(404).json({ error: 'No access token found for this email.' });
+    }
+
+    // Make a request to the GitHub API
+    const response = await fetch('https://api.github.com/user', {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        Accept: 'application/vnd.github.v3+json',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`GitHub API returned an error: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+
+    // Send the response data back to the client
+    res.status(200).json({
+      message: 'GitHub API request successful!',
+      data,
+    });
+  } catch (error) {
+    console.error('Error testing GitHub API:', error);
+    res.status(500).json({ error: 'Failed to fetch data from GitHub API' });
+  }
+});
 
 app.get('/api/discord/new_member', async (req, res) => {
   try {

@@ -80,12 +80,17 @@ router.get('/api/auth/discord/callback', passport.authenticate('discord', { fail
     if (!accessToken) {
         throw new Error('No access token available');
     }
+    try {
 
-    await createUserServiceID(user_id, service_id, accessToken, refreshToken, true);
-    console.log('Discord tokens:', { accessToken, refreshToken });
-    console.log("accessToken: " + JSON.stringify(accessToken));
-    console.log("refreshToken: " + JSON.stringify(refreshToken));
-    return res.redirect('http://localhost:8000/discord-service');
+      await createUserServiceID(user_id, service_id, accessToken, refreshToken, true);
+      console.log('Discord tokens:', { accessToken, refreshToken });
+      console.log("accessToken: " + JSON.stringify(accessToken));
+      console.log("refreshToken: " + JSON.stringify(refreshToken));
+      res.redirect('http://localhost:8000/discord-service?connected=true');
+    }
+    catch (error) {
+      res.redirect('http://localhost:8000/discord-service?connected=false');
+    }
 });
 
 // Define the route for displaying the user profile

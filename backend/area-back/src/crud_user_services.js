@@ -268,7 +268,6 @@ async function getUserIdByEmail(email) {
 async function getAccessTokenByEmailAndServiceName(email, serviceName) {
   // Get user_id from users table using email
   const userQuery = 'SELECT id FROM users WHERE email = $1';
-  console.log('email is ', email);
   const userValues = [email];
   const userResult = await client.query(userQuery, userValues);
   const userId = userResult.rows[0]?.id;

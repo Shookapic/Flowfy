@@ -4,6 +4,7 @@
  */
 
 const { google } = require('googleapis');
+const { discord } = require('./oauth2-discord');
 const fs = require('fs');
 const path = require('path');
 const { getUserServicesByUserMail } = require('./crud_user_services');
@@ -14,7 +15,7 @@ require('dotenv').config();
 const oauth2Client = new google.auth.OAuth2(
   process.env.YOUTUBE_CLIENT_ID,
   process.env.YOUTUBE_CLIENT_SECRET,
-  'http://flowfy.duckdns.org:3000/api/auth/youtube/callback'
+  'http://localhost:3000/api/auth/youtube/callback'
 );
 
 /**
@@ -359,4 +360,167 @@ async function Rlike3latestvideo(email) {
   }
 }
 
-module.exports = { AonLike, AonSubscribe, RsubscribeToChannel, RunsubscribeFromChannel, Rlike3latestvideo };
+async function AonNewVideo(email) {
+  try {
+    const userServices = await getUserServicesByUserMail(email);
+    if (!userServices || userServices.length === 0) {
+      throw new Error('No services found for the user');
+    }
+
+    const youtubeService = userServices.find(service => service.service_id === 2);
+    if (!youtubeService) {
+      throw new Error('YouTube service not connected');
+    }
+
+    oauth2Client.setCredentials({
+      access_token: youtubeService.access_token,
+      refresh_token: youtubeService.refresh_token
+    });
+
+    const youtube = google.youtube({ version: 'v3', auth: oauth2Client });
+
+    const response = await youtube.activities.list({
+      part: 'snippet',
+      mine: true,
+      maxResults: 10
+    });
+
+    console.log('Recent activities:', response.data.items);
+
+    const newVideos = response.data.items.filter(item => item.snippet.type === 'upload').map(item => ({
+      videoId: item.snippet.contentDetails.upload.videoId,
+      title: item.snippet.title,
+      channelId: item.snippet.channelId
+    }));
+
+    console.log('New videos:', newVideos);
+
+    if (newVideos.length === 0) {
+      console.log('No new videos found.');
+      return;
+    }
+
+    const videoData = newVideos.map(video => {
+      return `Video ID: ${video.videoId}, Title: ${video.title}, Channel ID: ${video.channelId}`;
+    }).join('\n');
+
+    console.log('New video data:', videoData);
+
+    const filePath = path.join(__dirname, 'new_videos.txt');
+    fs.writeFileSync(filePath, videoData);
+
+    console.log(`New videos saved to ${filePath}`);
+  } catch (error) {
+    console.error('Error handling new video event:', error);
+  }
+}
+
+async function RaddSongToSpotify(email) {
+  try {
+    const userServices = await getUserServicesByUserMail(email);
+    if (!userServices || userServices.length === 0) {
+      throw new Error('No services found for the user');
+    }
+
+    const spotifyService = userServices.find(service => service.service_id === 1);
+    if (!spotifyService) {
+      throw new Error('Spotify service not connected');
+    }
+
+    oauth2Client.setCredentials({
+      access_token: spotifyService.access_token,
+      refresh_token: spotifyService.refresh_token
+    });
+
+    const spotify = google.youtube({ version: 'v3', auth: oauth2Client });
+
+    const response = await spotify.playlistItems.list({
+      part: 'snippet',
+      playlistId: 'PL4fGSI1pDJn5Jf3gj9u3k7n8f4f3OwLzB',
+      maxResults: 10
+    });
+
+    console.log('Recent activities:', response.data.items);
+
+    const songs = response.data.items.map(item => ({
+      videoId: item.snippet.resourceId.videoId,
+      title: item.snippet.title,
+      channelId: item.snippet.videoOwnerChannelId
+    }));
+
+    console.log('Songs:', songs);
+
+    if (songs.length === 0) {
+      console.log('No songs found.');
+      return;
+    }
+
+    const songData = songs.map(song => {
+      return `Song ID: ${song.videoId}, Title: ${song.title}, Channel ID: ${song.channelId}`;
+    }).join('\n');
+
+    console.log('Song data:', songData);
+
+    const filePath = path.join(__dirname, 'recent_songs.txt');
+    fs.writeFileSync(filePath, songData);
+
+    console.log(`Recent songs saved to ${filePath}`);
+  } catch (error) {
+    console.error('Error handling add song to Spotify event:', error);
+  }
+}
+
+async function RrecommendchannelDiscord(email) {
+  try {
+    const userServices = await getUserServicesByUserMail(email);
+    if (!userServices || userServices.length === 0) {
+      throw new Error('No services found for the user');
+    }
+
+    const discordService = userServices.find(service => service.service_id === 3);
+    if (!discordService) {
+      throw new Error('Discord service not connected');
+    }
+
+    oauth2Client.setCredentials({
+      access_token: discordService.access_token,
+      refresh_token: discordService.refresh_token
+    });
+
+    const discord = google.youtube({ version: 'v3', auth: oauth2Client });
+
+    const response = await discord.channels.list({
+      part: 'snippet',
+      mine: true,
+      maxResults: 10
+    });
+
+    console.log('Recent activities:', response.data.items);
+
+    const channels = response.data.items.map(item => ({
+      channelId: item.snippet.resourceId.channelId,
+      title: item.snippet.title,
+    }));
+
+    console.log('Channels:', channels);
+
+    if (channels.length === 0) {
+      console.log('No channels found.');
+      return;
+    }
+
+    const channelData = channels.map(channel => {
+      return `Channel ID: ${channel.channelId}, Title: ${channel.title}`;
+    }).join('\n');
+
+    console.log('Channel data:', channelData);
+
+    const filePath = path.join(__dirname, 'recent_channels.txt');
+    fs.writeFileSync(filePath, channelData);
+
+    console.log(`Recent channels saved to ${filePath}`);
+  } catch (error) {
+    console.error('Error handling recommend channel event:', error);
+  }
+}
+module.exports = { AonLike, AonSubscribe, AonNewVideo, RsubscribeToChannel, RunsubscribeFromChannel, Rlike3latestvideo, RaddSongToSpotify, RrecommendchannelDiscord };

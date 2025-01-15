@@ -275,6 +275,7 @@ async function RcreateRepositoryFromDiscordServers(email) {
     if (!ownedServers) {
       throw new Error('No Server found.');
     }
+
     for (const server of ownedServers) {
       // Define the repository name and settings
       const repoData = {
@@ -284,36 +285,53 @@ async function RcreateRepositoryFromDiscordServers(email) {
       };
 
       // Create the repository via GitHub API
-        const response = await axios.post(
-          `${GITHUB_API_URL}/user/repos`,
-          {
-            name: repoData.name,
-            description: repoData.description || '',
-            private: repoData.private,
+      const response = await axios.post(
+        `${GITHUB_API_URL}/user/repos`,
+        {
+          name: repoData.name,
+          description: repoData.description || '',
+          private: repoData.private,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${githubAccessToken}`,
+            'Content-Type': 'application/json',
           },
-          {
-            headers: {
-              Authorization: `Bearer ${githubAccessToken}`,
-              'Content-Type': 'application/json',
-            },
-          }
-        );
+        }
+      );
 
-        console.log(`Repository created for server ${server.server_name}: ${response.data.html_url}`);
-        addReactionIdToServer(server.server_id, 10);
+      const repoUrl = response.data.html_url;
+      const repoName = response.data.name;
+      const owner = response.data.owner.login;
 
-      if (!response.ok) {
-        const errorDetails = await response.text();
-        // console.error(`Error creating repository for server ${server.server_name}:`, errorDetails);
-        continue; // Skip to the next server
-      }
+      console.log(`Repository created for server ${server.server_name}: ${repoUrl}`);
+      addReactionIdToServer(server.server_id, 10);
 
+      // Add a basic README.md file
+      const readmeContent = `# ${server.server_name}\n\nThis repository is for the Discord server: ${server.server_name}.`;
+
+      await axios.put(
+        `${GITHUB_API_URL}/repos/${owner}/${repoName}/contents/README.md`,
+        {
+          message: 'Add initial README.md',
+          content: Buffer.from(readmeContent).toString('base64'), // Encode content in base64
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${githubAccessToken}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      console.log(`README.md added to repository ${repoName}`);
     }
   } catch (error) {
-    // console.error('Error creating repositories:', error);
+    console.error('Error creating repositories or adding README.md:', error);
     throw error;
   }
 }
+
 
 /**
  * Follows a user on GitHub.

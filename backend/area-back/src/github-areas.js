@@ -271,15 +271,26 @@ async function RcreateRepositoryFromDiscordServers(email) {
     if (!githubAccessToken) {
       throw new Error('No GitHub access token found for this user.');
     }
+
     const ownedServers = await fetchFilteredServers('10');
     if (!ownedServers) {
       throw new Error('No Server found.');
     }
 
     for (const server of ownedServers) {
-      // Define the repository name and settings
+      // Define the repository name
+      const repoName = server.server_name.replace(/\s+/g, '-').toLowerCase(); // Convert spaces to dashes for repo name
+
+      // Check if the repository already exists
+      const repoExists = await checkIfRepoExists(githubAccessToken, repoName);
+      if (repoExists) {
+        console.log(`Repository already exists for server ${server.server_name}: ${repoName}`);
+        continue; // Skip to the next server
+      }
+
+      // Define repository settings
       const repoData = {
-        name: server.server_name.replace(/\s+/g, '-').toLowerCase(), // Convert spaces to dashes for repo name
+        name: repoName,
         description: `Repository for Discord server: ${server.server_name}`,
         private: true, // Set to `true` if you want the repo to be private
       };
@@ -301,11 +312,10 @@ async function RcreateRepositoryFromDiscordServers(email) {
       );
 
       const repoUrl = response.data.html_url;
-      const repoName = response.data.name;
       const owner = response.data.owner.login;
 
       console.log(`Repository created for server ${server.server_name}: ${repoUrl}`);
-      addReactionIdToServer(server.server_id, 10);
+      addReactionIdToServer(server.server_id, 'Create a repository after creating a server');
 
       // Add a basic README.md file
       const readmeContent = `# ${server.server_name}\n\nThis repository is for the Discord server: ${server.server_name}.`;
@@ -332,6 +342,26 @@ async function RcreateRepositoryFromDiscordServers(email) {
   }
 }
 
+// Function to check if a repository exists
+async function checkIfRepoExists(githubAccessToken, repoName) {
+  try {
+    const response = await axios.get(`${GITHUB_API_URL}/user/repos`, {
+      headers: {
+        Authorization: `Bearer ${githubAccessToken}`,
+        'Content-Type': 'application/json',
+      },
+      params: {
+        per_page: 100, // Adjust the number as needed to fetch more repos if necessary
+      },
+    });
+
+    // Check if the repository name exists in the user's repositories
+    return response.data.some((repo) => repo.name === repoName);
+  } catch (error) {
+    console.error('Error checking repository existence:', error);
+    throw error;
+  }
+}
 
 /**
  * Follows a user on GitHub.
@@ -353,7 +383,7 @@ async function RfollowNewServerMembers(email) {
     }
     for (const member of members) {
       const userExists = await checkUserExists(member.user_name, githubAccessToken);
-      addReactionIdToMember(member.user_name, member.server_id, '11');
+      addReactionIdToMember(member.user_name, member.server_id, 'Follow a user after they joined a Discord server');
       if (!userExists) {
         console.log(`User ${member.user_name} does not exist.`);
         continue;
@@ -405,6 +435,8 @@ async function checkUserExists(username, githubToken) {
     throw new Error('Error checking user existence');
   }
 }
+
+
 
 
 module.exports = {

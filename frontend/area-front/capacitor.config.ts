@@ -9,7 +9,7 @@ const config: CapacitorConfig = {
     hostname: 'flowfy.duckdns.org',
     allowNavigation: ['flowfy.duckdns.org'],
     cleartext: true,
-    url: 'http://flowfy.duckdns.org'
+    url: 'https://flowfy.duckdns.org'
   },
   plugins: {
     App: {

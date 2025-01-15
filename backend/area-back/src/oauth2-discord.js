@@ -24,7 +24,7 @@ app.use(
 app.use(passport.initialize());
 app.use(passport.session());
 
-const DISCORD_CALLBACK_URL = "http://flowfy.duckdns.org:3000/api/auth/discord/callback";
+const DISCORD_CALLBACK_URL = "https://flowfy.duckdns.org:3000/api/auth/discord/callback";
 const DISCORD_API_URL = "https://discord.com/api/v10";
 
 // Comment out Discord strategy configuration
@@ -87,7 +87,7 @@ router.get('/api/auth/discord/callback', passport.authenticate('discord', { fail
     console.log('Discord tokens:', { accessToken, refreshToken });
     console.log("accessToken: " + JSON.stringify(accessToken));
     console.log("refreshToken: " + JSON.stringify(refreshToken));
-    return res.redirect('http://flowfy.duckdns.org:8000/discord-service');
+    return res.redirect('https://flowfy.duckdns.org:8000/discord-service');
 });
 
 // Define the route for displaying the user profile

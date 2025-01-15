@@ -19,7 +19,7 @@ const SpotifyWebApi = require('spotify-web-api-node');
 const spotifyApi = new SpotifyWebApi({
   clientId: process.env.SPOTIFY_CLIENT_ID,
   clientSecret: process.env.SPOTIFY_CLIENT_SECRET,
-  redirectUri: 'http://flowfy.duckdns.org:3000/api/auth/spotify/callback'
+  redirectUri: 'https://flowfy.duckdns.org:3000/api/auth/spotify/callback'
 });
 
 router.get('/api/auth/spotify', async (req, res) => {
@@ -72,7 +72,7 @@ router.get('/api/auth/spotify', async (req, res) => {
     res.redirect(authorizeURL);
   } catch (error) {
     console.error('Error in Spotify auth:', error);
-    res.redirect('http://flowfy.duckdns.org/services?error=auth_init_failed');
+    res.redirect('https://flowfy.duckdns.org/services?error=auth_init_failed');
   }
 });
 
@@ -82,7 +82,7 @@ router.get('/api/auth/spotify/callback', async (req, res) => {
   try {
     if (!req.session?.spotifyAuth) {
       console.error('No session data found');
-      return res.redirect('http://flowfy.duckdns.org/spotify-service?connected=false&error=session_expired');
+      return res.redirect('https://flowfy.duckdns.org/spotify-service?connected=false&error=session_expired');
     }
 
     if (state !== req.session.spotifyAuth.state) {
@@ -90,7 +90,7 @@ router.get('/api/auth/spotify/callback', async (req, res) => {
         received: state,
         expected: req.session.spotifyAuth.state
       });
-      return res.redirect('http://flowfy.duckdns.org/spotify-service?connected=false&error=state_mismatch');
+      return res.redirect('https://flowfy.duckdns.org/spotify-service?connected=false&error=state_mismatch');
     }
 
     const { userId, email } = req.session.spotifyAuth;
@@ -128,15 +128,15 @@ router.get('/api/auth/spotify/callback', async (req, res) => {
       });
 
       // Redirect with connected=true parameter to port 8000
-      return res.redirect('http://flowfy.duckdns.org/spotify-service?connected=true');
+      return res.redirect('https://flowfy.duckdns.org/spotify-service?connected=true');
 
     } catch (error) {
       console.error('Spotify API error:', error);
-      return res.redirect('http://flowfy.duckdns.org/spotify-service?connected=false&error=api_error');
+      return res.redirect('https://flowfy.duckdns.org/spotify-service?connected=false&error=api_error');
     }
   } catch (error) {
     console.error('Final error:', error);
-    return res.redirect(`http://flowfy.duckdns.org/spotify-service?connected=false&error=${encodeURIComponent(error.message)}`);
+    return res.redirect(`https://flowfy.duckdns.org/spotify-service?connected=false&error=${encodeURIComponent(error.message)}`);
   }
 });
 module.exports = router;

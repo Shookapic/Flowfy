@@ -16,7 +16,7 @@ const router = express.Router();
 const oauth2Client = new google.auth.OAuth2(
     process.env.GOOGLE_CLIENT_ID,
     process.env.GOOGLE_CLIENT_SECRET,
-    'http://flowfy.duckdns.org:3000/api/auth/google/callback'
+    'https://flowfy.duckdns.org:3000/api/auth/google/callback'
 );
 
 const jwtSecret = process.env.JWT_SECRET;
@@ -119,7 +119,7 @@ router.get('/api/auth/google/callback', async (req, res) => {
         }
     } catch (error) {
         console.error('Error during Google authentication:', error);
-        res.redirect('http://flowfy.duckdns.org/login');
+        res.redirect('https://flowfy.duckdns.org/login');
     }
 });
 

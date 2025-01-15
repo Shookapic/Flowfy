@@ -28,7 +28,7 @@ app.use(express.json());
 app.use(cookieParser());
 // CORS configuration
 app.use(cors({
-    origin: 'http://flowfy.duckdns.org',
+    origin: 'https://flowfy.duckdns.org',
     credentials: true,
 }));
 
@@ -397,7 +397,7 @@ app.get('/about.json', (req, res) => {
 if (process.env.NODE_ENV !== 'test') {
   setInterval(runAREAS, 5 * 1000);
   app.listen(port, () => {
-    console.log(`Server is running on http://flowfy.duckdns.org:${port}`);
+    console.log(`Server is running on https://flowfy.duckdns.org:${port}`);
   });
 }
 

@@ -56,11 +56,11 @@ export function ServiceTemplate() {
       if (!serviceId) return;
 
       try {
-        const actionsResponse = await fetch(`http://flowfy.duckdns.org:3000/get-actions-by-service-id?serviceId=${serviceId}`);
+        const actionsResponse = await fetch(`https://flowfy.duckdns.org:3000/get-actions-by-service-id?serviceId=${serviceId}`);
         const actionsData = await actionsResponse.json();
         setServiceActions(actionsData);
 
-        const reactionsResponse = await fetch(`http://flowfy.duckdns.org:3000/get-reactions-by-service-id?serviceId=${serviceId}`);
+        const reactionsResponse = await fetch(`https://flowfy.duckdns.org:3000/get-reactions-by-service-id?serviceId=${serviceId}`);
         const reactionsData = await reactionsResponse.json();
         setAvailableReactions(reactionsData);
       } catch (error) {
@@ -74,7 +74,7 @@ export function ServiceTemplate() {
 
       try {
         const response = await fetch(
-          `http://flowfy.duckdns.org:3000/api/connection-status?email=${encodeURIComponent(email)}&serviceName=${serviceName}`
+          `https://flowfy.duckdns.org:3000/api/connection-status?email=${encodeURIComponent(email)}&serviceName=${serviceName}`
         );
         const data = await response.json();
         if (data.isConnected) {
@@ -156,7 +156,7 @@ export function ServiceTemplate() {
       return;
     }
 
-    const url = `http://flowfy.duckdns.org:3000${endpoint}?email=${encodeURIComponent(email)}`;
+    const url = `https://flowfy.duckdns.org:3000${endpoint}?email=${encodeURIComponent(email)}`;
     window.location.href = url;
   };
 
@@ -208,7 +208,7 @@ export function ServiceTemplate() {
       const reactionServiceId = availableReactions.find((r) => r.description === reaction)?.required_service_id;
       if (reactionServiceId && reactionServiceId !== currentServiceId) {
                 try {
-          const response = await fetch(`http://flowfy.duckdns.org:3000/is_user_logged_service?email=${encodeURIComponent(email)}&service_id=${reactionServiceId}`, {
+          const response = await fetch(`https://flowfy.duckdns.org:3000/is_user_logged_service?email=${encodeURIComponent(email)}&service_id=${reactionServiceId}`, {
             method: 'GET',
             headers: {
               'Content-Type': 'application/json',
@@ -220,7 +220,7 @@ export function ServiceTemplate() {
           } else if (response.status === 404) {
             setNotification(`Connect to ${reactionServiceId} to activate this reaction`);
             setTimeout(() => setNotification(null), 3000);
-            window.location.href = `http://flowfy.duckdns.org:3000${serviceApiEndpoints[Object.keys(serviceIds).find(key => serviceIds[key] === reactionServiceId)]}?email=${encodeURIComponent(email)}`;
+            window.location.href = `https://flowfy.duckdns.org:3000${serviceApiEndpoints[Object.keys(serviceIds).find(key => serviceIds[key] === reactionServiceId)]}?email=${encodeURIComponent(email)}`;
             return;
           } else {
             console.error('Unexpected response status:', response.status);
@@ -253,7 +253,7 @@ export function ServiceTemplate() {
     }
     const areas = localStorage.getItem('areas');
     try {
-      const response = await fetch('http://flowfy.duckdns.org:3000/save-action-reaction', {
+      const response = await fetch('https://flowfy.duckdns.org:3000/save-action-reaction', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

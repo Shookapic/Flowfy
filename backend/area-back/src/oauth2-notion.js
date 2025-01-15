@@ -12,7 +12,7 @@ const router = express.Router();
 
 const notionClientId = process.env.NOTION_CLIENT_ID;
 const notionClientSecret = process.env.NOTION_CLIENT_SECRET;
-const notionRedirectUri = 'http://flowfy.duckdns.org:3000/api/auth/notion/callback';
+const notionRedirectUri = 'https://flowfy.duckdns.org:3000/api/auth/notion/callback';
 
 const scopes = [
   'https://www.googleapis.com/auth/notion.force-ssl',
@@ -67,14 +67,14 @@ router.get('/api/auth/notion/callback', async (req, res) => {
         console.log(`Successfully connected Notion service for email: ${email}`);
         
         // Send connection status back as a query parameter
-        res.redirect(`http://flowfy.duckdns.org/github-service?connected=true`);
+        res.redirect(`https://flowfy.duckdns.org/github-service?connected=true`);
     } catch (error) {
         console.error('Error during Notion OAuth2 callback:', error);
 
         console.log(`Failed to connect Notion service for email: ${email}`);
         
         // Handle errors and redirect with a failure status
-        res.redirect(`http://flowfy.duckdns.org/github-service?connected=false`);
+        res.redirect(`https://flowfy.duckdns.org/github-service?connected=false`);
     }
 });
 

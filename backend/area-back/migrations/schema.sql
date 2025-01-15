@@ -64,6 +64,7 @@ INSERT INTO actions (service_id, description) VALUES (5, 'When Following a user'
 INSERT INTO actions (service_id, description) VALUES (7, 'New friend added');
 INSERT INTO actions (service_id, description) VALUES (1, 'On Playlist Creation');
 INSERT INTO actions (service_id, description) VALUES (1, 'On Song Liked');
+INSERT INTO actions (service_id, description) VALUES (11, 'OnSubJoin');
 
 -- Insert reactions
 INSERT INTO reactions (service_id, description, required_service_id, required_service_name) VALUES (2, 'Add songs from videos you liked to a Spotify playlist named Youtube', 1, 'Spotify');
@@ -74,3 +75,4 @@ INSERT INTO reactions (service_id, description, required_service_id, required_se
 INSERT INTO reactions (service_id, description, required_service_id, required_service_name) VALUES (5, 'Search for the user and follow him on YouTube', 2, 'YouTube');
 INSERT INTO reactions (service_id, description, required_service_id, required_service_name) VALUES (7, 'Send an email to notify about new friend', 10, 'Outlook');
 INSERT INTO reactions (service_id, description, required_service_id, required_service_name) VALUES (1, 'Create a post with the new playlist', 11, 'Reddit');
+INSERT INTO reactions (service_id, description, required_service_id, required_service_name) VALUES (11, 'Create Playlist From Sub', 1, 'Reddit');

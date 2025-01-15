@@ -44,7 +44,12 @@
       "name": "On Song Liked",
       "function": "OnSongLike",
       "file": "./spotify-areas"
-    }
+    },
+    "10": {
+      "name": "On Sub Join",
+      "function": "OnSubJoin",
+      "file": "./reddit-areas"
+    } 
   },
   "reactions": {
     "1": {
@@ -86,6 +91,11 @@
       "name": "Create a post with the new playlist",
       "function": "RpostPlaylistToReddit",
       "file": "./spotify-areas"
+    },
+    "9": {
+      "name": "Create Playlist From Sub",
+      "function": "RcreatePlaylistFromSub",
+      "file": "./reddit-areas"
     }
   }
 }

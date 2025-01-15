@@ -220,7 +220,7 @@ export function ServiceTemplate() {
           } else if (response.status === 404) {
             setNotification(`Connect to ${reactionServiceId} to activate this reaction`);
             setTimeout(() => setNotification(null), 3000);
-            window.location.href = `http://flowfy.duckdns.org:3000${serviceApiEndpoints[Object.keys(serviceIds).find(key => serviceIds[key] === reactionServiceId)]}?email=${encodeURIComponent(email)}`;
+          window.location.href = `http://flowfy.duckdns.org:3000${serviceApiEndpoints[Object.keys(serviceIds).find(key => serviceIds[key] === reactionServiceId)]}?email=${encodeURIComponent(email)}&returnTo=${encodeURIComponent(window.location.pathname)}`;
             return;
           } else {
             console.error('Unexpected response status:', response.status);

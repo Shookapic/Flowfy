@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { redirect, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { Notification } from './Notification';
 import { ServiceHeader } from './ServiceHeader';
 import { ActionModal } from './ActionModal';

@@ -27,20 +27,22 @@ app.use(passport.session());
 const DISCORD_CALLBACK_URL = "http://flowfy.duckdns.org:3000/api/auth/discord/callback";
 const DISCORD_API_URL = "https://discord.com/api/v10";
 
-// Configure the Discord strategy for use by Passport
+// Comment out Discord strategy configuration
+/*
 passport.use(
   new DiscordStrategy(
     {
-      clientID: process.env.DISCORD_CLIENT_ID,
-      clientSecret: process.env.DISCORD_CLIENT_SECRET,
+      clientID: process.env.DISCORD_CLIENT_ID || '',
+      clientSecret: process.env.DISCORD_CLIENT_SECRET || '',
       callbackURL: DISCORD_CALLBACK_URL,
-      scope: ["identify", "email", "connections", "bot"],
+      scope: ["identify", "email", "connections", "bot"]
     },
     function (accessToken, refreshToken, profile, done) {
-      return done(null, profile);
+      return done(null, { ...profile, accessToken });
     }
   )
 );
+*/
 
 // Serialize and deserialize user information to support persistent login sessions
 passport.serializeUser((user, done) => {

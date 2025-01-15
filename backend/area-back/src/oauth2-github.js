@@ -73,16 +73,12 @@ router.get(
         const service_id = await getServiceByName('Github');
 
         // Example: Save GitHub user info to the database with the provided email
-        const result = await createUserServiceEMAIL(email, service_id, user.accessToken, null, true);
+        await createUserServiceEMAIL(email, service_id, user.accessToken, null, true);
 
-        if (result.status === 400) {
-          throw new Error('Error creating user service');
-        }
-
-        res.redirect('http://flowfy.duckdns.org/github-service?connected=true'); // Redirect after success
+        res.redirect('http://flowfy.duckdns.org/github-service'); // Redirect after success
       } catch (error) {
         console.error('Error in GitHub callback processing:', error);
-        res.redirect('http://flowfy.duckdns.org/github-service?connected=false'); // Redirect after error
+        res.redirect('http://flowfy.duckdns.org/github-service'); // Redirect after success
       }
     })(req, res, next);
   }

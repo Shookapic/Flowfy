@@ -117,7 +117,7 @@ async function OnSongLike(email) {
     spotifyApi.setAccessToken(existingService.access_token);
     spotifyApi.setRefreshToken(existingService.refresh_token);
 
-    // Get user's saved tracks with retry logic
+    // Get user's saved tracks with retry logic - increase limit to check more songs
     const response = await fetchWithRetry(() => spotifyApi.getMySavedTracks({ limit: 1 }), 3000, 2000);
     console.log('User saved tracks fetched successfully');
 
@@ -127,47 +127,44 @@ async function OnSongLike(email) {
     }
 
     const latestTrack = response.body.items[0].track;
+    const latestAddedAt = new Date(response.body.items[0].added_at).getTime();
     const lastChecked = lastCheckTimes.get(email);
-
-    // If this is the first check, just store the latest track without triggering
+    
+    // On first check, store current time instead of track info
     if (!lastChecked) {
-      console.log('First check - storing current liked song as reference');
+      console.log('First check - storing current timestamp');
       lastCheckTimes.set(email, {
-        id: latestTrack.id,
-        name: latestTrack.name,
-        artist: latestTrack.artists[0].name,
-        url: latestTrack.external_urls.spotify,
-        timestamp: Date.now()
+        timestamp: Date.now(),
+        lastCheckId: latestTrack.id
       });
       return null;
     }
 
-    // Only trigger if we find a different song than last check
-    if (lastChecked.id !== latestTrack.id) {
+    // Check if song was liked after our last check
+    if (latestAddedAt > lastChecked.timestamp && latestTrack.id !== lastChecked.lastCheckId) {
       console.log('New liked song detected:', {
         name: latestTrack.name,
         artist: latestTrack.artists[0].name,
         url: latestTrack.external_urls.spotify
       });
 
-      // Update last checked track
+      // Update last check time and track
       lastCheckTimes.set(email, {
-        id: latestTrack.id,
-        name: latestTrack.name,
-        artist: latestTrack.artists[0].name,
-        url: latestTrack.external_urls.spotify,
-        timestamp: Date.now()
+        timestamp: Date.now(),
+        lastCheckId: latestTrack.id
       });
 
       return {
-        type: 'track', // Add type field for Reddit posting
+        type: 'track',
         id: latestTrack.id,
         name: latestTrack.name,
         artist: latestTrack.artists[0].name,
         url: latestTrack.external_urls.spotify,
-        title: `${latestTrack.name} by ${latestTrack.artists[0].name}` // Add title for Reddit post
+        title: `${latestTrack.name} by ${latestTrack.artists[0].name}`
       };
     }
+
+    console.log('No new liked songs since last check');
     return null;
   } catch (error) {
     console.error('Error detecting liked song:', error);

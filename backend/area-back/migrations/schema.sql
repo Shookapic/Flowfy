@@ -59,8 +59,6 @@ INSERT INTO actions (service_id, description) VALUES (2, 'Like a video');
 INSERT INTO actions (service_id, description) VALUES (2, 'New video uploaded');
 INSERT INTO actions (service_id, description) VALUES (6, 'New pull request created');
 INSERT INTO actions (service_id, description) VALUES (6, 'New issue created');
-INSERT INTO actions (service_id, description) VALUES (1, 'New song added to a playlist');
-INSERT INTO actions (service_id, description) VALUES (1, 'New album released by a favorite artist');
 INSERT INTO actions (service_id, description) VALUES (5, 'New tweet liked');
 INSERT INTO actions (service_id, description) VALUES (5, 'When Following a user');
 INSERT INTO actions (service_id, description) VALUES (7, 'New friend added');
@@ -72,8 +70,6 @@ INSERT INTO reactions (service_id, description, required_service_id, required_se
 INSERT INTO reactions (service_id, description, required_service_id, required_service_name) VALUES (2, 'Tweet on X the video you liked', 5, 'Twitter');
 INSERT INTO reactions (service_id, description, required_service_id, required_service_name) VALUES (6, 'Add a task on Notion', 9, 'Notion');
 INSERT INTO reactions (service_id, description, required_service_id, required_service_name) VALUES (6, 'Send an email on Outlook to notify', 10, 'Outlook');
-INSERT INTO reactions (service_id, description, required_service_id, required_service_name) VALUES (1, 'Share the song on Twitter', 5, 'Twitter');
-INSERT INTO reactions (service_id, description, required_service_id, required_service_name) VALUES (1, 'Post a tweet with the album link', 5, 'Twitter');
 INSERT INTO reactions (service_id, description, required_service_id, required_service_name) VALUES (5, 'Create a Google Calendar with the tweet link', 8, 'Google');
 INSERT INTO reactions (service_id, description, required_service_id, required_service_name) VALUES (5, 'Search for the user and follow him on YouTube', 2, 'YouTube');
 INSERT INTO reactions (service_id, description, required_service_id, required_service_name) VALUES (7, 'Send an email to notify about new friend', 10, 'Outlook');

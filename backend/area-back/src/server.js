@@ -41,12 +41,14 @@ app.use(session({
   name: 'flowfy.session',
   cookie: {
     httpOnly: true,
-    secure: false, // Set to false for development
+    secure: false,
     sameSite: 'lax',
-    maxAge: 24 * 60 * 60 * 1000 // 24 hours
+    maxAge: 24 * 60 * 60 * 1000
   },
   store: new (require('connect-pg-simple')(session))({
-    conString: 'postgres://toto:l3_m04_d3_P3SS@flowfy.duckdns.org:5432/flowfy.db',
+    // Use the proper database connection configuration
+    pool: require('./db'),
+    tableName: 'session',
     createTableIfMissing: true,
     schemaName: 'public'
   })

@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">flowfy</string>
+    <string name="title_activity_main">flowfy</string>
+    <string name="package_name">duckdns.flowfy.app</string>
+    <string name="custom_url_scheme">duckdns.flowfy.app</string>
+</resources>

@@ -65,7 +65,28 @@ const Navbar = () => {
           <li><a className="font-bold" href="/login">Get Start</a></li>
         </ul>
       </div>
-      <div className="navbar-end relative">
+      <div className="navbar-end relative flex items-center gap-4">
+        {/* Add the download button before the avatar */}
+        <a 
+          href="/android/app/build/outputs/apk/debug/app-debug.apk" 
+          download
+          className="btn btn-primary hidden md:inline-flex btn-sm lg:btn-md" // Desktop version
+        >
+          <FontAwesomeIcon icon={['fab', 'android']} className="mr-2" />
+          Download APK
+        </a>
+        
+        {/* Mobile version of download button */}
+        <a 
+          href="/android/app/build/outputs/apk/debug/app-debug.apk" 
+          download
+          className="btn btn-primary btn-circle btn-xs md:hidden" // Mobile version
+          title="Download APK"
+        >
+          <FontAwesomeIcon icon={['fab', 'android']} />
+        </a>
+      
+        {/* Existing avatar code */}
         <div className="avatar" id="avatar-menu">
           <div className="w-10 rounded-full">
             <img
@@ -77,7 +98,8 @@ const Navbar = () => {
             />
           </div>
         </div>
-
+      
+        {/* Existing menu code */}
         {isMenuVisible && (
           <ul
             className="menu bg-base-200 rounded-box w-56 absolute z-10 mt-3"

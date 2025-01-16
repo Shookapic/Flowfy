@@ -35,8 +35,8 @@ To deploy the project using Docker Compose, follow these steps:
 
 4. **Access the application**:
     Once the containers are up and running, you can access the application at:
-    - Frontend: [http://localhost/](http://localhost/)
-    - Backend Documentation: [http://localhost:3000/doc](http://localhost:3000/doc)
+    - Frontend: [https://flowfy.duckdns.org/](https://flowfy.duckdns.org/)
+    - Backend Documentation: [https://flowfy.duckdns.org:3000/doc](https://flowfy.duckdns.org:3000/doc)
 
 ## Stopping the containers
 
@@ -45,4 +45,4 @@ To stop the running containers, use the following command:
 docker-compose down --volumes --remove-orphans
 ```
 
-# Flowfy is accessible at [Flowfy](http://localhost) and Flowfy doc is accessible at [Flowfy DOC](http://localhost:3000/doc) 
+# Flowfy is accessible at [Flowfy](https://flowfy.duckdns.org) and Flowfy doc is accessible at [Flowfy DOC](https://flowfy.duckdns.org:3000/doc) 

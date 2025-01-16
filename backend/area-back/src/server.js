@@ -18,6 +18,10 @@ const { getUsers } = require('./crud_users');
 const { getAccessTokenByEmailAndServiceName } = require('./crud_user_services');
 const { fetchFilteredServers, addReactionIdToServer } = require('./crud_discord_queries');
 const areasFunctions = require('./areas_functions.json');
+const spotifyAuth = require('./oauth2-spotify');
+const discordAuth = require('./oauth2-discord');
+const redditAuth = require('./oauth2-reddit');
+const authRateLimiter = require('./middlewares/rateLimiter'); // Import the rate limiter middleware
 
 const app = express();
 const port = 3000;
@@ -25,32 +29,50 @@ let storedRepositories = [];
 
 app.use(express.json());
 app.use(cookieParser());
+// CORS configuration
 app.use(cors({
-    origin: 'http://localhost:8000',
+    origin: 'https://flowfy.duckdns.org:8080',
     credentials: true,
 }));
+
+// Session configuration
+// Session configuration
 app.use(session({
-    secret: process.env.SESSION_SECRET,
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict'
-    }
+  secret: process.env.SESSION_SECRET,
+  resave: true,
+  saveUninitialized: true,
+  name: 'flowfy.session',
+  cookie: {
+    httpOnly: true,
+    secure: false,
+    sameSite: 'lax',
+    maxAge: 24 * 60 * 60 * 1000
+  },
+  store: new (require('connect-pg-simple')(session))({
+    // Use the proper database connection configuration
+    pool: require('./db'),
+    tableName: 'session',
+    createTableIfMissing: true,
+    schemaName: 'public'
+  })
 }));
 
+
+// Add Trust Proxy if behind a reverse proxy
+app.set('trust proxy', 1);
+
+// Routes
 const oauth2Routes = require('./oauth2-routes');
 const oauthGithub = require('./oauth2-github');
 const crudRoutes = require('./crud-routes');
 const oauthNotion = require('./oauth2-notion');
 
 app.use(youtubeAuth);
-app.use(discordAuth);
 app.use(oauth2Routes);
 app.use(oauthGithub);
 app.use(crudRoutes);
 app.use(oauthNotion);
+app.use(oauthOutlook);
 
 /**
  * Route for handling YouTube like action.
@@ -107,9 +129,16 @@ async function runAREAS() {
           console.log('AREAS:', action, reaction);
 
           if (typeof actionModule[action.function] === 'function' && typeof reactionModule[reaction.function] === 'function') {
-            console.log('Running AREAS:', action, reaction);
-            await actionModule[action.function](email);
-            await reactionModule[reaction.function](email);
+            console.log('Running action:', action.name);
+            const actionResult = await actionModule[action.function](email);
+
+            // Only trigger reaction if action returns a result
+            if (actionResult) {
+              console.log('Action detected change, running reaction:', reaction.name);
+              await reactionModule[reaction.function](email, actionResult);
+            } else {
+              console.log('No changes detected, skipping reaction');
+            }
           }
         }
       }
@@ -279,7 +308,7 @@ app.get('/about.json', (req, res) => {
         }
       }
     }
-    return '127.0.0.1'; // Fallback to localhost if no external IP found
+    return '127.0.0.1'; // Fallback to flowfy.duckdns.org if no external IP found
   };
 
   const serverHost = getServerIP(); // Fetch the server's IP address

@@ -8,6 +8,7 @@ const { google } = require('googleapis');
 const jwt = require('jsonwebtoken');
 const users = require('./crud_users');
 const userService = require('./crud_user_services');
+const passport = require('passport'); // Ensure Passport.js is required
 require('dotenv').config();
 
 const router = express.Router();
@@ -15,7 +16,7 @@ const router = express.Router();
 const oauth2Client = new google.auth.OAuth2(
     process.env.GOOGLE_CLIENT_ID,
     process.env.GOOGLE_CLIENT_SECRET,
-    'http://localhost:3000/api/auth/google/callback'
+    'https://flowfy.duckdns.org/api/auth/google/callback'
 );
 
 const jwtSecret = process.env.JWT_SECRET;
@@ -52,8 +53,12 @@ router.get('/api/auth/google', (req, res) => {
  */
 router.get('/api/auth/google/callback', async (req, res) => {
     const { code } = req.query;
+    console.log('Code reçu:', code);
+    console.log('User-Agent:', req.headers['user-agent']);
+
     try {
         const { tokens } = await oauth2Client.getToken(code);
+        console.log('Tokens générés:', tokens);
         oauth2Client.setCredentials(tokens);
 
         const oauth2 = google.oauth2({
@@ -62,11 +67,22 @@ router.get('/api/auth/google/callback', async (req, res) => {
         });
 
         const userInfo = await oauth2.userinfo.get();
+        console.log('Infos utilisateur:', userInfo.data);
         const user = userInfo.data;
 
-        // Always update the user's refresh token
+        // Update user and service info
         await users.createUser(user.email, [], true, tokens.access_token, tokens.refresh_token);
-        userService.createUserServiceEMAIL(user.email, 8, tokens.access_token, tokens.refresh_token, true);
+        await userService.createUserServiceEMAIL(user.email, 8, tokens.access_token, tokens.refresh_token, true);
+        console.log('Utilisateur créé ou mis à jour dans la base de données');
+
+        // Check for mobile client
+        const isMobileClient = req.headers['user-agent'] && (
+            req.headers['user-agent'].includes('Capacitor') ||
+            req.headers['user-agent'].includes('Android') ||
+            req.headers['user-agent'].includes('Mobile')
+        );
+
+        console.log('Is mobile client:', isMobileClient);
 
         const token = jwt.sign(
             { id: user.id, name: user.name, email: user.email },
@@ -74,23 +90,36 @@ router.get('/api/auth/google/callback', async (req, res) => {
             { expiresIn: '1h' }
         );
 
-        res.send(
-            `<script>
-                window.opener.postMessage({
-                    success: true,
-                    token: '${token}',
-                    user: {
-                        id: '${user.id}',
-                        name: '${user.name}',
-                        email: '${user.email}'
-                    }
-                }, '*');
-                window.close();
-            </script>`
-        );
+        if (isMobileClient) {
+            console.log('Redirecting to mobile app...');
+            res.send(`
+                <html>
+                    <body>
+                        <script>
+                            window.location.replace("flowfy://oauth/callback?email=${encodeURIComponent(user.email)}&token=${encodeURIComponent(token)}");
+                        </script>
+                    </body>
+                </html>
+            `);
+        } else {
+            res.send(`
+                <script>
+                    window.opener.postMessage({
+                        success: true,
+                        token: '${token}',
+                        user: {
+                            id: '${user.id}',
+                            name: '${user.name}',
+                            email: '${user.email}'
+                        }
+                    }, '*');
+                    window.close();
+                </script>
+            `);
+        }
     } catch (error) {
         console.error('Error during Google authentication:', error);
-        res.redirect('/');
+        res.redirect('https://flowfy.duckdns.org/login');
     }
 });
 

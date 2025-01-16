@@ -15,9 +15,9 @@ passport.deserializeUser((user, done) => {
 passport.use(
   new GitHubStrategy(
     {
-      clientID: process.env.CLIENT_ID_GITHUB,
-      clientSecret: process.env.CLIENT_SECRET_GITHUB,
-      callbackURL: process.env.GITHUB_CALLBACK_URL,
+      clientID: process.env.GITHUB_CLIENT_ID,
+      clientSecret: process.env.GITHUB_CLIENT_SECRET,
+      callbackURL: 'https://flowfy.duckdns.org/api/auth/github/callback',
       scope: ['repo', 'user:email'], // Ensure 'repo' is here
     },
     (accessToken, refreshToken, profile, done) => {

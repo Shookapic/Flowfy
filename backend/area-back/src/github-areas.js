@@ -125,7 +125,7 @@ async function RaddTaskToNotion(email) {
     }
 
     // Get the Notion database ID for the "Github Tasks" calendar
-    const notionDatabaseId = "17bc1900f49980099436fac478d94086";
+    const notionDatabaseId = process.env.NOTION_DATABASE_ID;
 
     // Iterate through the pull requests and add them to the Notion calendar
     for (let pr of prData.items) {

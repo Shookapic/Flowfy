@@ -9,7 +9,7 @@ const redditApi = {
   userAgent: 'Flowfy/1.0.0',
   clientId: process.env.REDDIT_CLIENT_ID,
   clientSecret: process.env.REDDIT_CLIENT_SECRET,
-  redirectUri: 'https://flowfy.duckdns.org:3000/api/auth/reddit/callback'
+  redirectUri: 'https://flowfy.duckdns.org/api/auth/reddit/callback'
 };
 
 // Reddit auth route

@@ -24,7 +24,7 @@ app.use(
 app.use(passport.initialize());
 app.use(passport.session());
 
-const DISCORD_CALLBACK_URL = "https://flowfy.duckdns.org:3000/api/auth/discord/callback";
+const DISCORD_CALLBACK_URL = "https://flowfy.duckdns.org/api/auth/discord/callback";
 const DISCORD_API_URL = "https://discord.com/api/v10";
 
 // Comment out Discord strategy configuration

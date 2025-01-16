@@ -35,7 +35,7 @@ CREATE TABLE users (
 CREATE TABLE user_services (
     id SERIAL PRIMARY KEY,
     user_id INT REFERENCES users(id) ON DELETE CASCADE,
-    service_id INT REFERENCES services(id) ON DELETE CASCADE UNIQUE,
+    service_id INT REFERENCES services(id) ON DELETE CASCADE,
     access_token TEXT NULL,
     refresh_token TEXT NULL,
     is_logged BOOLEAN NOT NULL

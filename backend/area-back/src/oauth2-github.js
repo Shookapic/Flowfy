@@ -28,7 +28,7 @@ const bodyParser = require('body-parser');
  * @param {string} req.query.email - The email address of the user.
  * @param {Object} res - The response object.
  * @param {Function} next - The next middleware function.
- */
+*/
 router.get('/api/auth/github', (req, res, next) => {
   const { email } = req.query;
 
@@ -36,6 +36,7 @@ router.get('/api/auth/github', (req, res, next) => {
     return res.status(400).json({ error: 'Email is required' });
   }
 
+  console.log('email for github auth:', email);
   passport.authenticate('github', {
     scope: ['user:email'], // Request email access from GitHub
     state: JSON.stringify({ email }), // Embed email in state
@@ -56,7 +57,9 @@ router.get('/api/auth/github', (req, res, next) => {
 router.get(
   '/api/auth/github/callback',
   (req, res, next) => {
+    console.log('in GitHub callback:');
     passport.authenticate('github', { failureRedirect: '/' }, async (err, user, info) => {
+      console.log('passport authenticate:', { err, user, info });
       if (err || !user) {
         console.error('GitHub authentication error:', err || info);
         return res.redirect('/');
@@ -75,10 +78,10 @@ router.get(
         // Example: Save GitHub user info to the database with the provided email
         await createUserServiceEMAIL(email, service_id, user.accessToken, null, true);
 
-        res.redirect('https://flowfy.duckdns.org/github-service'); // Redirect after success
+        res.redirect('https://flowfy.duckdns.org/github-service?connected=true'); // Redirect after success
       } catch (error) {
         console.error('Error in GitHub callback processing:', error);
-        res.redirect('https://flowfy.duckdns.org/github-service'); // Redirect after success
+        res.redirect('https://flowfy.duckdns.org/github-service?connected=false'); // Redirect after success
       }
     })(req, res, next);
   }

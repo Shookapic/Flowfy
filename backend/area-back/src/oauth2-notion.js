@@ -12,7 +12,7 @@ const router = express.Router();
 
 const notionClientId = process.env.NOTION_CLIENT_ID;
 const notionClientSecret = process.env.NOTION_CLIENT_SECRET;
-const notionRedirectUri = 'https://flowfy.duckdns.org:3000/api/auth/notion/callback';
+const notionRedirectUri = 'https://flowfy.duckdns.org/api/auth/notion/callback';
 
 const scopes = [
   'https://www.googleapis.com/auth/notion.force-ssl',

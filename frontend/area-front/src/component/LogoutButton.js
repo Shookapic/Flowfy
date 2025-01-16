@@ -10,14 +10,14 @@ const LogoutButton = () => {
         }
 
         // Step 1: Call the logout route
-        fetch('https://flowfy.duckdns.org:3000/api/auth/logout', {
+        fetch('https://flowfy.duckdns.org/api/auth/logout', {
             credentials: 'include',
         })
             .then((res) => res.json())
             .then((data) => {
                 if (data.message === 'Logged out successfully') {
                     // Step 2: Update the user's logged status
-                    fetch(`https://flowfy.duckdns.org:3000/setUserLoggedStatus?email=${encodeURIComponent(email)}&status=false`, {
+                    fetch(`https://flowfy.duckdns.org/setUserLoggedStatus?email=${encodeURIComponent(email)}&status=false`, {
                         method: 'GET',
                     })
                         .then((res) => {

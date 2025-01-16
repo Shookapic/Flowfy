@@ -16,7 +16,7 @@ const router = express.Router();
 const oauth2Client = new google.auth.OAuth2(
     process.env.GOOGLE_CLIENT_ID,
     process.env.GOOGLE_CLIENT_SECRET,
-    'https://flowfy.duckdns.org:3000/api/auth/google/callback'
+    'https://flowfy.duckdns.org/api/auth/google/callback'
 );
 
 const jwtSecret = process.env.JWT_SECRET;

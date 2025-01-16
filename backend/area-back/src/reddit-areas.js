@@ -9,7 +9,7 @@ const lastCheckedUpvotes = new Map();
 const spotifyApi = new SpotifyWebApi({
   clientId: process.env.SPOTIFY_CLIENT_ID,
   clientSecret: process.env.SPOTIFY_CLIENT_SECRET,
-  redirectUri: 'https://flowfy.duckdns.org:3000/api/auth/spotify/callback'
+  redirectUri: 'https://flowfy.duckdns.org/api/auth/spotify/callback'
 });
 
 /**

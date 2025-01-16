@@ -23,7 +23,7 @@ const outlookScopes = [
   'https://graph.microsoft.com/Mail.Send'
 ];
 
-const redirectUri = 'http://localhost:3000/api/auth/outlook/callback';
+const redirectUri = 'https://flowfy.duckdns.org/api/auth/outlook/callback';
 
 // Route for initiating Outlook authentication
 router.get('/api/auth/outlook', (req, res) => {
@@ -87,14 +87,14 @@ router.get('/api/auth/outlook/callback', async (req, res) => {
     console.log(`Successfully connected Outlook service for email: ${email}`);
     
     // Redirect back with a success query parameter
-    res.redirect(`http://localhost/github-service?connected=true`);
+    res.redirect(`https://flowfy.duckdns.org/github-service?connected=true`);
   } catch (error) {
     console.error('Error during Outlook OAuth2 callback:', error);
 
     console.log(`Failed to connect Outlook service for email: ${email}`);
 
     // Redirect back with a failure query parameter
-    res.redirect(`http://localhost/github-service?connected=false`);
+    res.redirect(`https://flowfy.duckdns.org/github-service?connected=false`);
   }
 });
 

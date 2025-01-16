@@ -28,7 +28,7 @@ app.use(express.json());
 app.use(cookieParser());
 // CORS configuration
 app.use(cors({
-    origin: 'https://flowfy.duckdns.org',
+    origin: 'https://flowfy.duckdns.org:8080',
     credentials: true,
 }));
 

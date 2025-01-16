@@ -44,7 +44,7 @@ async function AonNewPullRequest(email) {
     // Write the data to a file named "recent pull request"
     fs.writeFileSync('recent_pull_requests.json', JSON.stringify(pullRequestResponse.data, null, 2));
     console.log('Recent pull requests have been saved.');
-
+    return pullRequestResponse.data;
   } catch (error) {
     console.error('Error fetching pull requests:', error.response ? error.response.data : error.message);
   }
@@ -92,7 +92,7 @@ async function AonNewIssue(email) {
     // Write the data to a file named "recent issue"
     fs.writeFileSync('recent_issues.json', JSON.stringify(issueResponse.data, null, 2));
     console.log('Recent issues have been saved.');
-
+    return issueResponse.data;
   } catch (error) {
     console.error('Error fetching issues:', error.response ? error.response.data : error.message);
   }

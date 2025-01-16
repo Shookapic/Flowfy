@@ -87,10 +87,15 @@ router.get('/api/auth/discord/callback', passport.authenticate('discord', { fail
         console.log('Discord tokens:', { accessToken, refreshToken });
         console.log("accessToken: " + JSON.stringify(accessToken));
         console.log("refreshToken: " + JSON.stringify(refreshToken));
-        res.redirect(returnTo + '?connected=true');
+        
+        const redirectUrl = new URL(returnTo);
+        redirectUrl.searchParams.set('connected', 'true');
+        res.redirect(redirectUrl.toString());
     }
     catch (error) {
-        res.redirect(returnTo + '?connected=false');
+        const redirectUrl = new URL(returnTo);
+        redirectUrl.searchParams.set('connected', 'false');
+        res.redirect(redirectUrl.toString());
     }
 });
 

@@ -4,19 +4,12 @@
  */
 
 const express = require('express');
-const { google } = require('googleapis');
-const { getUserIdByEmail, createUserServiceEMAIL, getAccessTokenByEmailAndServiceName } = require('./crud_user_services');
+const { getUserIdByEmail, createUserServiceEMAIL } = require('./crud_user_services');
 const { getServiceByName } = require('./crud_services');
 require('dotenv').config();
 
 const router = express.Router();
 const passport = require('./auth');
-const bodyParser = require('body-parser');
-
-// Middleware
-// app.use(bodyParser.json());
-// app.use(passport.initialize());
-// app.use(passport.session());
 
 /**
  * Route for initiating GitHub authentication.
@@ -26,6 +19,7 @@ const bodyParser = require('body-parser');
  * @param {Object} req - The request object.
  * @param {Object} req.query - The query parameters.
  * @param {string} req.query.email - The email address of the user.
+ * @param {string} req.query.returnTo - The return URL after authentication.
  * @param {Object} res - The response object.
  * @param {Function} next - The next middleware function.
 */
@@ -81,15 +75,18 @@ router.get(
         // Example: Save GitHub user info to the database with the provided email
         await createUserServiceEMAIL(email, service_id, user.accessToken, null, true);
 
-        res.redirect(`${returnTo}?connected=true`); // Redirect after success
+        const redirectUrl = new URL(returnTo);
+        redirectUrl.searchParams.set('connected', 'true');
+        res.redirect(redirectUrl.toString()); // Redirect after success
       } catch (error) {
         console.error('Error in GitHub callback processing:', error);
-        res.redirect(`${returnTo}?connected=false`); // Redirect after failure
+        const redirectUrl = new URL(returnTo);
+        redirectUrl.searchParams.set('connected', 'false');
+        res.redirect(redirectUrl.toString()); // Redirect after failure
       }
     })(req, res, next);
   }
 );
-
 
 /**
  * Route for logging out the user.

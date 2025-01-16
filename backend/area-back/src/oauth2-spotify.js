@@ -11,6 +11,7 @@ const {
 } = require('./crud_user_services');
 const { getServiceByName } = require('./crud_services');
 require('dotenv').config();
+const { URL } = require('url');
 
 const router = express.Router();
 const SpotifyWebApi = require('spotify-web-api-node');
@@ -74,18 +75,38 @@ router.get('/api/auth/spotify', async (req, res) => {
     res.redirect(authorizeURL);
   } catch (error) {
     console.error('Error in Spotify auth:', error);
-    res.redirect(`${returnTo}?connected=false&error=${encodeURIComponent(error.message)}`);
+    const redirectUrl = new URL(returnTo);
+    redirectUrl.searchParams.set('connected', 'false');
+    redirectUrl.searchParams.set('error', encodeURIComponent(error.message));
+    res.redirect(redirectUrl.toString());
   }
 });
 
 router.get('/api/auth/spotify/callback', async (req, res) => {
   const { code, state } = req.query;
-  const { email, userId, returnTo } = JSON.parse(state);
+
+  if (!state) {
+    console.error('State parameter is missing');
+    return res.redirect('/?connected=false&error=missing_state');
+  }
+
+  let parsedState;
+  try {
+    parsedState = JSON.parse(state);
+  } catch (error) {
+    console.error('Error parsing state parameter:', error);
+    return res.redirect('/?connected=false&error=invalid_state');
+  }
+
+  const { email, userId, returnTo } = parsedState;
 
   try {
     if (!req.session?.spotifyAuth) {
       console.error('No session data found');
-      return res.redirect(`${returnTo}?connected=false&error=session_expired`);
+      const redirectUrl = new URL(returnTo);
+      redirectUrl.searchParams.set('connected', 'false');
+      redirectUrl.searchParams.set('error', 'session_expired');
+      return res.redirect(redirectUrl.toString());
     }
 
     if (state !== req.session.spotifyAuth.state) {
@@ -93,7 +114,10 @@ router.get('/api/auth/spotify/callback', async (req, res) => {
         received: state,
         expected: req.session.spotifyAuth.state
       });
-      return res.redirect(`${returnTo}?connected=false&error=state_mismatch`);
+      const redirectUrl = new URL(returnTo);
+      redirectUrl.searchParams.set('connected', 'false');
+      redirectUrl.searchParams.set('error', 'state_mismatch');
+      return res.redirect(redirectUrl.toString());
     }
 
     try {
@@ -129,15 +153,23 @@ router.get('/api/auth/spotify/callback', async (req, res) => {
       });
 
       // Redirect with connected=true parameter
-      return res.redirect(`${returnTo}?connected=true`);
+      const redirectUrl = new URL(returnTo);
+      redirectUrl.searchParams.set('connected', 'true');
+      return res.redirect(redirectUrl.toString());
 
     } catch (error) {
       console.error('Spotify API error:', error);
-      return res.redirect(`${returnTo}?connected=false&error=api_error`);
+      const redirectUrl = new URL(returnTo);
+      redirectUrl.searchParams.set('connected', 'false');
+      redirectUrl.searchParams.set('error', 'api_error');
+      return res.redirect(redirectUrl.toString());
     }
   } catch (error) {
     console.error('Final error:', error);
-    return res.redirect(`${returnTo}?connected=false&error=${encodeURIComponent(error.message)}`);
+    const redirectUrl = new URL(returnTo);
+    redirectUrl.searchParams.set('connected', 'false');
+    redirectUrl.searchParams.set('error', encodeURIComponent(error.message));
+    return res.redirect(redirectUrl.toString());
   }
 });
 

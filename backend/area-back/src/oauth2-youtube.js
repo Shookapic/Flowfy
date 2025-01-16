@@ -1,84 +1,104 @@
-/**
- * @file oauth2-youtube.js
- * @description Express router module for handling YouTube OAuth2 authentication.
- */
-
 const express = require('express');
-const { google } = require('googleapis');
-const { getUserIdByEmail, createUserServiceEMAIL } = require('./crud_user_services');
+const router = express.Router();
+const { getUserIdByEmail, createUserServiceID } = require('./crud_user_services');
 const { getServiceByName } = require('./crud_services');
 require('dotenv').config();
 
-const router = express.Router();
+// Reddit OAuth2 configuration
+const redditApi = {
+  userAgent: 'Flowfy/1.0.0',
+  clientId: process.env.REDDIT_CLIENT_ID,
+  clientSecret: process.env.REDDIT_CLIENT_SECRET,
+  redirectUri: 'https://flowfy.duckdns.org/api/auth/reddit/callback'
+};
 
-const oauth2Client = new google.auth.OAuth2(
-  process.env.YOUTUBE_CLIENT_ID,
-  process.env.YOUTUBE_CLIENT_SECRET,
-  'https://flowfy.duckdns.org/api/auth/youtube/callback'
-);
-
-const scopes = [
-  'https://www.googleapis.com/auth/youtube.force-ssl',
-  'https://www.googleapis.com/auth/youtube.readonly'
-];
-
-/**
- * Route for initiating YouTube authentication.
- * @name GET /api/auth/youtube
- * @function
- * @memberof module:oauth2-youtube
- * @param {Object} req - The request object.
- * @param {Object} req.query - The query parameters.
- * @param {string} req.query.email - The email address of the user.
- * @param {Object} res - The response object.
- */
-router.get('/api/auth/youtube', (req, res) => {
-  const { email } = req.query;
-  const url = oauth2Client.generateAuthUrl({
-    access_type: 'offline',
-    prompt: 'consent', // Force reauthorization to get a refresh token
-    scope: scopes,
-    state: JSON.stringify({ email }),
-  });  
-  res.redirect(url);
-});
-
-/**
- * Route for handling YouTube authentication callback.
- * @name GET /api/auth/youtube/callback
- * @function
- * @memberof module:oauth2-youtube
- * @param {Object} req - The request object.
- * @param {Object} req.query - The query parameters.
- * @param {string} req.query.code - The authorization code returned by YouTube.
- * @param {string} req.query.state - The state parameter containing the email.
- * @param {Object} res - The response object.
- */
-router.get('/api/auth/youtube/callback', async (req, res) => {
-  const { code, state } = req.query;
-  const { email } = JSON.parse(state);
+// Reddit auth route
+router.get('/api/auth/reddit', async (req, res) => {
+  const { email, returnTo } = req.query;
+  
+  if (!email) {
+    return res.status(400).send('Email is required');
+  }
+  if (!returnTo) {
+    return res.status(400).send('ReturnTo is required');
+  }
 
   try {
-    const { tokens } = await oauth2Client.getToken(code);
-    oauth2Client.setCredentials(tokens);
-
-    // Retrieve existing user service record to check for an existing refresh token
-    const service_id = await getServiceByName('YouTube');
-    const existingUserService = await getUserIdByEmail(email);
-
-    // Use the new access token and fallback to the stored refresh token if missing
-    const refreshToken = tokens.refresh_token || existingUserService?.refresh_token;
-
-    if (!refreshToken) {
-      throw new Error('No refresh token available');
+    // Verify user exists
+    const userId = await getUserIdByEmail(email);
+    if (!userId) {
+      return res.status(404).send('User not found');
     }
 
-    await createUserServiceEMAIL(email, service_id, tokens.access_token, refreshToken, true);
-    console.log('YouTube tokens:', tokens);
-    res.redirect('https://flowfy.duckdns.org/youtube-service');
+    const state = JSON.stringify({ email, userId, returnTo });
+    const authUrl = `https://www.reddit.com/api/v1/authorize?` +
+      `client_id=${redditApi.clientId}` +
+      `&response_type=code` +
+      `&state=${encodeURIComponent(state)}` +
+      `&redirect_uri=${encodeURIComponent(redditApi.redirectUri)}` +
+      `&duration=permanent` +
+      `&scope=identity edit flair history read vote submit`;
+
+    res.redirect(authUrl);
   } catch (error) {
-    console.error('Error during YouTube OAuth2 callback:', error);
-    res.redirect('https://flowfy.duckdns.org/youtube-service');
+    console.error('Error initiating Reddit auth:', error);
+    const redirectUrl = new URL(returnTo);
+    redirectUrl.searchParams.set('connected', 'false');
+    redirectUrl.searchParams.set('error', encodeURIComponent(error.message));
+    res.redirect(redirectUrl.toString());
+  }
+});
+
+// Reddit callback route
+router.get('/api/auth/reddit/callback', async (req, res) => {
+  const { code, state } = req.query;
+  const { email, userId, returnTo } = JSON.parse(state);
+
+  try {
+    // Exchange code for tokens
+    const tokenResponse = await fetch('https://www.reddit.com/api/v1/access_token', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Basic ${Buffer.from(`${redditApi.clientId}:${redditApi.clientSecret}`).toString('base64')}`,
+        'Content-Type': 'application/x-www-form-urlencoded'
+      },
+      body: new URLSearchParams({
+        grant_type: 'authorization_code',
+        code,
+        redirect_uri: redditApi.redirectUri
+      })
+    });
+
+    const tokens = await tokenResponse.json();
+    if (!tokens.access_token) {
+      throw new Error('Failed to get access token');
+    }
+
+    // Get service ID for Reddit
+    const serviceId = await getServiceByName('Reddit');
+    if (!serviceId) {
+      throw new Error('Reddit service not found in database');
+    }
+
+    // Create or update user service with is_logged=true
+    await createUserServiceID(
+      userId,
+      serviceId, 
+      tokens.access_token,
+      tokens.refresh_token || null,
+      true
+    );
+
+    console.log('Reddit auth successful:', { email, userId, serviceId });
+    const redirectUrl = new URL(returnTo);
+    redirectUrl.searchParams.set('connected', 'true');
+    res.redirect(redirectUrl.toString());
+  } catch (error) {
+    console.error('Error during Reddit OAuth2 callback:', error);
+    const redirectUrl = new URL(returnTo);
+    redirectUrl.searchParams.set('connected', 'false');
+    redirectUrl.searchParams.set('error', encodeURIComponent(error.message));
+    res.redirect(redirectUrl.toString());
   }
 });
 

@@ -42,7 +42,10 @@ router.get('/api/auth/reddit', async (req, res) => {
     res.redirect(authUrl);
   } catch (error) {
     console.error('Error initiating Reddit auth:', error);
-    res.redirect(`${returnTo}?connected=false&error=${encodeURIComponent(error.message)}`);
+    const redirectUrl = new URL(returnTo);
+    redirectUrl.searchParams.set('connected', 'false');
+    redirectUrl.searchParams.set('error', encodeURIComponent(error.message));
+    res.redirect(redirectUrl.toString());
   }
 });
 
@@ -87,10 +90,15 @@ router.get('/api/auth/reddit/callback', async (req, res) => {
     );
 
     console.log('Reddit auth successful:', { email, userId, serviceId });
-    res.redirect(`${returnTo}?connected=true`);
+    const redirectUrl = new URL(returnTo);
+    redirectUrl.searchParams.set('connected', 'true');
+    res.redirect(redirectUrl.toString());
   } catch (error) {
     console.error('Error during Reddit OAuth2 callback:', error);
-    res.redirect(`${returnTo}?connected=false&error=${encodeURIComponent(error.message)}`);
+    const redirectUrl = new URL(returnTo);
+    redirectUrl.searchParams.set('connected', 'false');
+    redirectUrl.searchParams.set('error', encodeURIComponent(error.message));
+    res.redirect(redirectUrl.toString());
   }
 });
 

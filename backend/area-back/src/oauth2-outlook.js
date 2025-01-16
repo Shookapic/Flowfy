@@ -94,14 +94,18 @@ router.get('/api/auth/outlook/callback', async (req, res) => {
     console.log(`Successfully connected Outlook service for email: ${email}`);
     
     // Redirect back with a success query parameter
-    res.redirect(`${returnTo}?connected=true`);
+    const redirectUrl = new URL(returnTo);
+    redirectUrl.searchParams.set('connected', 'true');
+    res.redirect(redirectUrl.toString());
   } catch (error) {
     console.error('Error during Outlook OAuth2 callback:', error);
 
     console.log(`Failed to connect Outlook service for email: ${email}`);
 
     // Redirect back with a failure query parameter
-    res.redirect(`${returnTo}?connected=false`);
+    const redirectUrl = new URL(returnTo);
+    redirectUrl.searchParams.set('connected', 'false');
+    res.redirect(redirectUrl.toString());
   }
 });
 

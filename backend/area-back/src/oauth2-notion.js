@@ -74,14 +74,18 @@ router.get('/api/auth/notion/callback', async (req, res) => {
         console.log(`Successfully connected Notion service for email: ${email}`);
         
         // Send connection status back as a query parameter
-        res.redirect(`${returnTo}?connected=true`);
+        const redirectUrl = new URL(returnTo);
+        redirectUrl.searchParams.set('connected', 'true');
+        res.redirect(redirectUrl.toString());
     } catch (error) {
         console.error('Error during Notion OAuth2 callback:', error);
 
         console.log(`Failed to connect Notion service for email: ${email}`);
         
         // Handle errors and redirect with a failure status
-        res.redirect(`${returnTo}?connected=false`);
+        const redirectUrl = new URL(returnTo);
+        redirectUrl.searchParams.set('connected', 'false');
+        res.redirect(redirectUrl.toString());
     }
 });
 

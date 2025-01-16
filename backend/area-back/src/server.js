@@ -63,6 +63,7 @@ const oauth2Routes = require('./oauth2-routes');
 const oauthGithub = require('./oauth2-github');
 const crudRoutes = require('./crud-routes');
 const oauthNotion = require('./oauth2-notion');
+const oauthOutlook = require('./oauth2-outlook');
 
 // Apply rate limiter after session middleware
 app.use('/api/auth', authRateLimiter);
@@ -96,6 +97,7 @@ app.use(oauth2Routes);
 app.use(oauthGithub);
 app.use(crudRoutes);
 app.use(oauthNotion);
+app.use(oauthOutlook);
 
 /**
  * Route for handling YouTube like action.

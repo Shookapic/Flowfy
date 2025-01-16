@@ -1,4 +1,4 @@
-/**
+  /**
  * @file server.js
  * @description Main server file for the application, setting up Express server and routes.
  */
@@ -10,10 +10,13 @@ const cookieParser = require('cookie-parser');
 require('dotenv').config();
 const csrfProtection = require('./middlewares/csrfProtection');
 const youtubeAuth = require('./oauth2-youtube');
+const discordAuth = require('./oauth2-discord');
 const { onLike, subscribeToChannel } = require('./youtube-areas');
 const { fetchRepositories, compareRepositories, AonRepoCreation, AonRepoDeletion, RcreateRepo, RfollowUser, RfollowUsersFromFile } = require('./github-areas');
+const { storeNewUser, client, AonNewServerMember, AonServerCreation } = require('./discord-areas');
 const { getUsers } = require('./crud_users');
 const { getAccessTokenByEmailAndServiceName } = require('./crud_user_services');
+const { fetchFilteredServers, addReactionIdToServer } = require('./crud_discord_queries');
 const areasFunctions = require('./areas_functions.json');
 const spotifyAuth = require('./oauth2-spotify');
 const discordAuth = require('./oauth2-discord');
@@ -63,35 +66,7 @@ const oauth2Routes = require('./oauth2-routes');
 const oauthGithub = require('./oauth2-github');
 const crudRoutes = require('./crud-routes');
 const oauthNotion = require('./oauth2-notion');
-const oauthOutlook = require('./oauth2-outlook');
 
-// Apply rate limiter after session middleware
-app.use('/api/auth', authRateLimiter);
-
-// Apply routes
-app.use(youtubeAuth);
-app.use(oauth2Routes);
-app.use(oauthGithub);
-app.use(crudRoutes);
-app.use(redditAuth);
-
-// Session configuration
-app.use(session({
-  secret: process.env.SESSION_SECRET,
-  resave: true,
-  saveUninitialized: true,
-  cookie: {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    maxAge: 24 * 60 * 60 * 1000 // 24 hours
-  }
-}));
-
-
-app.use('/api/auth', authRateLimiter); // Apply the rate limiter middleware to the /api/auth route
-app.use(spotifyAuth);
-app.use(discordAuth);
 app.use(youtubeAuth);
 app.use(oauth2Routes);
 app.use(oauthGithub);
@@ -131,11 +106,11 @@ let isRunning = false;
  */
 async function runAREAS() {
   if (isRunning) {
-    console.log('runAREAS is already running. Skipping this interval.');
+    // console.log('runAREAS is already running. Skipping this interval.');
     return;
   }
 
-  console.log('///Running AREAS...///');
+  // console.log('///Running AREAS...///');
   isRunning = true;
 
   try {
@@ -395,12 +370,141 @@ app.get('/about.json', (req, res) => {
   res.send(JSON.stringify(response, null, 2)); // Format the JSON with 2 spaces for indentation
 });
 
+// When the bot is ready
+client.once('ready', () => {
+  console.log(`Logged in as ${client.user.tag}`);
+  AonNewServerMember('placeholder');
+});
+
+// Listen for messages
+client.on('messageCreate', (message) => {
+  if (message.author.bot) return; // Ignore bot messages
+
+  if (message.content === '!ping') {
+      message.reply('Pong!');
+  }
+});
+
+// Login to Discord
+client.login(process.env.DISCORD_BOT_TOKEN);
+
+// Listen for messages
+client.on('messageCreate', async (message) => {
+  if (message.author.bot) return; // Ignore bot messages
+
+  // Example command to fetch friend list
+  if (message.content === '!friends') {
+      // Fetch the user's friend list
+      try {
+        message.reply('Fetching your friends.');
+        const guild = await message.guild.members.fetch();
+        const friendList = guild.map(member => member.user.tag); // Simulating friends from guild members
+        message.channel.send(`Friends in this server: ${friendList.join(', ')}`);
+      } catch (error) {
+          console.error('Error fetching friends:', error);
+          message.reply('Sorry, there was an error fetching your friends.');
+      }
+  }
+});
+
+client.on('messageCreate', async (message) => {
+  if (message.content === '!getfriends') {
+    try {
+      // Fetch guild members (the bot must have access to the guild)
+      const guild = await message.guild.members.fetch();
+      const friendList = guild.map(member => member.user.tag); // Simulating friends from guild members
+      message.channel.send(`Friends in this server: ${friendList.join(', ')}`);
+    } catch (error) {
+      message.channel.send('Error fetching friends.');
+    }
+  }
+});
+
+client.on('guildBanAdd', async (ban) => {
+  console.log(`User banned: ${ban.user.tag}`);
+});
 
 if (process.env.NODE_ENV !== 'test') {
   setInterval(runAREAS, 5 * 1000);
   app.listen(port, () => {
-    console.log(`Server is running on https://flowfy.duckdns.org:${port}`);
+    console.log(`Server is running on http://localhost:${port}`);
   });
 }
+
+app.get('/api/discord/server-creation', async (req, res) => {
+  try {
+    const { email } = req.query;
+    console.log('email body is ',email);
+    const ownedServers = await AonServerCreation(email);
+    if (ownedServers) {
+      res.status(200).send('gotem');
+    } else {
+      res.status(200).send('nun');
+    }
+  } catch (error) {
+    res.status(500).send('Error with servs');
+  }
+})
+
+/**
+ * @name GET /api/github/test
+ * @description Route to test the GitHub API using the authenticated user's access token.
+ * @function
+ * @memberof module:oauth2-github
+ * @param {Object} req - The request object.
+ * @param {Object} req.query - The query parameters.
+ * @param {string} req.query.email - The email address of the user.
+ * @param {Object} res - The response object.
+ */
+app.get('/api/github/test', async (req, res) => {
+  const { email } = req.query;
+
+  if (!email) {
+    return res.status(400).json({ error: 'Email is required' });
+  }
+
+  try {
+    // Retrieve the user's access token from the database
+    const accessToken = await getAccessTokenByEmailAndServiceName(email, 'Github');
+
+    if (!accessToken) {
+      return res.status(404).json({ error: 'No access token found for this email.' });
+    }
+
+    // Make a request to the GitHub API
+    const response = await fetch('https://api.github.com/user', {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        Accept: 'application/vnd.github.v3+json',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`GitHub API returned an error: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+
+    // Send the response data back to the client
+    res.status(200).json({
+      message: 'GitHub API request successful!',
+      data,
+    });
+  } catch (error) {
+    console.error('Error testing GitHub API:', error);
+    res.status(500).json({ error: 'Failed to fetch data from GitHub API' });
+  }
+});
+
+app.get('/api/discord/new_member', async (req, res) => {
+  try {
+    const { email } = req.query;
+    await AonNewServerMember(email);
+    res.status(200).send('aight');
+  } catch (error) {
+    res.status(500).send('Error with servs');
+  }
+})
 
 module.exports = app;

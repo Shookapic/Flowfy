@@ -5,7 +5,7 @@
 
 const express = require('express');
 const { google } = require('googleapis');
-const { getUserIdByEmail, createUserServiceEMAIL } = require('./crud_user_services');
+const { getUserIdByEmail, createUserServiceEMAIL, getAccessTokenByEmailAndServiceName } = require('./crud_user_services');
 const { getServiceByName } = require('./crud_services');
 require('dotenv').config();
 
@@ -38,7 +38,7 @@ router.get('/api/auth/github', (req, res, next) => {
 
   console.log('email for github auth:', email);
   passport.authenticate('github', {
-    scope: ['user:email'], // Request email access from GitHub
+    scope: ['user:email', 'user:follow', 'repo'], // Request email access from GitHub
     state: JSON.stringify({ email }), // Embed email in state
   })(req, res, next);
 });
@@ -86,6 +86,7 @@ router.get(
     })(req, res, next);
   }
 );
+
 
 /**
  * Route for logging out the user.

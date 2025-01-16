@@ -24,25 +24,23 @@ app.use(
 app.use(passport.initialize());
 app.use(passport.session());
 
-const DISCORD_CALLBACK_URL = "https://flowfy.duckdns.org/api/auth/discord/callback";
+const DISCORD_CALLBACK_URL = "http://localhost:3000/api/auth/discord/callback";
 const DISCORD_API_URL = "https://discord.com/api/v10";
 
-// Comment out Discord strategy configuration
-/*
+// Configure the Discord strategy for use by Passport
 passport.use(
   new DiscordStrategy(
     {
-      clientID: process.env.DISCORD_CLIENT_ID || '',
-      clientSecret: process.env.DISCORD_CLIENT_SECRET || '',
+      clientID: process.env.DISCORD_CLIENT_ID,
+      clientSecret: process.env.DISCORD_CLIENT_SECRET,
       callbackURL: DISCORD_CALLBACK_URL,
-      scope: ["identify", "email", "connections", "bot"]
+      scope: ["identify", "email", "connections", "bot"],
     },
     function (accessToken, refreshToken, profile, done) {
-      return done(null, { ...profile, accessToken });
+      return done(null, profile);
     }
   )
 );
-*/
 
 // Serialize and deserialize user information to support persistent login sessions
 passport.serializeUser((user, done) => {
@@ -82,12 +80,17 @@ router.get('/api/auth/discord/callback', passport.authenticate('discord', { fail
     if (!accessToken) {
         throw new Error('No access token available');
     }
+    try {
 
-    await createUserServiceID(user_id, service_id, accessToken, refreshToken, true);
-    console.log('Discord tokens:', { accessToken, refreshToken });
-    console.log("accessToken: " + JSON.stringify(accessToken));
-    console.log("refreshToken: " + JSON.stringify(refreshToken));
-    return res.redirect('https://flowfy.duckdns.org:8000/discord-service');
+      await createUserServiceID(user_id, service_id, accessToken, refreshToken, true);
+      console.log('Discord tokens:', { accessToken, refreshToken });
+      console.log("accessToken: " + JSON.stringify(accessToken));
+      console.log("refreshToken: " + JSON.stringify(refreshToken));
+      res.redirect('http://localhost:8000/discord-service?connected=true');
+    }
+    catch (error) {
+      res.redirect('http://localhost:8000/discord-service?connected=false');
+    }
 });
 
 // Define the route for displaying the user profile

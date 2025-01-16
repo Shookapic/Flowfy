@@ -31,8 +31,13 @@
       "file": "./twitter-areas"
     },
     "7": {
-      "name": "New friend added",
-      "function": "AonNewFriend",
+      "name": "New server created",
+      "function": "AonServerCreation",
+      "file": "./discord-areas"
+    },
+    "10": {
+      "name": "New member in server",
+      "function": "AonNewServerMember",
       "file": "./discord-areas"
     },
     "8": {
@@ -86,6 +91,16 @@
       "name": "Create a post with the new playlist",
       "function": "RpostPlaylistToReddit",
       "file": "./spotify-areas"
+    },
+    "10": {
+      "name": "Create a repository after creating a server",
+      "function": "RcreateRepositoryFromDiscordServers",
+      "file": "./github-areas"
+    },
+    "11": {
+      "name": "Follow a user after they joined a Discord server",
+      "function": "RfollowNewServerMembers",
+      "file": "./github-areas"
     }
   }
 }

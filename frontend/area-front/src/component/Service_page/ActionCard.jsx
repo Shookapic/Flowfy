@@ -1,13 +1,13 @@
 import React from 'react';
 
-export const ActionCard = ({ 
-  action, 
-  reactions, 
-  onAddReaction, 
-  onDeleteAction, 
+export const ActionCard = ({
+  action,
+  reactions,
+  onAddReaction,
+  onDeleteAction,
   onDeleteReaction,
   onServiceConnect,
-  connectedServices 
+  connectedServices
 }) => (
   <div className="bg-white dark:bg-gray-600 p-4 sm:p-6 rounded-lg shadow">
     <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-gray-700 pb-4 gap-3 sm:gap-2">

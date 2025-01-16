@@ -14,10 +14,13 @@ const redditApi = {
 
 // Reddit auth route
 router.get('/api/auth/reddit', async (req, res) => {
-  const { email } = req.query;
+  const { email, returnTo } = req.query;
   
   if (!email) {
     return res.status(400).send('Email is required');
+  }
+  if (!returnTo) {
+    return res.status(400).send('ReturnTo is required');
   }
 
   try {
@@ -27,7 +30,7 @@ router.get('/api/auth/reddit', async (req, res) => {
       return res.status(404).send('User not found');
     }
 
-    const state = JSON.stringify({ email, userId });
+    const state = JSON.stringify({ email, userId, returnTo });
     const authUrl = `https://www.reddit.com/api/v1/authorize?` +
       `client_id=${redditApi.clientId}` +
       `&response_type=code` +
@@ -39,14 +42,14 @@ router.get('/api/auth/reddit', async (req, res) => {
     res.redirect(authUrl);
   } catch (error) {
     console.error('Error initiating Reddit auth:', error);
-    res.redirect(`https://flowfy.duckdns.org/reddit-service?connected=false&error=${encodeURIComponent(error.message)}`);
+    res.redirect(`${returnTo}?connected=false&error=${encodeURIComponent(error.message)}`);
   }
 });
 
 // Reddit callback route
 router.get('/api/auth/reddit/callback', async (req, res) => {
   const { code, state } = req.query;
-  const { email, userId } = JSON.parse(state);
+  const { email, userId, returnTo } = JSON.parse(state);
 
   try {
     // Exchange code for tokens
@@ -84,10 +87,10 @@ router.get('/api/auth/reddit/callback', async (req, res) => {
     );
 
     console.log('Reddit auth successful:', { email, userId, serviceId });
-    res.redirect('https://flowfy.duckdns.org/spotify-service?connected=true');
+    res.redirect(`${returnTo}?connected=true`);
   } catch (error) {
     console.error('Error during Reddit OAuth2 callback:', error);
-    res.redirect(`https://flowfy.duckdns.org/reddit-service?connected=false&error=${encodeURIComponent(error.message)}`);
+    res.redirect(`${returnTo}?connected=false&error=${encodeURIComponent(error.message)}`);
   }
 });
 

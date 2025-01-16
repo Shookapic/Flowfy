@@ -4,8 +4,8 @@ const DiscordStrategy = require("passport-discord").Strategy;
 const session = require("express-session");
 require('dotenv').config();
 const router = express.Router();
-const { getUserIdByEmail, createUserServiceEMAIL, getAccessTokenByEmailAndServiceName, createUserServiceID } = require('./crud_user_services');
-const { getServers, getOwnedServers, addServers, getUserFriends, addOwnedServersToDB } = require('./crud_discord_queries');
+const { getUserIdByEmail, getAccessTokenByEmailAndServiceName, createUserServiceID } = require('./crud_user_services');
+const { getOwnedServers, addServers, getUserFriends, addOwnedServersToDB } = require('./crud_discord_queries');
 const { getServiceByName } = require('./crud_services');
 
 // Create an Express application
@@ -24,7 +24,7 @@ app.use(
 app.use(passport.initialize());
 app.use(passport.session());
 
-const DISCORD_CALLBACK_URL = "http://localhost:3000/api/auth/discord/callback";
+const DISCORD_CALLBACK_URL = "https://flowfy.duckdns.org/api/auth/discord/callback";
 const DISCORD_API_URL = "https://discord.com/api/v10";
 
 // Configure the Discord strategy for use by Passport
@@ -51,16 +51,17 @@ passport.deserializeUser((obj, done) => {
   done(null, obj);
 });
 
-// Define the route for initiating Discord authentication
-app.get("/api/auth/discord", passport.authenticate("discord"));
-
 router.get('/api/auth/discord', (req, res, next) => {
     const email = req.query.email;
+    const returnTo = req.query.returnTo;
     if (!email) {
         return res.status(400).send('Email is required');
     }
+    if (!returnTo) {
+        return res.status(400).send('ReturnTo is required');
+    }
     passport.authenticate('discord', {
-        state: JSON.stringify({ email })
+        state: JSON.stringify({ email, returnTo })
     })(req, res, next);
 });
 
@@ -68,6 +69,7 @@ router.get('/api/auth/discord', (req, res, next) => {
 router.get('/api/auth/discord/callback', passport.authenticate('discord', { failureRedirect: '/' }), async (req, res) => {
     const state = JSON.parse(req.query.state);
     const email = state.email;
+    const returnTo = state.returnTo;
     const refreshToken = '';
 
     const service_id = await getServiceByName('Discord');
@@ -81,15 +83,14 @@ router.get('/api/auth/discord/callback', passport.authenticate('discord', { fail
         throw new Error('No access token available');
     }
     try {
-
-      await createUserServiceID(user_id, service_id, accessToken, refreshToken, true);
-      console.log('Discord tokens:', { accessToken, refreshToken });
-      console.log("accessToken: " + JSON.stringify(accessToken));
-      console.log("refreshToken: " + JSON.stringify(refreshToken));
-      res.redirect('http://localhost:8000/discord-service?connected=true');
+        await createUserServiceID(user_id, service_id, accessToken, refreshToken, true);
+        console.log('Discord tokens:', { accessToken, refreshToken });
+        console.log("accessToken: " + JSON.stringify(accessToken));
+        console.log("refreshToken: " + JSON.stringify(refreshToken));
+        res.redirect(returnTo + '?connected=true');
     }
     catch (error) {
-      res.redirect('http://localhost:8000/discord-service?connected=false');
+        res.redirect(returnTo + '?connected=false');
     }
 });
 

@@ -30,16 +30,19 @@ const bodyParser = require('body-parser');
  * @param {Function} next - The next middleware function.
 */
 router.get('/api/auth/github', (req, res, next) => {
-  const { email } = req.query;
+  const { email, returnTo } = req.query;
 
   if (!email) {
     return res.status(400).json({ error: 'Email is required' });
+  }
+  if (!returnTo) {
+    return res.status(400).json({ error: 'ReturnTo is required' });
   }
 
   console.log('email for github auth:', email);
   passport.authenticate('github', {
     scope: ['user:email', 'user:follow', 'repo'], // Request email access from GitHub
-    state: JSON.stringify({ email }), // Embed email in state
+    state: JSON.stringify({ email, returnTo }), // Embed email and returnTo in state
   })(req, res, next);
 });
 
@@ -50,7 +53,7 @@ router.get('/api/auth/github', (req, res, next) => {
  * @memberof module:oauth2-github
  * @param {Object} req - The request object.
  * @param {Object} req.query - The query parameters.
- * @param {string} req.query.state - The state parameter containing the email.
+ * @param {string} req.query.state - The state parameter containing the email and returnTo.
  * @param {Object} res - The response object.
  * @param {Function} next - The next middleware function.
  */
@@ -66,9 +69,9 @@ router.get(
       }
 
       try {
-        // Extract the state parameter (contains the email)
+        // Extract the state parameter (contains the email and returnTo)
         const { state } = req.query;
-        const { email } = JSON.parse(state);
+        const { email, returnTo } = JSON.parse(state);
 
         // Use the email and user information for SQL queries
         console.log(`Email from frontend: ${email}`);
@@ -78,10 +81,10 @@ router.get(
         // Example: Save GitHub user info to the database with the provided email
         await createUserServiceEMAIL(email, service_id, user.accessToken, null, true);
 
-        res.redirect('https://flowfy.duckdns.org/github-service?connected=true'); // Redirect after success
+        res.redirect(`${returnTo}?connected=true`); // Redirect after success
       } catch (error) {
         console.error('Error in GitHub callback processing:', error);
-        res.redirect('https://flowfy.duckdns.org/github-service?connected=false'); // Redirect after success
+        res.redirect(`${returnTo}?connected=false`); // Redirect after failure
       }
     })(req, res, next);
   }

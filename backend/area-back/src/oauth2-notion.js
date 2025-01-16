@@ -21,17 +21,24 @@ const scopes = [
 
 // Route for initiating Notion authentication
 router.get('/api/auth/notion', (req, res) => {
-  const { email } = req.query;
+  const { email, returnTo } = req.query;
   console.log(`Initiating Notion OAuth2 flow for email: ${email}`);
   
-  const url = `https://api.notion.com/v1/oauth/authorize?client_id=${notionClientId}&response_type=code&redirect_uri=${encodeURIComponent(notionRedirectUri)}&scope=${encodeURIComponent(scopes.join(' '))}&state=${encodeURIComponent(JSON.stringify({ email }))}`;
+  if (!email) {
+    return res.status(400).json({ error: 'Email is required' });
+  }
+  if (!returnTo) {
+    return res.status(400).json({ error: 'ReturnTo is required' });
+  }
+
+  const url = `https://api.notion.com/v1/oauth/authorize?client_id=${notionClientId}&response_type=code&redirect_uri=${encodeURIComponent(notionRedirectUri)}&scope=${encodeURIComponent(scopes.join(' '))}&state=${encodeURIComponent(JSON.stringify({ email, returnTo }))}`;
   res.redirect(url);
 });
 
 // Route for handling Notion authentication callback
 router.get('/api/auth/notion/callback', async (req, res) => {
     const { code, state } = req.query;
-    const { email } = JSON.parse(state);
+    const { email, returnTo } = JSON.parse(state);
 
     try {
         console.log(`Received callback for email: ${email}`);
@@ -67,14 +74,14 @@ router.get('/api/auth/notion/callback', async (req, res) => {
         console.log(`Successfully connected Notion service for email: ${email}`);
         
         // Send connection status back as a query parameter
-        res.redirect(`https://flowfy.duckdns.org/github-service?connected=true`);
+        res.redirect(`${returnTo}?connected=true`);
     } catch (error) {
         console.error('Error during Notion OAuth2 callback:', error);
 
         console.log(`Failed to connect Notion service for email: ${email}`);
         
         // Handle errors and redirect with a failure status
-        res.redirect(`https://flowfy.duckdns.org/github-service?connected=false`);
+        res.redirect(`${returnTo}?connected=false`);
     }
 });
 

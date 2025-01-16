@@ -155,8 +155,8 @@ export function ServiceTemplate() {
       setTimeout(() => setNotification(null), 3000);
       return;
     }
-
-    const url = `https://flowfy.duckdns.org${endpoint}?email=${encodeURIComponent(email)}`;
+    const returnTo = window.location.href;
+    const url = `https://flowfy.duckdns.org${endpoint}?email=${encodeURIComponent(email)}&returnTo=${encodeURIComponent(returnTo)}`;
     window.location.href = url;
   };
 
@@ -207,20 +207,24 @@ export function ServiceTemplate() {
     for (const reaction of reactions) {
       const reactionServiceId = availableReactions.find((r) => r.description === reaction)?.required_service_id;
       if (reactionServiceId && reactionServiceId !== currentServiceId) {
-                try {
+        try {
           const response = await fetch(`https://flowfy.duckdns.org/api/is_user_logged_service?email=${encodeURIComponent(email)}&service_id=${reactionServiceId}`, {
             method: 'GET',
             headers: {
               'Content-Type': 'application/json',
             },
           });
-        
+  
           if (response.status === 200) {
             console.log('User is logged in for this service');
           } else if (response.status === 404) {
             setNotification(`Connect to ${reactionServiceId} to activate this reaction`);
             setTimeout(() => setNotification(null), 3000);
-            window.location.href = `https://flowfy.duckdns.org${serviceApiEndpoints[Object.keys(serviceIds).find(key => serviceIds[key] === reactionServiceId)]}?email=${encodeURIComponent(email)}`;
+            window.location.href = `https://flowfy.duckdns.org${serviceApiEndpoints[Object.keys(serviceIds).find(key => serviceIds[key] === reactionServiceId)]}?email=${encodeURIComponent(email)}&returnTo=${encodeURIComponent(window.location.href)}`;
+            return;
+          } else if (response.status === 400) {
+            const returnTo = window.location.href;
+            window.location.href = `https://flowfy.duckdns.org${serviceApiEndpoints[Object.keys(serviceIds).find(key => serviceIds[key] === reactionServiceId)]}?email=${encodeURIComponent(email)}&returnTo=${encodeURIComponent(returnTo)}`;
             return;
           } else {
             console.error('Unexpected response status:', response.status);

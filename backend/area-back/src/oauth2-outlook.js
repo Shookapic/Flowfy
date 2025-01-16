@@ -27,8 +27,15 @@ const redirectUri = 'https://flowfy.duckdns.org/api/auth/outlook/callback';
 
 // Route for initiating Outlook authentication
 router.get('/api/auth/outlook', (req, res) => {
-  const { email } = req.query;
+  const { email, returnTo } = req.query;
   console.log(`Initiating Outlook OAuth2 flow for email: ${email}`);
+
+  if (!email) {
+    return res.status(400).json({ error: 'Email is required' });
+  }
+  if (!returnTo) {
+    return res.status(400).json({ error: 'ReturnTo is required' });
+  }
 
   const params = new URLSearchParams({
     client_id: process.env.OUTLOOK_CLIENT_ID,
@@ -36,7 +43,7 @@ router.get('/api/auth/outlook', (req, res) => {
     redirect_uri: redirectUri,
     scope: outlookScopes.join(' '),
     response_mode: 'query',
-    state: JSON.stringify({ email })
+    state: JSON.stringify({ email, returnTo })
   });
 
   res.redirect(`${OUTLOOK_AUTH_URL}?${params.toString()}`);
@@ -45,7 +52,7 @@ router.get('/api/auth/outlook', (req, res) => {
 // Route for handling Outlook authentication callback
 router.get('/api/auth/outlook/callback', async (req, res) => {
   const { code, state } = req.query;
-  const { email } = JSON.parse(state);
+  const { email, returnTo } = JSON.parse(state);
 
   try {
     console.log(`Received callback for email: ${email}`);
@@ -87,14 +94,14 @@ router.get('/api/auth/outlook/callback', async (req, res) => {
     console.log(`Successfully connected Outlook service for email: ${email}`);
     
     // Redirect back with a success query parameter
-    res.redirect(`https://flowfy.duckdns.org/github-service?connected=true`);
+    res.redirect(`${returnTo}?connected=true`);
   } catch (error) {
     console.error('Error during Outlook OAuth2 callback:', error);
 
     console.log(`Failed to connect Outlook service for email: ${email}`);
 
     // Redirect back with a failure query parameter
-    res.redirect(`https://flowfy.duckdns.org/github-service?connected=false`);
+    res.redirect(`${returnTo}?connected=false`);
   }
 });
 

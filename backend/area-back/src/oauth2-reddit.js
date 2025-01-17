@@ -2,7 +2,6 @@ const express = require('express');
 const router = express.Router();
 const { getUserIdByEmail, createUserServiceID } = require('./crud_user_services');
 const { getServiceByName } = require('./crud_services');
-const snoowrap = require('snoowrap');
 require('dotenv').config();
 
 // Reddit OAuth2 configuration
@@ -13,7 +12,6 @@ const redditApi = {
   redirectUri: 'https://flowfy.duckdns.org/api/auth/reddit/callback'
 };
 
-// Reddit auth route
 router.get('/api/auth/reddit', async (req, res) => {
   const { email, returnTo } = req.query;
   
@@ -30,7 +28,7 @@ router.get('/api/auth/reddit', async (req, res) => {
 
   const state = JSON.stringify({ email, returnTo, isMobile });
   
-  // Change authorization URL to use oauth.reddit.com
+  // Use correct Reddit authorization URL with proper scopes
   const params = new URLSearchParams({
     client_id: redditApi.clientId,
     response_type: 'code',
@@ -40,10 +38,7 @@ router.get('/api/auth/reddit', async (req, res) => {
     scope: 'identity edit flair history read vote submit'
   });
 
-  // Use oauth.reddit.com instead of www.reddit.com
-  const authUrl = `https://oauth.reddit.com/api/v1/authorize?${params.toString()}`;
-  // Alternative URL if above doesn't work:
-  // const authUrl = `https://ssl.reddit.com/api/v1/authorize?${params.toString()}`;
+  const authUrl = `https://www.reddit.com/api/v1/authorize?${params.toString()}`;
 
   console.log('Redirecting to:', authUrl);
   res.redirect(authUrl);
@@ -56,8 +51,8 @@ router.get('/api/auth/reddit/callback', async (req, res) => {
   try {
     console.log(`Received callback for email: ${email}`);
     
-    // Get the access token using proper Reddit OAuth token exchange
-    const tokenResponse = await fetch('&', {
+    // Exchange code for access token
+    const tokenResponse = await fetch('https://www.reddit.com/api/v1/access_token', {
       method: 'POST',
       headers: {
         'Authorization': `Basic ${Buffer.from(`${redditApi.clientId}:${redditApi.clientSecret}`).toString('base64')}`,
@@ -65,7 +60,7 @@ router.get('/api/auth/reddit/callback', async (req, res) => {
       },
       body: new URLSearchParams({
         grant_type: 'authorization_code',
-        code: code,
+        code,
         redirect_uri: redditApi.redirectUri
       })
     });

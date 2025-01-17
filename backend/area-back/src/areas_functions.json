@@ -51,8 +51,8 @@
       "file": "./spotify-areas"
     },
     "11": {
-      "name": "On Sub Join",
-      "function": "OnSubJoin",
+      "name": "On Save Post",
+      "function": "OnNewSavedPost",
       "file": "./reddit-areas"
     } 
   },

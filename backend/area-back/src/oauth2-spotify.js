@@ -74,8 +74,30 @@ router.get('/api/auth/spotify/callback', async (req, res) => {
   const { code, state } = req.query;
 
   try {
-    const parsedState = JSON.parse(state);
-    const { email, userId, returnTo, isMobile } = parsedState; // Get mobile state from parsed state
+    // Add error handling for missing state
+    if (!state) {
+      throw new Error('Missing state parameter');
+    }
+
+    // Fix state parsing with proper error handling
+    let parsedState;
+    try {
+      // First try to decode the state in case it's URI encoded
+      const decodedState = decodeURIComponent(state);
+      parsedState = JSON.parse(decodedState);
+    } catch (parseError) {
+      console.error('Failed to parse state:', parseError);
+      console.error('Raw state value:', state);
+      throw new Error('Invalid state parameter');
+    }
+
+    // Validate required state properties
+    if (!parsedState.email || !parsedState.returnTo) {
+      throw new Error('Missing required state parameters');
+    }
+
+    // Destructure with defaults to avoid undefined errors
+    const { email, userId = '', returnTo = '/', isMobile = false } = parsedState;
 
     const data = await spotifyApi.authorizationCodeGrant(code);
     const { access_token, refresh_token } = data.body;
@@ -87,7 +109,6 @@ router.get('/api/auth/spotify/callback', async (req, res) => {
 
     await createUserServiceID(userId, service_id, access_token, refresh_token, true);
 
-    // Use the isMobile flag from state instead of user-agent
     if (isMobile) {
       console.log('Redirecting to mobile app...');
       res.send(`
@@ -104,19 +125,32 @@ router.get('/api/auth/spotify/callback', async (req, res) => {
       redirectUrl.searchParams.set('connected', 'true');
       res.redirect(redirectUrl.toString());
     }
-
   } catch (error) {
     console.error('Spotify OAuth error:', error);
-    if (req.headers['user-agent']?.includes('Capacitor')) {
+    
+    // Handle error cases with safe fallbacks
+    let email = '';
+    let returnTo = 'https://flowfy.duckdns.org';
+    let isMobile = false;
+
+    try {
+      if (state) {
+        const decodedState = decodeURIComponent(state);
+        const parsedState = JSON.parse(decodedState);
+        email = parsedState.email || '';
+        returnTo = parsedState.returnTo || returnTo;
+        isMobile = parsedState.isMobile || false;
+      }
+    } catch (e) {
+      console.error('Error parsing state in error handler:', e);
+    }
+
+    if (isMobile) {
       res.send(`
         <html>
           <body>
             <script>
               window.location.replace("flowfy://oauth/callback?email=${encodeURIComponent(email)}&connected=false");
-              // Force window close on error too
-              setTimeout(function() {
-                window.close();
-              }, 1000);
             </script>
           </body>
         </html>

@@ -53,14 +53,6 @@ export const projects = [
     textColor: "#FFFFFF",
   },
   {
-    title: "Gmail",
-    description: "Gmail",
-    link: "/gmail-service",
-    icon: <FontAwesomeIcon icon={faGoogle} className="w-20 h-20" style={{ color: "#FFFFFF" }} />,
-    bgColor: "#FF0000",
-    textColor: "#FFFFFF",
-  },
-  {
     title: "Reddit",
     description: "Reddit",
     link: "/reddit-service",

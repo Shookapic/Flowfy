@@ -6,6 +6,8 @@ import { ActionModal } from './ActionModal';
 import { ReactionModal } from './ReactionModal';
 import { ActionCard } from './ActionCard';
 import { projects } from '../services';
+import { Browser } from '@capacitor/browser';
+import { App } from '@capacitor/app';
 
 const serviceApiEndpoints = {
   'spotify-service': '/api/auth/spotify',
@@ -141,24 +143,52 @@ export function ServiceTemplate() {
     localStorage.setItem('areas', areas);
   };
 
-  const handleConnect = () => {
-    const endpoint = serviceApiEndpoints[serviceName];
-    if (!endpoint) {
-      setNotification(`No API endpoint configured for ${serviceName}`);
-      setTimeout(() => setNotification(null), 3000);
-      return;
-    }
-
-    const email = localStorage.getItem('email');
-    if (!email) {
-      setNotification('Email not found in localStorage');
-      setTimeout(() => setNotification(null), 3000);
-      return;
-    }
-    const returnTo = window.location.href;
-    const url = `https://flowfy.duckdns.org${endpoint}?email=${encodeURIComponent(email)}&returnTo=${encodeURIComponent(returnTo)}`;
-    window.location.href = url;
-  };
+        const handleConnect = async () => {
+      if (!serviceName) return;
+    
+      const email = localStorage.getItem('email');
+      if (!email) return;
+    
+      const endpoint = serviceApiEndpoints[serviceName];
+      const returnTo = window.location.href;
+      // Add platform parameter
+      const platform = window.Capacitor?.isNative ? 'mobile' : 'web';
+      const url = `https://flowfy.duckdns.org${endpoint}?email=${encodeURIComponent(email)}&returnTo=${encodeURIComponent(returnTo)}&platform=${platform}`;
+    
+      if (window.Capacitor?.isNative) {
+        try {
+          const handler = App.addListener('appUrlOpen', async ({ url }) => {
+            if (url.startsWith('flowfy://oauth/callback')) {
+              await Browser.close();
+              const urlObj = new URL(url);
+              const email = urlObj.searchParams.get('email');
+              if (email) {
+                setIsConnected(true);
+                setConnectedServices(prev => ({
+                  ...prev,
+                  [serviceName]: true
+                }));
+                handler.remove();
+                setNotification(`Successfully connected to ${serviceName}`);
+                setTimeout(() => setNotification(null), 3000);
+              }
+            }
+          });
+    
+          await Browser.open({
+            url: url,
+            windowName: '_self',
+            presentationStyle: 'fullscreen'
+          });
+        } catch (error) {
+          console.error('Error during OAuth flow:', error);
+          setNotification('Failed to open authentication window');
+          setTimeout(() => setNotification(null), 3000);
+        }
+      } else {
+        window.location.href = url;
+      }
+    };
 
   const handleActionSubmit = (action) => {
     if (!isConnected) {
@@ -177,7 +207,7 @@ export function ServiceTemplate() {
     saveToLocalStorage(newActions, newReactions);
   };
 
-  const handleReactionSubmit = async (reactions) => {
+    const handleReactionSubmit = async (reactions) => {
     if (!currentAction) {
       setNotification('Action missing');
       setTimeout(() => setNotification(null), 3000);
@@ -203,6 +233,8 @@ export function ServiceTemplate() {
   
     const currentServiceId = serviceIds[serviceName];
     const email = localStorage.getItem('email');
+    const isMobile = window.Capacitor?.isNative;
+    const platform = isMobile ? 'mobile' : 'web';
   
     for (const reaction of reactions) {
       const reactionServiceId = availableReactions.find((r) => r.description === reaction)?.required_service_id;
@@ -217,14 +249,26 @@ export function ServiceTemplate() {
   
           if (response.status === 200) {
             console.log('User is logged in for this service');
-          } else if (response.status === 404) {
-            setNotification(`Connect to ${reactionServiceId} to activate this reaction`);
-            setTimeout(() => setNotification(null), 3000);
-            window.location.href = `https://flowfy.duckdns.org${serviceApiEndpoints[Object.keys(serviceIds).find(key => serviceIds[key] === reactionServiceId)]}?email=${encodeURIComponent(email)}&returnTo=${encodeURIComponent(window.location.href)}`;
-            return;
-          } else if (response.status === 400) {
+          } else if (response.status === 404 || response.status === 400) {
             const returnTo = window.location.href;
-            window.location.href = `https://flowfy.duckdns.org${serviceApiEndpoints[Object.keys(serviceIds).find(key => serviceIds[key] === reactionServiceId)]}?email=${encodeURIComponent(email)}&returnTo=${encodeURIComponent(returnTo)}`;
+            const serviceName = Object.keys(serviceIds).find(key => serviceIds[key] === reactionServiceId);
+            const authUrl = `https://flowfy.duckdns.org${serviceApiEndpoints[serviceName]}?email=${encodeURIComponent(email)}&returnTo=${encodeURIComponent(returnTo)}&platform=${platform}`;
+  
+            if (isMobile) {
+              try {
+                const { Browser } = await import('@capacitor/browser');
+                await Browser.open({
+                  url: authUrl,
+                  windowName: '_self',
+                  presentationStyle: 'fullscreen'
+                });
+              } catch (error) {
+                console.error('Error opening browser:', error);
+                setNotification('Failed to open authentication window');
+              }
+            } else {
+              window.location.href = authUrl;
+            }
             return;
           } else {
             console.error('Unexpected response status:', response.status);

@@ -1,8 +1,3 @@
-/**
- * @file oauth2-outlook.js
- * @description Express router module for handling Outlook OAuth2 authentication.
- */
-
 const express = require('express');
 const { Client } = require('@microsoft/microsoft-graph-client');
 require('isomorphic-fetch');
@@ -25,7 +20,6 @@ const outlookScopes = [
 
 const redirectUri = 'https://flowfy.duckdns.org/api/auth/outlook/callback';
 
-// Route for initiating Outlook authentication
 router.get('/api/auth/outlook', (req, res) => {
   const { email, returnTo } = req.query;
   console.log(`Initiating Outlook OAuth2 flow for email: ${email}`);
@@ -37,27 +31,30 @@ router.get('/api/auth/outlook', (req, res) => {
     return res.status(400).json({ error: 'ReturnTo is required' });
   }
 
+  // Get the platform from query params passed by ServiceTemplate.jsx
+  const isMobile = req.query.platform === 'mobile';
+  console.log('Platform:', req.query.platform);
+  console.log('Is Mobile:', isMobile);
+
   const params = new URLSearchParams({
     client_id: process.env.OUTLOOK_CLIENT_ID,
     response_type: 'code',
     redirect_uri: redirectUri,
     scope: outlookScopes.join(' '),
     response_mode: 'query',
-    state: JSON.stringify({ email, returnTo })
+    state: JSON.stringify({ email, returnTo, isMobile })
   });
 
   res.redirect(`${OUTLOOK_AUTH_URL}?${params.toString()}`);
 });
 
-// Route for handling Outlook authentication callback
 router.get('/api/auth/outlook/callback', async (req, res) => {
   const { code, state } = req.query;
-  const { email, returnTo } = JSON.parse(state);
+  const { email, returnTo, isMobile } = JSON.parse(state);
 
   try {
     console.log(`Received callback for email: ${email}`);
 
-    // Exchange code for tokens
     const tokenResponse = await fetch(OUTLOOK_TOKEN_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -71,41 +68,50 @@ router.get('/api/auth/outlook/callback', async (req, res) => {
     });
 
     const tokens = await tokenResponse.json();
-
     if (tokens.error) {
       throw new Error(tokens.error_description || 'Failed to obtain tokens');
     }
 
-    console.log(`Successfully obtained tokens for email: ${email}`);
-
-    // Retrieve the user's service ID and check for existing records
     const service_id = await getServiceByName('Outlook');
     const existingUserService = await getUserIdByEmail(email);
-
     const refreshToken = tokens.refresh_token || existingUserService?.refresh_token;
 
-    if (!refreshToken) {
-      throw new Error('No refresh token available');
-    }
-
-    // Store the user's service connection details in the database
     await createUserServiceEMAIL(email, service_id, tokens.access_token, refreshToken, true);
 
-    console.log(`Successfully connected Outlook service for email: ${email}`);
-    
-    // Redirect back with a success query parameter
-    const redirectUrl = new URL(returnTo);
-    redirectUrl.searchParams.set('connected', 'true');
-    res.redirect(redirectUrl.toString());
+    if (isMobile) {
+      console.log('Redirecting to mobile app...');
+      res.send(`
+        <html>
+          <body>
+            <script>
+              window.location.replace("flowfy://oauth/callback?email=${encodeURIComponent(email)}&token=${encodeURIComponent(tokens.access_token)}");
+            </script>
+          </body>
+        </html>
+      `);
+    } else {
+      const redirectUrl = new URL(returnTo);
+      redirectUrl.searchParams.set('connected', 'true');
+      res.redirect(redirectUrl.toString());
+    }
   } catch (error) {
     console.error('Error during Outlook OAuth2 callback:', error);
-
-    console.log(`Failed to connect Outlook service for email: ${email}`);
-
-    // Redirect back with a failure query parameter
-    const redirectUrl = new URL(returnTo);
-    redirectUrl.searchParams.set('connected', 'false');
-    res.redirect(redirectUrl.toString());
+    if (isMobile) {
+      res.send(`
+        <html>
+          <body>
+            <script>
+              window.location.replace("flowfy://oauth/callback?email=${encodeURIComponent(email)}&connected=false");
+            </script>
+          </body>
+        </html>
+      `);
+    } else {
+      const redirectUrl = new URL(returnTo);
+      redirectUrl.searchParams.set('connected', 'false');
+      redirectUrl.searchParams.set('error', encodeURIComponent(error.message));
+      res.redirect(redirectUrl.toString());
+    }
   }
 });
 

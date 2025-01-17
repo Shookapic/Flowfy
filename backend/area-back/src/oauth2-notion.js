@@ -31,14 +31,19 @@ router.get('/api/auth/notion', (req, res) => {
     return res.status(400).json({ error: 'ReturnTo is required' });
   }
 
-  const url = `https://api.notion.com/v1/oauth/authorize?client_id=${notionClientId}&response_type=code&redirect_uri=${encodeURIComponent(notionRedirectUri)}&scope=${encodeURIComponent(scopes.join(' '))}&state=${encodeURIComponent(JSON.stringify({ email, returnTo }))}`;
+  // Get the platform from query params passed by ServiceTemplate.jsx
+  const isMobile = req.query.platform === 'mobile';
+  console.log('Platform:', req.query.platform);
+  console.log('Is Mobile:', isMobile);
+
+  const state = JSON.stringify({ email, returnTo, isMobile });
+  const url = `https://api.notion.com/v1/oauth/authorize?client_id=${notionClientId}&response_type=code&redirect_uri=${encodeURIComponent(notionRedirectUri)}&scope=${encodeURIComponent(scopes.join(' '))}&state=${encodeURIComponent(state)}`;
   res.redirect(url);
 });
 
-// Route for handling Notion authentication callback
 router.get('/api/auth/notion/callback', async (req, res) => {
     const { code, state } = req.query;
-    const { email, returnTo } = JSON.parse(state);
+    const { email, returnTo, isMobile } = JSON.parse(state);
 
     try {
         console.log(`Received callback for email: ${email}`);
@@ -61,31 +66,49 @@ router.get('/api/auth/notion/callback', async (req, res) => {
             throw new Error('Failed to obtain access token');
         }
 
-        console.log(`Successfully obtained tokens for email: ${email}`);
-
         const service_id = await getServiceByName('Notion');
         const existingUserService = await getUserIdByEmail(email);
-        console.log("TOOOOOOOOOOOOO tokens", tokens);
-
         const refreshToken = tokens.refresh_token || existingUserService?.refresh_token || null;
-        console.log("-----------------going to create user service with email", email, service_id, tokens.access_token, refreshToken);
+        
         await createUserServiceEMAIL(email, service_id, tokens.access_token, refreshToken, true);
 
         console.log(`Successfully connected Notion service for email: ${email}`);
         
-        // Send connection status back as a query parameter
-        const redirectUrl = new URL(returnTo);
-        redirectUrl.searchParams.set('connected', 'true');
-        res.redirect(redirectUrl.toString());
+        if (isMobile) {
+            console.log('Redirecting to mobile app...');
+            res.send(`
+                <html>
+                    <body>
+                        <script>
+                            window.location.replace("flowfy://oauth/callback?email=${encodeURIComponent(email)}&token=${encodeURIComponent(tokens.access_token)}");
+                        </script>
+                    </body>
+                </html>
+            `);
+        } else {
+            const redirectUrl = new URL(returnTo);
+            redirectUrl.searchParams.set('connected', 'true');
+            res.redirect(redirectUrl.toString());
+        }
     } catch (error) {
         console.error('Error during Notion OAuth2 callback:', error);
-
-        console.log(`Failed to connect Notion service for email: ${email}`);
         
-        // Handle errors and redirect with a failure status
-        const redirectUrl = new URL(returnTo);
-        redirectUrl.searchParams.set('connected', 'false');
-        res.redirect(redirectUrl.toString());
+        if (isMobile) {
+            res.send(`
+                <html>
+                    <body>
+                        <script>
+                            window.location.replace("flowfy://oauth/callback?email=${encodeURIComponent(email)}&connected=false");
+                        </script>
+                    </body>
+                </html>
+            `);
+        } else {
+            const redirectUrl = new URL(returnTo);
+            redirectUrl.searchParams.set('connected', 'false');
+            redirectUrl.searchParams.set('error', encodeURIComponent(error.message));
+            res.redirect(redirectUrl.toString());
+        }
     }
 });
 

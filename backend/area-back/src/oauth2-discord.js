@@ -52,52 +52,77 @@ passport.deserializeUser((obj, done) => {
 });
 
 router.get('/api/auth/discord', (req, res, next) => {
-    const email = req.query.email;
-    const returnTo = req.query.returnTo;
-    if (!email) {
-        return res.status(400).send('Email is required');
+    const { email, returnTo } = req.query;
+    
+    if (!email || !returnTo) {
+        return res.status(400).send('Email and returnTo are required');
     }
-    if (!returnTo) {
-        return res.status(400).send('ReturnTo is required');
-    }
+
+    // Get the platform from query params passed by ServiceTemplate.jsx
+    const isMobile = req.query.platform === 'mobile';
+    console.log('Platform:', req.query.platform);
+    console.log('Is Mobile:', isMobile);
+
     passport.authenticate('discord', {
-        state: JSON.stringify({ email, returnTo })
+        scope: ["identify", "email", "connections", "guilds", "bot"],
+        state: JSON.stringify({ email, returnTo, isMobile })
     })(req, res, next);
 });
-
 // Define the route for handling the OAuth2 callback
-router.get('/api/auth/discord/callback', passport.authenticate('discord', { failureRedirect: '/' }), async (req, res) => {
-    const state = JSON.parse(req.query.state);
-    const email = state.email;
-    const returnTo = state.returnTo;
-    const refreshToken = '';
+router.get('/api/auth/discord/callback', 
+    passport.authenticate('discord', { failureRedirect: '/' }), 
+    async (req, res) => {
+        const state = JSON.parse(req.query.state);
+        const { email, returnTo, isMobile } = state;
 
-    const service_id = await getServiceByName('Discord');
-    const existingUserService = await getUserIdByEmail(email);
-    const user_id = await getUserIdByEmail(email);
+        try {
+            const service_id = await getServiceByName('Discord');
+            const user_id = await getUserIdByEmail(email);
+            const accessToken = req.user.accessToken;
 
-    // Use the new access token and fallback to the stored refresh token if missing
-    const accessToken = req.user.accessToken || existingUserService?.access_token;
+            if (!accessToken) {
+                throw new Error('No access token available');
+            }
 
-    if (!accessToken) {
-        throw new Error('No access token available');
+            await createUserServiceID(user_id, service_id, accessToken, '', true);
+
+            if (isMobile) {
+                console.log('Redirecting to mobile app...');
+                res.send(`
+                    <html>
+                        <body>
+                            <script>
+                                window.location.replace("flowfy://oauth/callback?email=${encodeURIComponent(email)}&token=${encodeURIComponent(accessToken)}");
+                            </script>
+                        </body>
+                    </html>
+                `);
+            } else {
+                const redirectUrl = new URL(returnTo);
+                redirectUrl.searchParams.set('connected', 'true');
+                res.redirect(redirectUrl.toString());
+            }
+        } catch (error) {
+            console.error('Discord OAuth error:', error);
+            if (isMobile) {
+                res.send(`
+                    <html>
+                        <body>
+                            <script>
+                                window.location.replace("flowfy://oauth/callback?email=${encodeURIComponent(email)}&connected=false");
+                            </script>
+                        </body>
+                    </html>
+                `);
+            } else {
+                const redirectUrl = new URL(returnTo);
+                redirectUrl.searchParams.set('connected', 'false');
+                redirectUrl.searchParams.set('error', encodeURIComponent(error.message));
+                res.redirect(redirectUrl.toString());
+            }
+        }
     }
-    try {
-        await createUserServiceID(user_id, service_id, accessToken, refreshToken, true);
-        console.log('Discord tokens:', { accessToken, refreshToken });
-        console.log("accessToken: " + JSON.stringify(accessToken));
-        console.log("refreshToken: " + JSON.stringify(refreshToken));
-        
-        const redirectUrl = new URL(returnTo);
-        redirectUrl.searchParams.set('connected', 'true');
-        res.redirect(redirectUrl.toString());
-    }
-    catch (error) {
-        const redirectUrl = new URL(returnTo);
-        redirectUrl.searchParams.set('connected', 'false');
-        res.redirect(redirectUrl.toString());
-    }
-});
+);
 
 // Define the route for displaying the user profile
 router.get("/api/discord/profile", async (req, res) => {

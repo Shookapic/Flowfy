@@ -23,6 +23,7 @@ const passport = require('./auth');
  * @param {Object} res - The response object.
  * @param {Function} next - The next middleware function.
 */
+
 router.get('/api/auth/github', (req, res, next) => {
   const { email, returnTo } = req.query;
 
@@ -33,10 +34,15 @@ router.get('/api/auth/github', (req, res, next) => {
     return res.status(400).json({ error: 'ReturnTo is required' });
   }
 
+  // Get the platform from query params passed by ServiceTemplate.jsx
+  const isMobile = req.query.platform === 'mobile';
+  console.log('Platform:', req.query.platform);
+  console.log('Is Mobile:', isMobile);
+
   console.log('email for github auth:', email);
   passport.authenticate('github', {
-    scope: ['user:email', 'user:follow', 'repo'], // Request email access from GitHub
-    state: JSON.stringify({ email, returnTo }), // Embed email and returnTo in state
+    scope: ['user:email', 'user:follow', 'repo'],
+    state: JSON.stringify({ email, returnTo, isMobile }), // Add isMobile to state
   })(req, res, next);
 });
 
@@ -63,26 +69,49 @@ router.get(
       }
 
       try {
-        // Extract the state parameter (contains the email and returnTo)
         const { state } = req.query;
-        const { email, returnTo } = JSON.parse(state);
+        const { email, returnTo, isMobile } = JSON.parse(state);
 
-        // Use the email and user information for SQL queries
         console.log(`Email from frontend: ${email}`);
         console.log(`GitHub User: ${user.profile.username}`);
         const service_id = await getServiceByName('Github');
 
-        // Example: Save GitHub user info to the database with the provided email
         await createUserServiceEMAIL(email, service_id, user.accessToken, null, true);
 
-        const redirectUrl = new URL(returnTo);
-        redirectUrl.searchParams.set('connected', 'true');
-        res.redirect(redirectUrl.toString()); // Redirect after success
+        if (isMobile) {
+          console.log('Redirecting to mobile app...');
+          res.send(`
+            <html>
+              <body>
+                <script>
+                  window.location.replace("flowfy://oauth/callback?email=${encodeURIComponent(email)}&token=${encodeURIComponent(user.accessToken)}");
+                </script>
+              </body>
+            </html>
+          `);
+        } else {
+          const redirectUrl = new URL(returnTo);
+          redirectUrl.searchParams.set('connected', 'true');
+          res.redirect(redirectUrl.toString());
+        }
       } catch (error) {
         console.error('Error in GitHub callback processing:', error);
-        const redirectUrl = new URL(returnTo);
-        redirectUrl.searchParams.set('connected', 'false');
-        res.redirect(redirectUrl.toString()); // Redirect after failure
+        if (isMobile) {
+          res.send(`
+            <html>
+              <body>
+                <script>
+                  window.location.replace("flowfy://oauth/callback?email=${encodeURIComponent(email)}&connected=false");
+                </script>
+              </body>
+            </html>
+          `);
+        } else {
+          const redirectUrl = new URL(returnTo);
+          redirectUrl.searchParams.set('connected', 'false');
+          redirectUrl.searchParams.set('error', encodeURIComponent(error.message));
+          res.redirect(redirectUrl.toString());
+        }
       }
     })(req, res, next);
   }

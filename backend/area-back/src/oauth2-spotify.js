@@ -25,11 +25,8 @@ const spotifyApi = new SpotifyWebApi({
 router.get('/api/auth/spotify', async (req, res) => {
   const { email, returnTo } = req.query;
 
-  if (!email) {
-    return res.status(400).send('Email is required');
-  }
-  if (!returnTo) {
-    return res.status(400).send('ReturnTo is required');
+  if (!email || !returnTo) {
+    return res.status(400).send('Email and returnTo are required');
   }
 
   try {
@@ -37,6 +34,18 @@ router.get('/api/auth/spotify', async (req, res) => {
     if (!userId) {
       return res.status(404).send('User not found');
     }
+
+    // Get the platform from query params passed by ServiceTemplate.jsx
+    const isMobile = req.query.platform === 'mobile';
+    console.log('Platform:', req.query.platform);
+    console.log('Is Mobile:', isMobile);
+
+    const state = JSON.stringify({ 
+      email, 
+      userId, 
+      returnTo,
+      isMobile // Store the mobile state
+    });
 
     const scopes = [
       'user-read-private',
@@ -47,130 +56,77 @@ router.get('/api/auth/spotify', async (req, res) => {
       'user-library-modify'
     ];
 
-    // Generate state
-    const state = JSON.stringify({ email, userId, returnTo });
-    
-    // Store in session
-    req.session.spotifyAuth = {
-      state,
-      userId,
-      email
-    };
-
-    // Force session save before redirect
-    await new Promise((resolve, reject) => {
-      req.session.save(err => {
-        if (err) reject(err);
-        else resolve();
-      });
-    });
-
-    // Always show dialog and include show_dialog parameter
     const authorizeURL = spotifyApi.createAuthorizeURL(
       scopes, 
       state, 
-      true // showDialog
+      true
     );
 
     res.redirect(authorizeURL);
   } catch (error) {
-    console.error('Error in Spotify auth:', error);
-    const redirectUrl = new URL(returnTo);
-    redirectUrl.searchParams.set('connected', 'false');
-    redirectUrl.searchParams.set('error', encodeURIComponent(error.message));
-    res.redirect(redirectUrl.toString());
+    console.error('Error:', error);
+    res.redirect(`${returnTo}?connected=false&error=${encodeURIComponent(error.message)}`);
   }
 });
 
+// In the callback route
 router.get('/api/auth/spotify/callback', async (req, res) => {
   const { code, state } = req.query;
 
-  if (!state) {
-    console.error('State parameter is missing');
-    return res.redirect('/?connected=false&error=missing_state');
-  }
-
-  let parsedState;
   try {
-    parsedState = JSON.parse(state);
-  } catch (error) {
-    console.error('Error parsing state parameter:', error);
-    return res.redirect('/?connected=false&error=invalid_state');
-  }
+    const parsedState = JSON.parse(state);
+    const { email, userId, returnTo, isMobile } = parsedState; // Get mobile state from parsed state
 
-  const { email, userId, returnTo } = parsedState;
+    const data = await spotifyApi.authorizationCodeGrant(code);
+    const { access_token, refresh_token } = data.body;
 
-  try {
-    if (!req.session?.spotifyAuth) {
-      console.error('No session data found');
-      const redirectUrl = new URL(returnTo);
-      redirectUrl.searchParams.set('connected', 'false');
-      redirectUrl.searchParams.set('error', 'session_expired');
-      return res.redirect(redirectUrl.toString());
+    const service_id = await getServiceByName('Spotify');
+    if (!service_id) {
+      throw new Error('Spotify service not found in database');
     }
 
-    if (state !== req.session.spotifyAuth.state) {
-      console.error('State mismatch:', {
-        received: state,
-        expected: req.session.spotifyAuth.state
-      });
-      const redirectUrl = new URL(returnTo);
-      redirectUrl.searchParams.set('connected', 'false');
-      redirectUrl.searchParams.set('error', 'state_mismatch');
-      return res.redirect(redirectUrl.toString());
-    }
+    await createUserServiceID(userId, service_id, access_token, refresh_token, true);
 
-    try {
-      const existingService = await getUserServiceByEmailAndServiceName(email, 'Spotify');
-      
-      if (existingService && existingService.refresh_token) {
-        spotifyApi.setRefreshToken(existingService.refresh_token);
-        const refreshData = await spotifyApi.refreshAccessToken();
-        const { access_token } = refreshData.body;
-        
-        await updateUserServiceTokens(existingService.id, access_token, existingService.refresh_token);
-        console.log('Updated existing Spotify connection using refresh token');
-      } else {
-        const data = await spotifyApi.authorizationCodeGrant(code);
-        const { access_token, refresh_token } = data.body;
-
-        const service_id = await getServiceByName('Spotify');
-        if (!service_id) {
-          throw new Error('Spotify service not found in database');
-        }
-
-        if (existingService) {
-          await updateUserServiceTokens(existingService.id, access_token, refresh_token);
-        } else {
-          await createUserServiceID(userId, service_id, access_token, refresh_token, true);
-        }
-      }
-
-      // Clear session
-      delete req.session.spotifyAuth;
-      await new Promise((resolve, reject) => {
-        req.session.save(err => err ? reject(err) : resolve());
-      });
-
-      // Redirect with connected=true parameter
+    // Use the isMobile flag from state instead of user-agent
+    if (isMobile) {
+      console.log('Redirecting to mobile app...');
+      res.send(`
+        <html>
+          <body>
+            <script>
+              window.location.replace("flowfy://oauth/callback?email=${encodeURIComponent(email)}&token=${encodeURIComponent(access_token)}");
+            </script>
+          </body>
+        </html>
+      `);
+    } else {
       const redirectUrl = new URL(returnTo);
       redirectUrl.searchParams.set('connected', 'true');
-      return res.redirect(redirectUrl.toString());
+      res.redirect(redirectUrl.toString());
+    }
 
-    } catch (error) {
-      console.error('Spotify API error:', error);
+  } catch (error) {
+    console.error('Spotify OAuth error:', error);
+    if (req.headers['user-agent']?.includes('Capacitor')) {
+      res.send(`
+        <html>
+          <body>
+            <script>
+              window.location.replace("flowfy://oauth/callback?email=${encodeURIComponent(email)}&connected=false");
+              // Force window close on error too
+              setTimeout(function() {
+                window.close();
+              }, 1000);
+            </script>
+          </body>
+        </html>
+      `);
+    } else {
       const redirectUrl = new URL(returnTo);
       redirectUrl.searchParams.set('connected', 'false');
-      redirectUrl.searchParams.set('error', 'api_error');
-      return res.redirect(redirectUrl.toString());
+      redirectUrl.searchParams.set('error', encodeURIComponent(error.message));
+      res.redirect(redirectUrl.toString());
     }
-  } catch (error) {
-    console.error('Final error:', error);
-    const redirectUrl = new URL(returnTo);
-    redirectUrl.searchParams.set('connected', 'false');
-    redirectUrl.searchParams.set('error', encodeURIComponent(error.message));
-    return res.redirect(redirectUrl.toString());
   }
 });
-
 module.exports = router;

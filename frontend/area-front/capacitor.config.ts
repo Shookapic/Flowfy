@@ -14,11 +14,13 @@ const config: CapacitorConfig = {
   plugins: {
     App: {
       webDir: 'build'
+    },
+    Browser: {
+      presentationStyle: 'popover'
     }
   },
   android: {
     allowMixedContent: true
   }
 };
-
 export default config;

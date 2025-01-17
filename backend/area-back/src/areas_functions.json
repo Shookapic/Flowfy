@@ -49,7 +49,12 @@
       "name": "On Song Liked",
       "function": "OnSongLike",
       "file": "./spotify-areas"
-    }
+    },
+    "11": {
+      "name": "On Sub Join",
+      "function": "OnSubJoin",
+      "file": "./reddit-areas"
+    } 
   },
   "reactions": {
     "1": {
@@ -68,7 +73,7 @@
       "file": "./github-areas"
     },
     "4": {
-      "name": "Send an email on Outlook",
+      "name": "Send an email on Outlook to notify",
       "function": "RsendEmail",
       "file": "./github-areas"
     },
@@ -88,19 +93,24 @@
       "file": "./discord-areas"
     },
     "8": {
+      "name": "Create a repository after creating a Discord server",
+      "function": "RcreateRepositoryFromDiscordServers",
+      "file": "./github-areas"
+    },
+    "9": {
+      "name": "Follow a user after they joined a Discord server",
+      "function": "RfollowNewServerMembers",
+      "file": "./github-areas"
+    },
+    "10": {
       "name": "Create a post with the new playlist",
       "function": "RpostPlaylistToReddit",
       "file": "./spotify-areas"
     },
-    "10": {
-      "name": "Create a repository after creating a server",
-      "function": "RcreateRepositoryFromDiscordServers",
-      "file": "./github-areas"
-    },
     "11": {
-      "name": "Follow a user after they joined a Discord server",
-      "function": "RfollowNewServerMembers",
-      "file": "./github-areas"
+      "name": "Create Playlist From Sub",
+      "function": "RcreatePlaylistFromSub",
+      "file": "./reddit-areas"
     }
   }
 }

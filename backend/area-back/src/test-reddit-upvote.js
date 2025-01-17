@@ -1,46 +1,46 @@
-const { OnUpvote, RcreatePlaylistFromUpvote } = require('./reddit-areas');
+const { OnSubJoin, RcreatePlaylistFromUpvote } = require('./reddit-areas');
 
-async function testRedditUpvoteToSpotify() {
-  const testEmail = 'mazeauarthur7@gmail.com';
-  const CHECK_INTERVAL = 60000; // 60 seconds = 1 minute
+async function testRedditSubToSpotify() {
+    const testEmail = 'mazeauarthur7@gmail.com'; // Replace with your test email
+    const CHECK_INTERVAL = 6000; // 6 seconds interval
 
-  console.log('Starting Reddit upvote detection service...');
-  console.log('Waiting for new upvoted posts...');
+    console.log('Starting Reddit subreddit join detection service...');
+    console.log('Waiting for new subreddit joins...');
 
-  // Run the check every minute
-  setInterval(async () => {
-    try {
-      console.log('\nChecking for new upvoted posts...');
-      const upvoteResult = await OnUpvote(testEmail);
-      
-      if (upvoteResult) {
-        console.log('New upvoted post detected:', {
-          title: upvoteResult.title,
-          id: upvoteResult.id
-        });
+    // Run the check periodically
+    setInterval(async () => {
+        try {
+            console.log('\nChecking for new subreddit joins...');
+            const subResult = await OnSubJoin(testEmail);
 
-        // Create Spotify playlist only if a new upvote is detected
-        console.log('\nCreating Spotify playlist...');
-        const playlistResult = await RcreatePlaylistFromUpvote(testEmail, upvoteResult);
-        console.log('Playlist creation result:', playlistResult);
-      } else {
-        console.log('No new upvoted posts detected');
-      }
+            if (subResult) {
+                console.log('New subreddit join detected:', {
+                    name: subResult.name,
+                    title: subResult.title,
+                    url: subResult.url
+                });
 
-    } catch (error) {
-      console.error('Test failed:', error);
-    }
-  }, CHECK_INTERVAL);
+                // Create Spotify playlist when new subreddit is joined
+                console.log('\nCreating Spotify playlist...');
+                const playlistResult = await RcreatePlaylistFromUpvote(testEmail, subResult);
+                console.log('Playlist creation result:', playlistResult);
+            } else {
+                console.log('No new subreddit joins detected');
+            }
+        } catch (error) {
+            console.error('Test failed:', error);
+        }
+    }, CHECK_INTERVAL);
 
-  // Keep the script running
-  console.log('Monitoring for upvoted posts. Press Ctrl+C to stop.');
+    // Keep the script running
+    console.log('Monitoring for subreddit joins. Press Ctrl+C to stop.');
 }
 
 // Run the test
-testRedditUpvoteToSpotify();
+testRedditSubToSpotify();
 
 // Handle graceful shutdown
 process.on('SIGINT', () => {
-  console.log('\nStopping Reddit upvote detection service...');
-  process.exit(0);
+    console.log('\nStopping Reddit subreddit join detection service...');
+    process.exit(0);
 });

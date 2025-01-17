@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import '../icon/fontawesome';
+import LogoutButton from './LogoutButton';
+
 
 const Navbar = () => {
   const [isMenuVisible, setIsMenuVisible] = useState(false);
@@ -14,6 +16,10 @@ const Navbar = () => {
       setIsMenuVisible(false);
     }
   };
+
+  const [profilePhoto] = useState(
+    localStorage.getItem('profilePhoto') || 'https://i0.wp.com/www.lifewaycenters.com/wp-content/uploads/2016/06/placeholder-150x150-1.png?fit=150%2C150&ssl=1'
+  );
 
   React.useEffect(() => {
     document.addEventListener('click', handleOutsideClick);
@@ -60,9 +66,9 @@ const Navbar = () => {
         <ul className="menu menu-horizontal px-1">
           <li><a className="font-bold" href="/services">Services</a></li>
           <li>
-            <a className="font-bold" href="/login">Log in</a>
+            <a className="font-bold" href="/#wthflowfy">What is Flowfy ?</a>
           </li>
-          <li><a className="font-bold" href="/login">Get Start</a></li>
+          <li><a className="font-bold" href="/#team">Our Team</a></li>
         </ul>
       </div>
       <div className="navbar-end relative flex items-center gap-4">
@@ -90,7 +96,7 @@ const Navbar = () => {
         <div className="avatar" id="avatar-menu">
           <div className="w-10 rounded-full">
             <img
-              src="https://img.daisyui.com/images/stock/photo-1534528741775-53994a69daeb.webp"
+              src={profilePhoto}
               id="avatar-image"
               style={{ cursor: 'pointer' }}
               alt="Avatar"
@@ -105,7 +111,9 @@ const Navbar = () => {
             className="menu bg-base-200 rounded-box w-56 absolute z-10 mt-3"
             style={{ top: '100%' }}
           >
-            <li><a href="/profile">View profile</a></li>
+            <div className="mt-2 ms-1">
+              <LogoutButton />
+            </div>
           </ul>
         )}
       </div>

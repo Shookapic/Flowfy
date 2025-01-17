@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react';
 import lightImage from '../assets/homepage/tile_background_light.png';
 import darkImage from '../assets/homepage/tile_background.png';
+import wthisflowfy from '../assets/homepage/rb_2092.png';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import '../icon/fontawesome';
 import Footer from './Footer';
 import { motion } from 'framer-motion';
 import Navbar from './Navbar';
+import TeamSection from './TeamSection';
 
 function Homepage() {
     const [headerImage, setHeaderImage] = useState(darkImage);
@@ -41,10 +43,27 @@ function Homepage() {
           </div>
         </div>
 
-        <div className="container mx-auto mt-16">
+        <div className="container mx-auto mt-32" id="wthflowfy">
+          <div className="text-center font-bold">
+            <h1 className="text-3xl">What is Flowfy</h1>
+            <p className="text-lg mt-4">
+              Flowfy is a platform that allows you to connect all your services together in one place with action and reaction.
+              <br />
+              It provides a wide range of services to help you automate your daily tasks.
+            </p>
+            <div className="flex justify-center">
+              <div className="max-w-2xl">
+                <img src={wthisflowfy} alt="Flowfy" />
+              </div>
+            </div>
+            <a href="/about" className="btn">What is a action reaction ?</a>
+          </div>
+        </div>
+
+        <div className="container mx-auto mt-32">
           <div className="text-center font-bold">
             <h1 className="text-3xl">Our services</h1>
-            <p className="text-lg">
+            <p className="text-lg mt-4">
               We provide a wide range of services to help you connect all your services together.
             </p>
             <div className="flex justify-center">
@@ -93,6 +112,15 @@ function Homepage() {
             </div>
             <a href="/services" className="btn mt-16">Discover all services</a>
           </div>
+        </div>
+        <div className="container mx-auto mt-32">
+          <div className="text-center font-bold">
+            <h1 className="text-3xl">Our team</h1>
+            <p className="text-lg mt-4">
+              Meet the team behind Flowfy.
+            </p>
+            <TeamSection />
+        </div>
         </div>
         <Footer />
       </>

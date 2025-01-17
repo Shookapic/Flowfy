@@ -36,7 +36,7 @@ To deploy the project using Docker Compose, follow these steps:
 4. **Access the application**:
     Once the containers are up and running, you can access the application at:
     - Frontend: [https://flowfy.duckdns.org/](https://flowfy.duckdns.org/)
-    - Backend Documentation: [https://flowfy.duckdns.org:3000/doc](https://flowfy.duckdns.org/api/docs)
+    - Backend Documentation: [https://flowfy.duckdns.org/api/docs](https://flowfy.duckdns.org/api/docs)
 
 ## Stopping the containers
 

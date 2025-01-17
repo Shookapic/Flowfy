@@ -3,6 +3,8 @@
  * @description Main server file for the application, setting up Express server and routes.
  */
 
+  const path = require('path');
+  const fs = require('fs');
   const express = require('express');
   const session = require('express-session');
   const cors = require('cors');
@@ -302,7 +304,7 @@
   
   const os = require('os');
   
-  app.get('/about.json', (req, res) => {
+  app.get('/api/about.json', (req, res) => {
     // Function to get the server's IP address
     const getServerIP = () => {
       const interfaces = os.networkInterfaces();
@@ -513,5 +515,31 @@
     }
   })
   
+  app.get('/api/docs', (req, res) => {
+    const docsDir = path.join(__dirname, 'docs');
+    fs.readdir(docsDir, (err, files) => {
+      if (err) {
+        return res.status(500).send('Error reading docs directory');
+      }
+
+      const htmlFiles = files.filter(file => file.endsWith('.html'));
+      if (htmlFiles.length === 0) {
+        return res.status(404).send('No HTML files found in docs directory');
+      }
+
+      const fileLinks = htmlFiles.map(file => `<a href="/api/docs/${file}">${file}</a>`).join('<br>');
+      res.send(`<html><body>${fileLinks}</body></html>`);
+    });
+  });
+
+  app.get('/api/docs/:file', (req, res) => {
+    const filePath = path.join(__dirname, 'docs', req.params.file);
+    res.sendFile(filePath, err => {
+      if (err) {
+        res.status(404).send('File not found');
+      }
+    });
+  });
+
   module.exports = app;
   

@@ -11,7 +11,6 @@
   const cookieParser = require('cookie-parser');
   require('dotenv').config();
   const csrfProtection = require('./middlewares/csrfProtection');
-  const youtubeAuth = require('./oauth2-youtube');
   const discordAuth = require('./oauth2-discord');
   const { onLike, subscribeToChannel } = require('./youtube-areas');
   const { fetchRepositories, compareRepositories, AonRepoCreation, AonRepoDeletion, RcreateRepo, RfollowUser, RfollowUsersFromFile } = require('./github-areas');
@@ -72,7 +71,6 @@
   const oauthReddit = require('./oauth2-reddit');
   
   
-  app.use(youtubeAuth);
   app.use(oauth2Routes);
   app.use(oauthGithub);
   app.use(crudRoutes);

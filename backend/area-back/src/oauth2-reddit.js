@@ -22,13 +22,17 @@ router.get('/api/auth/reddit', async (req, res) => {
     return res.status(400).json({ error: 'ReturnTo is required' });
   }
 
+  // Add debug logs for platform detection
+  console.log('Query params:', req.query);
   const isMobile = req.query.platform === 'mobile';
   console.log('Platform:', req.query.platform);
   console.log('Is Mobile:', isMobile);
 
   const state = JSON.stringify({ email, returnTo, isMobile });
   
-  // Use correct Reddit authorization URL with proper scopes
+  // Log state to verify mobile flag is included
+  console.log('State:', state);
+
   const params = new URLSearchParams({
     client_id: redditApi.clientId,
     response_type: 'code',
@@ -39,7 +43,6 @@ router.get('/api/auth/reddit', async (req, res) => {
   });
 
   const authUrl = `https://www.reddit.com/api/v1/authorize?${params.toString()}`;
-
   console.log('Redirecting to:', authUrl);
   res.redirect(authUrl);
 });
@@ -70,17 +73,34 @@ router.get('/api/auth/reddit/callback', async (req, res) => {
       throw new Error('Failed to obtain access token');
     }
 
-    const service_id = await getServiceByName('Reddit');
+        const service_id = await getServiceByName('Reddit');
     await createUserServiceID(email, service_id, tokens.access_token, tokens.refresh_token, true);
-
+    
+    console.log('isMobile:', isMobile);
     if (isMobile) {
-      console.log('Redirecting to mobile app...');
+      console.log('Mobile redirect - Debug info:');
+      console.log('email:', email);
+      console.log('token:', tokens.access_token);
+    
+      // Send HTML with additional logging and force close
       res.send(`
         <html>
           <body>
             <script>
-              window.location.replace("flowfy://oauth/callback?email=${encodeURIComponent(email)}&token=${encodeURIComponent(tokens.access_token)}");
+              console.log("Starting mobile redirect...");
+              // Add delay before redirect to ensure window.close works
+              setTimeout(function() {
+                console.log("Redirecting to app...");
+                window.location.replace("flowfy://oauth/callback?email=${encodeURIComponent(email)}&token=${encodeURIComponent(tokens.access_token)}");
+                console.log("Setting close timeout...");
+                // Force close after redirect
+                setTimeout(function() {
+                  console.log("Closing window...");
+                  window.close();
+                }, 1000);
+              }, 100);
             </script>
+            <p>Redirecting to Flowfy app...</p>
           </body>
         </html>
       `);

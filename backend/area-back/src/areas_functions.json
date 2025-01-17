@@ -35,17 +35,17 @@
       "function": "AonServerCreation",
       "file": "./discord-areas"
     },
-    "10": {
+    "8": {
       "name": "New member in server",
       "function": "AonNewServerMember",
       "file": "./discord-areas"
     },
-    "8": {
+    "9": {
       "name": "On Playlist Creation",
       "function": "OnPlaylistCreation",
       "file": "./spotify-areas"
     },
-    "9": {
+    "10": {
       "name": "On Song Liked",
       "function": "OnSongLike",
       "file": "./spotify-areas"

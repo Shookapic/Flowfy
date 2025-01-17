@@ -1,7 +1,7 @@
 import { HoverEffect } from "./hover-effect";
 import React from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faDiscord, faGithub, faSpotify, faYoutube, faGoogle, faXTwitter, faReddit } from '@fortawesome/free-brands-svg-icons';
+import { faDiscord, faGithub, faSpotify, faYoutube, faXTwitter, faReddit } from '@fortawesome/free-brands-svg-icons';
 import Navbar from "./Navbar";
 import Footer from "./Footer";
 
@@ -62,14 +62,6 @@ export const projects = [
     description: "Youtube",
     link: "/youtube-service",
     icon: <FontAwesomeIcon icon={faYoutube} className="w-20 h-20" style={{ color: "#FFFFFF" }} />,
-    bgColor: "#FF0000",
-    textColor: "#FFFFFF",
-  },
-  {
-    title: "Gmail",
-    description: "Gmail",
-    link: "/gmail-service",
-    icon: <FontAwesomeIcon icon={faGoogle} className="w-20 h-20" style={{ color: "#FFFFFF" }} />,
     bgColor: "#FF0000",
     textColor: "#FFFFFF",
   },

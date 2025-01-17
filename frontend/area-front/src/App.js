@@ -16,7 +16,7 @@ const ProtectedRoute = ({ children }) => {
   React.useEffect(() => {
     const email = localStorage.getItem('email');
     if (email) {
-      fetch(`http://flowfy.duckdns.org:3000/isUserLogged?email=${encodeURIComponent(email)}`, {
+      fetch(`https://flowfy.duckdns.org/api/isUserLogged?email=${encodeURIComponent(email)}`, {
         method: 'GET',
       })
         .then((response) => response.json()) // Assumes the API returns plain `true` or `false`
@@ -45,11 +45,11 @@ function App() {
         <Routes>
           <Route path="/login" element={<Oauth2 />} />
           <Route path="/auth/callback" element={<AuthCallback />} />
+          <Route path="/" element={<Homepage />} />
           <Route path="/services" element={<ProtectedRoute><Services /></ProtectedRoute>} />
           <Route path="/:serviceName" element={<ProtectedRoute><ServiceTemplate /></ProtectedRoute>} />
+          <Route path="/profile" element={<ProtectedRoute><Profilepage /></ProtectedRoute>} />
           <Route path="*" element={<Navigate to="/login" replace />} />
-          <Route path="/" element={<ProtectedRoute> <Homepage /> </ProtectedRoute>} />
-          <Route path="/profile" element={<ProtectedRoute> <Profilepage /> </ProtectedRoute>} />
           <Route path="/about" element={<ProtectedRoute> <Aboutpage /> </ProtectedRoute>} />
           <Route path="/tutorial" element={<ProtectedRoute> <TutoAreapage /> </ProtectedRoute>} />
         </Routes>

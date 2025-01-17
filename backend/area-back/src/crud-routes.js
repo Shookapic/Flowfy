@@ -18,7 +18,7 @@ const router = express.Router();
  * @function
  * @memberof module:crud-routes
  */
-router.get('/users', async (req, res) => {
+router.get('/api/users', async (req, res) => {
     try {
         const result = await users.getUsers();
         res.status(200).json(result);
@@ -41,7 +41,7 @@ router.get('/users', async (req, res) => {
  * @param {string} req.body.accessToken - The access token for authentication.
  * @param {string} req.body.refreshToken - The refresh token for authentication.
  */
-router.post('/add-users', async (req, res) => {
+router.post('/api/add-users', async (req, res) => {
     const { email, areas, is_logged, accessToken, refreshToken } = req.body;
     try {
         await users.createUser(email, areas, is_logged, accessToken, refreshToken);
@@ -61,7 +61,7 @@ router.post('/add-users', async (req, res) => {
  * @param {Object} req.body - The body of the request.
  * @param {number} req.body.id - The ID of the user to delete.
  */
-router.post('/delete-user', async (req, res) => {
+router.post('/api/delete-user', async (req, res) => {
     const { id } = req.body;
     try {
         await users.deleteUser(id);
@@ -83,7 +83,7 @@ router.post('/delete-user', async (req, res) => {
  * @param {string} req.body.email - The new email address of the user.
  * @param {Array} req.body.areas - The new areas associated with the user.
  */
-router.post('/update-user', async (req, res) => {
+router.post('/api/update-user', async (req, res) => {
     const { id, email, areas } = req.body;
     try {
         await users.updateUser(id, email, areas);
@@ -100,7 +100,7 @@ router.post('/update-user', async (req, res) => {
  * @function
  * @memberof module:crud-routes
  */
-router.get('/services', async (req, res) => {
+router.get('/api/services', async (req, res) => {
     try {
         const result = await services.getServices();
         res.status(200).json(result);
@@ -119,7 +119,7 @@ router.get('/services', async (req, res) => {
  * @param {Object} req.body - The body of the request.
  * @param {string} req.body.name - The name of the service to create.
  */
-router.post('/add_services', async (req, res) => {
+router.post('/api/add_services', async (req, res) => {
     const { name } = req.body;
     try {
         await services.createService(name);
@@ -139,7 +139,7 @@ router.post('/add_services', async (req, res) => {
  * @param {Object} req.body - The body of the request.
  * @param {number} req.body.id - The ID of the service to delete.
  */
-router.post('/delete-service', async (req, res) => {
+router.post('/api/delete-service', async (req, res) => {
     const { id } = req.body;
     try {
         await services.deleteService(id);
@@ -160,7 +160,7 @@ router.post('/delete-service', async (req, res) => {
  * @param {number} req.body.id - The ID of the service to update.
  * @param {string} req.body.name - The new name of the service.
  */
-router.post('/update-service', async (req, res) => {
+router.post('/api/update-service', async (req, res) => {
     const { id, name } = req.body;
     try {
         await services.updateService(id, name);
@@ -177,7 +177,7 @@ router.post('/update-service', async (req, res) => {
  * @function
  * @memberof module:crud-routes
  */
-router.get('/reactions', async (req, res) => {
+router.get('/api/reactions', async (req, res) => {
     try {
         const result = await reactions.getReactions();
         res.status(200).json(result);
@@ -197,7 +197,7 @@ router.get('/reactions', async (req, res) => {
  * @param {number} req.body.serviceId - The ID of the service associated with the reaction.
  * @param {string} req.body.description - The description of the reaction.
  */
-router.post('/add-reactions', async (req, res) => {
+router.post('/api/add-reactions', async (req, res) => {
     const { serviceId, description } = req.body;
     try {
         await reactions.createReaction(serviceId, description);
@@ -217,7 +217,7 @@ router.post('/add-reactions', async (req, res) => {
  * @param {Object} req.body - The body of the request.
  * @param {number} req.body.id - The ID of the reaction to delete.
  */
-router.post('/delete-reaction', async (req, res) => {
+router.post('/api/delete-reaction', async (req, res) => {
     const { id } = req.body;
     try {
         await reactions.deleteReaction(id);
@@ -238,7 +238,7 @@ router.post('/delete-reaction', async (req, res) => {
  * @param {number} req.body.id - The ID of the reaction to update.
  * @param {string} req.body.description - The new description of the reaction.
  */
-router.post('/update-reaction', async (req, res) => {
+router.post('/api/update-reaction', async (req, res) => {
     const { id, description } = req.body;
     try {
         await reactions.updateReaction(id, description);
@@ -255,7 +255,7 @@ router.post('/update-reaction', async (req, res) => {
  * @function
  * @memberof module:crud-routes
  */
-router.post('/actions', async (req, res) => {
+router.post('/api/actions', async (req, res) => {
     try {
         const result = await actions.getActions();
         res.status(200).json(result);
@@ -275,7 +275,7 @@ router.post('/actions', async (req, res) => {
  * @param {number} req.body.serviceId - The ID of the service associated with the action.
  * @param {string} req.body.description - The description of the action.
  */
-router.post('/add-actions', async (req, res) => {
+router.post('/api/add-actions', async (req, res) => {
     const { serviceId, description } = req.body;
     try {
         await actions.createAction(serviceId, description);
@@ -295,7 +295,7 @@ router.post('/add-actions', async (req, res) => {
  * @param {Object} req.body - The body of the request.
  * @param {number} req.body.id - The ID of the action to delete.
  */
-router.post('/delete-action', async (req, res) => {
+router.post('/api/delete-action', async (req, res) => {
     const { id } = req.body;
     try {
         await actions.deleteAction(id);
@@ -316,7 +316,7 @@ router.post('/delete-action', async (req, res) => {
  * @param {number} req.body.id - The ID of the action to update.
  * @param {string} req.body.description - The new description of the action.
  */
-router.post('/update-action', async (req, res) => {
+router.post('/api/update-action', async (req, res) => {
     const { id, description } = req.body;
     try {
         await actions.updateAction(id, description);
@@ -336,7 +336,7 @@ router.post('/update-action', async (req, res) => {
  * @param {Object} req.query - The query parameters.
  * @param {string} req.query.email - The email address of the user.
  */
-router.get('/get-user-by-email', async (req, res) => {
+router.get('/api/get-user-by-email', async (req, res) => {
     const { email } = req.query;
     try {
         const result = await users.getUserByEmail(email);
@@ -356,7 +356,7 @@ router.get('/get-user-by-email', async (req, res) => {
  * @param {Object} req.query - The query parameters.
  * @param {string} req.query.email - The email address of the user.
  */
-router.get('/isUserLogged', async (req, res) => {
+router.get('/api/isUserLogged', async (req, res) => {
     const { email } = req.query;
     try {
         const result = await users.isUserLogged(email);
@@ -382,7 +382,7 @@ router.get('/isUserLogged', async (req, res) => {
  * @param {string} req.query.email - The email address of the user.
  * @param {boolean} req.query.status - The new logged status of the user.
  */
-router.get('/setUserLoggedStatus', async (req, res) => {
+router.get('/api/setUserLoggedStatus', async (req, res) => {
     const { email, status } = req.query;
     try {
         await users.setUserLoggedStatus(email, status);
@@ -402,8 +402,11 @@ router.get('/setUserLoggedStatus', async (req, res) => {
  * @param {Object} req.query - The query parameters.
  * @param {number} req.query.serviceId - The ID of the service.
  */
-router.get('/get-actions-by-service-id', async (req, res) => {
+router.get('/api/get-actions-by-service-id', async (req, res) => {
     const { serviceId } = req.query;
+    if (!serviceId) {
+        return res.status(400).send('Service ID is required.');
+    }
     try {
         const result = await actions.getActionsByServiceId(serviceId);
         res.status(200).json(result);
@@ -422,7 +425,7 @@ router.get('/get-actions-by-service-id', async (req, res) => {
  * @param {Object} req.query - The query parameters.
  * @param {number} req.query.serviceId - The ID of the service.
  */
-router.get('/get-reactions-by-service-id', async (req, res) => {
+router.get('/api/get-reactions-by-service-id', async (req, res) => {
     const { serviceId } = req.query;
     try {
         const result = await reactions.getReactionsByServiceId(serviceId);
@@ -434,7 +437,7 @@ router.get('/get-reactions-by-service-id', async (req, res) => {
     }
 });
 
-router.post('/save-action-reaction', async (req, res) => {
+router.post('/api/save-action-reaction', async (req, res) => {
     console.log("///////////////////// GONNA SAVE ACTION REACTION///////////////////////////");
     const { email, areas } = req.body;
     console.log("request body: ", req.body);
@@ -481,7 +484,7 @@ router.post('/save-action-reaction', async (req, res) => {
  * @param {string} service_id - The ID of the service to check.
  * @returns {Promise<boolean>} - A promise that resolves to a boolean indicating whether the user is logged in.
  */
-router.get('/is_user_logged_service', async (req, res) => {
+router.get('/api/is_user_logged_service', async (req, res) => {
     console.log("PASSSSSSSSSSSSSSSSSSSSSSSSINNNNNNNNNNNNNNNNNNNNNNNGGGGGGGGGGGGG");
     const { email, service_id } = req.query;
     console.log("email: ", email);

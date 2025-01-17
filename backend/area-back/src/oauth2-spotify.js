@@ -11,7 +11,7 @@ const {
 } = require('./crud_user_services');
 const { getServiceByName } = require('./crud_services');
 require('dotenv').config();
-
+const { URL } = require('url');
 
 const router = express.Router();
 const SpotifyWebApi = require('spotify-web-api-node');
@@ -19,14 +19,14 @@ const SpotifyWebApi = require('spotify-web-api-node');
 const spotifyApi = new SpotifyWebApi({
   clientId: process.env.SPOTIFY_CLIENT_ID,
   clientSecret: process.env.SPOTIFY_CLIENT_SECRET,
-  redirectUri: 'http://flowfy.duckdns.org:3000/api/auth/spotify/callback'
+  redirectUri: 'https://flowfy.duckdns.org/api/auth/spotify/callback'
 });
 
 router.get('/api/auth/spotify', async (req, res) => {
-  const { email } = req.query;
+  const { email, returnTo } = req.query;
 
-  if (!email) {
-    return res.status(400).send('Email is required');
+  if (!email || !returnTo) {
+    return res.status(400).send('Email and returnTo are required');
   }
 
   try {
@@ -34,6 +34,18 @@ router.get('/api/auth/spotify', async (req, res) => {
     if (!userId) {
       return res.status(404).send('User not found');
     }
+
+    // Get the platform from query params passed by ServiceTemplate.jsx
+    const isMobile = req.query.platform === 'mobile';
+    console.log('Platform:', req.query.platform);
+    console.log('Is Mobile:', isMobile);
+
+    const state = JSON.stringify({ 
+      email, 
+      userId, 
+      returnTo,
+      isMobile // Store the mobile state
+    });
 
     const scopes = [
       'user-read-private',
@@ -44,99 +56,111 @@ router.get('/api/auth/spotify', async (req, res) => {
       'user-library-modify'
     ];
 
-    // Generate state
-    const state = Math.random().toString(36).substring(7);
-    
-    // Store in session
-    req.session.spotifyAuth = {
-      state,
-      userId,
-      email
-    };
-
-    // Force session save before redirect
-    await new Promise((resolve, reject) => {
-      req.session.save(err => {
-        if (err) reject(err);
-        else resolve();
-      });
-    });
-
-    // Always show dialog and include show_dialog parameter
     const authorizeURL = spotifyApi.createAuthorizeURL(
       scopes, 
       state, 
-      true // showDialog
+      true
     );
 
     res.redirect(authorizeURL);
   } catch (error) {
-    console.error('Error in Spotify auth:', error);
-    res.redirect('http://flowfy.duckdns.org/services?error=auth_init_failed');
+    console.error('Error:', error);
+    res.redirect(`${returnTo}?connected=false&error=${encodeURIComponent(error.message)}`);
   }
 });
 
+// In the callback route
 router.get('/api/auth/spotify/callback', async (req, res) => {
   const { code, state } = req.query;
 
   try {
-    if (!req.session?.spotifyAuth) {
-      console.error('No session data found');
-      return res.redirect('http://flowfy.duckdns.org/spotify-service?connected=false&error=session_expired');
+    // Add error handling for missing state
+    if (!state) {
+      throw new Error('Missing state parameter');
     }
 
-    if (state !== req.session.spotifyAuth.state) {
-      console.error('State mismatch:', {
-        received: state,
-        expected: req.session.spotifyAuth.state
-      });
-      return res.redirect('http://flowfy.duckdns.org/spotify-service?connected=false&error=state_mismatch');
-    }
-
-    const { userId, email } = req.session.spotifyAuth;
-
+    // Fix state parsing with proper error handling
+    let parsedState;
     try {
-      const existingService = await getUserServiceByEmailAndServiceName(email, 'Spotify');
-      
-      if (existingService && existingService.refresh_token) {
-        spotifyApi.setRefreshToken(existingService.refresh_token);
-        const refreshData = await spotifyApi.refreshAccessToken();
-        const { access_token } = refreshData.body;
-        
-        await updateUserServiceTokens(existingService.id, access_token, existingService.refresh_token);
-        console.log('Updated existing Spotify connection using refresh token');
-      } else {
-        const data = await spotifyApi.authorizationCodeGrant(code);
-        const { access_token, refresh_token } = data.body;
+      // First try to decode the state in case it's URI encoded
+      const decodedState = decodeURIComponent(state);
+      parsedState = JSON.parse(decodedState);
+    } catch (parseError) {
+      console.error('Failed to parse state:', parseError);
+      console.error('Raw state value:', state);
+      throw new Error('Invalid state parameter');
+    }
 
-        const service_id = await getServiceByName('Spotify');
-        if (!service_id) {
-          throw new Error('Spotify service not found in database');
-        }
+    // Validate required state properties
+    if (!parsedState.email || !parsedState.returnTo) {
+      throw new Error('Missing required state parameters');
+    }
 
-        if (existingService) {
-          await updateUserServiceTokens(existingService.id, access_token, refresh_token);
-        } else {
-          await createUserServiceID(userId, service_id, access_token, refresh_token, true);
-        }
-      }
+    // Destructure with defaults to avoid undefined errors
+    const { email, userId = '', returnTo = '/', isMobile = false } = parsedState;
 
-      // Clear session
-      delete req.session.spotifyAuth;
-      await new Promise((resolve, reject) => {
-        req.session.save(err => err ? reject(err) : resolve());
-      });
+    const data = await spotifyApi.authorizationCodeGrant(code);
+    const { access_token, refresh_token } = data.body;
 
-      // Redirect with connected=true parameter to port 8000
-      return res.redirect('http://flowfy.duckdns.org/spotify-service?connected=true');
+    const service_id = await getServiceByName('Spotify');
+    if (!service_id) {
+      throw new Error('Spotify service not found in database');
+    }
 
-    } catch (error) {
-      console.error('Spotify API error:', error);
-      return res.redirect('http://flowfy.duckdns.org/spotify-service?connected=false&error=api_error');
+    await createUserServiceID(userId, service_id, access_token, refresh_token, true);
+
+    if (isMobile) {
+      console.log('Redirecting to mobile app...');
+      res.send(`
+        <html>
+          <body>
+            <script>
+              window.location.replace("flowfy://oauth/callback?email=${encodeURIComponent(email)}&token=${encodeURIComponent(access_token)}");
+            </script>
+          </body>
+        </html>
+      `);
+    } else {
+      const redirectUrl = new URL(returnTo);
+      redirectUrl.searchParams.set('connected', 'true');
+      res.redirect(redirectUrl.toString());
     }
   } catch (error) {
-    console.error('Final error:', error);
-    return res.redirect(`http://flowfy.duckdns.org/spotify-service?connected=false&error=${encodeURIComponent(error.message)}`);
+    console.error('Spotify OAuth error:', error);
+    
+    // Handle error cases with safe fallbacks
+    let email = '';
+    let returnTo = 'https://flowfy.duckdns.org';
+    let isMobile = false;
+
+    try {
+      if (state) {
+        const decodedState = decodeURIComponent(state);
+        const parsedState = JSON.parse(decodedState);
+        email = parsedState.email || '';
+        returnTo = parsedState.returnTo || returnTo;
+        isMobile = parsedState.isMobile || false;
+      }
+    } catch (e) {
+      console.error('Error parsing state in error handler:', e);
+    }
+
+    if (isMobile) {
+      res.send(`
+        <html>
+          <body>
+            <script>
+              window.location.replace("flowfy://oauth/callback?email=${encodeURIComponent(email)}&connected=false");
+            </script>
+          </body>
+        </html>
+      `);
+    } else {
+      const redirectUrl = new URL(returnTo);
+      redirectUrl.searchParams.set('connected', 'false');
+      redirectUrl.searchParams.set('error', encodeURIComponent(error.message));
+      res.redirect(redirectUrl.toString());
+    }
   }
 });
 module.exports = router;

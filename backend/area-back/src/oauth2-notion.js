@@ -12,7 +12,7 @@ const router = express.Router();
 
 const notionClientId = process.env.NOTION_CLIENT_ID;
 const notionClientSecret = process.env.NOTION_CLIENT_SECRET;
-const notionRedirectUri = 'http://flowfy.duckdns.org:3000/api/auth/notion/callback';
+const notionRedirectUri = 'https://flowfy.duckdns.org/api/auth/notion/callback';
 
 const scopes = [
   'https://www.googleapis.com/auth/notion.force-ssl',
@@ -21,17 +21,29 @@ const scopes = [
 
 // Route for initiating Notion authentication
 router.get('/api/auth/notion', (req, res) => {
-  const { email } = req.query;
+  const { email, returnTo } = req.query;
   console.log(`Initiating Notion OAuth2 flow for email: ${email}`);
   
-  const url = `https://api.notion.com/v1/oauth/authorize?client_id=${notionClientId}&response_type=code&redirect_uri=${encodeURIComponent(notionRedirectUri)}&scope=${encodeURIComponent(scopes.join(' '))}&state=${encodeURIComponent(JSON.stringify({ email }))}`;
+  if (!email) {
+    return res.status(400).json({ error: 'Email is required' });
+  }
+  if (!returnTo) {
+    return res.status(400).json({ error: 'ReturnTo is required' });
+  }
+
+  // Get the platform from query params passed by ServiceTemplate.jsx
+  const isMobile = req.query.platform === 'mobile';
+  console.log('Platform:', req.query.platform);
+  console.log('Is Mobile:', isMobile);
+
+  const state = JSON.stringify({ email, returnTo, isMobile });
+  const url = `https://api.notion.com/v1/oauth/authorize?client_id=${notionClientId}&response_type=code&redirect_uri=${encodeURIComponent(notionRedirectUri)}&scope=${encodeURIComponent(scopes.join(' '))}&state=${encodeURIComponent(state)}`;
   res.redirect(url);
 });
 
-// Route for handling Notion authentication callback
 router.get('/api/auth/notion/callback', async (req, res) => {
     const { code, state } = req.query;
-    const { email } = JSON.parse(state);
+    const { email, returnTo, isMobile } = JSON.parse(state);
 
     try {
         console.log(`Received callback for email: ${email}`);
@@ -54,27 +66,49 @@ router.get('/api/auth/notion/callback', async (req, res) => {
             throw new Error('Failed to obtain access token');
         }
 
-        console.log(`Successfully obtained tokens for email: ${email}`);
-
         const service_id = await getServiceByName('Notion');
         const existingUserService = await getUserIdByEmail(email);
-        console.log("TOOOOOOOOOOOOO tokens", tokens);
-
         const refreshToken = tokens.refresh_token || existingUserService?.refresh_token || null;
-        console.log("-----------------going to create user service with email", email, service_id, tokens.access_token, refreshToken);
+        
         await createUserServiceEMAIL(email, service_id, tokens.access_token, refreshToken, true);
 
         console.log(`Successfully connected Notion service for email: ${email}`);
         
-        // Send connection status back as a query parameter
-        res.redirect(`http://flowfy.duckdns.org/github-service?connected=true`);
+        if (isMobile) {
+            console.log('Redirecting to mobile app...');
+            res.send(`
+                <html>
+                    <body>
+                        <script>
+                            window.location.replace("flowfy://oauth/callback?email=${encodeURIComponent(email)}&token=${encodeURIComponent(tokens.access_token)}");
+                        </script>
+                    </body>
+                </html>
+            `);
+        } else {
+            const redirectUrl = new URL(returnTo);
+            redirectUrl.searchParams.set('connected', 'true');
+            res.redirect(redirectUrl.toString());
+        }
     } catch (error) {
         console.error('Error during Notion OAuth2 callback:', error);
-
-        console.log(`Failed to connect Notion service for email: ${email}`);
         
-        // Handle errors and redirect with a failure status
-        res.redirect(`http://flowfy.duckdns.org/github-service?connected=false`);
+        if (isMobile) {
+            res.send(`
+                <html>
+                    <body>
+                        <script>
+                            window.location.replace("flowfy://oauth/callback?email=${encodeURIComponent(email)}&connected=false");
+                        </script>
+                    </body>
+                </html>
+            `);
+        } else {
+            const redirectUrl = new URL(returnTo);
+            redirectUrl.searchParams.set('connected', 'false');
+            redirectUrl.searchParams.set('error', encodeURIComponent(error.message));
+            res.redirect(redirectUrl.toString());
+        }
     }
 });
 

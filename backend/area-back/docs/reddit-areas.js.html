@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: reddit-areas.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: reddit-areas.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>const snoowrap = require('snoowrap');
+const { getUserServiceByEmailAndServiceName } = require('./crud_user_services');
+const SpotifyWebApi = require('spotify-web-api-node');
+require('dotenv').config();
+
+// Store last checked upvotes for each user
+const lastCheckedUpvotes = new Map();
+
+const spotifyApi = new SpotifyWebApi({
+  clientId: process.env.SPOTIFY_CLIENT_ID,
+  clientSecret: process.env.SPOTIFY_CLIENT_SECRET,
+  redirectUri: 'https://flowfy.duckdns.org/api/auth/spotify/callback'
+});
+
+/**
+ * Detects when a post is upvoted on Reddit
+ * @async
+ * @function OnUpvote
+ * @param {string} email - The email address of the user
+ */
+// Fonction corrigée OnUpvote
+async function OnUpvote(email) {
+    try {
+        const redditService = await getUserServiceByEmailAndServiceName(email, 'Reddit');
+        if (!redditService) throw new Error('Reddit service not connected');
+
+        const reddit = new snoowrap({
+            userAgent: 'Flowfy/1.0.0',
+            accessToken: redditService.access_token,
+            refreshToken: redditService.refresh_token,
+            clientId: process.env.REDDIT_CLIENT_ID,
+            clientSecret: process.env.REDDIT_CLIENT_SECRET
+        });
+
+        // Get user info and upvoted posts
+        const user = await reddit.getMe();
+        const upvoted = await reddit.getUser(user.name).getUpvoted({ limit: 1 });
+
+        if (!upvoted || upvoted.length === 0) {
+            console.log('No upvoted posts found');
+            return null;
+        }
+
+        const latestUpvote = upvoted[0];
+        const lastChecked = lastCheckedUpvotes.get(email);
+
+        if (!lastChecked || lastChecked.id !== latestUpvote.id) {
+            console.log('New upvote detected:', latestUpvote.title);
+            lastCheckedUpvotes.set(email, {
+                id: latestUpvote.id,
+                title: latestUpvote.title,
+                subreddit: latestUpvote.subreddit.display_name
+            });
+            return latestUpvote;
+        }
+
+        console.log('No new upvotes since last check.');
+        return null;
+
+    } catch (error) {
+        console.error('Error detecting upvote:', error.message);
+        throw error;
+    }
+}
+
+  // Fonction corrigée RcreatePlaylistFromUpvote
+  async function RcreatePlaylistFromUpvote(email, upvoteData) {
+    try {
+      const spotifyService = await getUserServiceByEmailAndServiceName(email, 'Spotify');
+      if (!spotifyService) throw new Error('Spotify service not connected');
+  
+      spotifyApi.setAccessToken(spotifyService.access_token);
+      spotifyApi.setRefreshToken(spotifyService.refresh_token);
+  
+      const refreshResponse = await spotifyApi.refreshAccessToken();
+      spotifyApi.setAccessToken(refreshResponse.body.access_token);
+  
+      const playlist = await spotifyApi.createPlaylist(`Reddit: ${upvoteData.title}`, {
+        description: `Playlist created from upvoted Reddit post: ${upvoteData.title}`,
+        public: true
+      });
+  
+      console.log('Created playlist:', playlist.body.name);
+      return { status: 'success', playlistId: playlist.body.id, name: playlist.body.name };
+    } catch (error) {
+      console.error('Error creating playlist:', error);
+      throw error;
+    }
+  }
+  
+module.exports = {
+  OnUpvote,
+  RcreatePlaylistFromUpvote
+};</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Global</h3><ul><li><a href="global.html#AonLike">AonLike</a></li><li><a href="global.html#AonSubscribe">AonSubscribe</a></li><li><a href="global.html#OnSongLike">OnSongLike</a></li><li><a href="global.html#OnUpvote">OnUpvote</a></li><li><a href="global.html#RcreateRepositoryFromDiscordServers">RcreateRepositoryFromDiscordServers</a></li><li><a href="global.html#RfollowUser">RfollowUser</a></li><li><a href="global.html#Rlike3latestvideo">Rlike3latestvideo</a></li><li><a href="global.html#RpostPlaylistToReddit">RpostPlaylistToReddit</a></li><li><a href="global.html#RsubscribeToChannel">RsubscribeToChannel</a></li><li><a href="global.html#RunsubscribeFromChannel">RunsubscribeFromChannel</a></li><li><a href="global.html#addReactionIdToServer">addReactionIdToServer</a></li><li><a href="global.html#checkUserExists">checkUserExists</a></li><li><a href="global.html#client">client</a></li><li><a href="global.html#compareRepositories">compareRepositories</a></li><li><a href="global.html#connectUserToService">connectUserToService</a></li><li><a href="global.html#createAction">createAction</a></li><li><a href="global.html#createReaction">createReaction</a></li><li><a href="global.html#createService">createService</a></li><li><a href="global.html#createUser">createUser</a></li><li><a href="global.html#createUserServiceEMAIL">createUserServiceEMAIL</a></li><li><a href="global.html#createUserServiceID">createUserServiceID</a></li><li><a href="global.html#deleteAction">deleteAction</a></li><li><a href="global.html#deleteReaction">deleteReaction</a></li><li><a href="global.html#deleteService">deleteService</a></li><li><a href="global.html#deleteUser">deleteUser</a></li><li><a href="global.html#deleteUserService">deleteUserService</a></li><li><a href="global.html#deleteUserServiceByUserIdAndServiceId">deleteUserServiceByUserIdAndServiceId</a></li><li><a href="global.html#deleteUserServicesByServiceId">deleteUserServicesByServiceId</a></li><li><a href="global.html#deleteUserServicesByUserId">deleteUserServicesByUserId</a></li><li><a href="global.html#deserializeUser">deserializeUser</a></li><li><a href="global.html#fetchFilteredServers">fetchFilteredServers</a></li><li><a href="global.html#fetchRepositories">fetchRepositories</a></li><li><a href="global.html#getActions">getActions</a></li><li><a href="global.html#getActionsByServiceId">getActionsByServiceId</a></li><li><a href="global.html#getReactions">getReactions</a></li><li><a href="global.html#getServices">getServices</a></li><li><a href="global.html#getUserServices">getUserServices</a></li><li><a href="global.html#getUserServicesByServiceId">getUserServicesByServiceId</a></li><li><a href="global.html#getUserServicesByUserId">getUserServicesByUserId</a></li><li><a href="global.html#getUserServicesByUserMail">getUserServicesByUserMail</a></li><li><a href="global.html#getUsers">getUsers</a></li><li><a href="global.html#readChannelIdsFromFile">readChannelIdsFromFile</a></li><li><a href="global.html#serializeUser">serializeUser</a></li><li><a href="global.html#updateAction">updateAction</a></li><li><a href="global.html#updateReaction">updateReaction</a></li><li><a href="global.html#updateService">updateService</a></li><li><a href="global.html#updateUser">updateUser</a></li><li><a href="global.html#updateUserServiceAccessToken">updateUserServiceAccessToken</a></li><li><a href="global.html#updateUserServiceRefreshToken">updateUserServiceRefreshToken</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Fri Jan 17 2025 14:35:47 GMT+0100 (Central European Standard Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

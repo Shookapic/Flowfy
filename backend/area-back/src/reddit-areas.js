@@ -3,92 +3,109 @@ const { getUserServiceByEmailAndServiceName } = require('./crud_user_services');
 const SpotifyWebApi = require('spotify-web-api-node');
 require('dotenv').config();
 
-// Store last checked upvotes for each user
-const lastCheckedUpvotes = new Map();
+// Store last checked subscriptions for each user
+const lastCheckedSubs = new Map();
+// Store initial subscription lists
+const initialSubscriptions = new Map();
 
 const spotifyApi = new SpotifyWebApi({
   clientId: process.env.SPOTIFY_CLIENT_ID,
   clientSecret: process.env.SPOTIFY_CLIENT_SECRET,
-  redirectUri: 'http://flowfy.duckdns.org:3000/api/auth/spotify/callback'
+  redirectUri: 'https://flowfy.duckdns.org/api/auth/spotify/callback'
 });
 
-/**
- * Detects when a post is upvoted on Reddit
- * @async
- * @function OnUpvote
- * @param {string} email - The email address of the user
- */
-// Fonction corrigée OnUpvote
-async function OnUpvote(email) {
-    try {
-        const redditService = await getUserServiceByEmailAndServiceName(email, 'Reddit');
-        if (!redditService) throw new Error('Reddit service not connected');
+async function OnNewSavedPost(email) {
+  try {
+    const redditService = await getUserServiceByEmailAndServiceName(email, 'Reddit');
+    if (!redditService) throw new Error('Reddit service not connected');
 
-        const reddit = new snoowrap({
-            userAgent: 'Flowfy/1.0.0',
-            accessToken: redditService.access_token,
-            refreshToken: redditService.refresh_token,
-            clientId: process.env.REDDIT_CLIENT_ID,
-            clientSecret: process.env.REDDIT_CLIENT_SECRET
-        });
+    const reddit = new snoowrap({
+      userAgent: 'Flowfy/1.0.0 (by /u/No-Donut-3306)',
+      clientId: process.env.REDDIT_CLIENT_ID,
+      clientSecret: process.env.REDDIT_CLIENT_SECRET,
+      accessToken: redditService.access_token,
+      refreshToken: redditService.refresh_token
+    });
 
-        // Get user info and upvoted posts
-        const user = await reddit.getMe();
-        const upvoted = await reddit.getUser(user.name).getUpvoted({ limit: 1 });
-
-        if (!upvoted || upvoted.length === 0) {
-            console.log('No upvoted posts found');
-            return null;
-        }
-
-        const latestUpvote = upvoted[0];
-        const lastChecked = lastCheckedUpvotes.get(email);
-
-        if (!lastChecked || lastChecked.id !== latestUpvote.id) {
-            console.log('New upvote detected:', latestUpvote.title);
-            lastCheckedUpvotes.set(email, {
-                id: latestUpvote.id,
-                title: latestUpvote.title,
-                subreddit: latestUpvote.subreddit.display_name
-            });
-            return latestUpvote;
-        }
-
-        console.log('No new upvotes since last check.');
-        return null;
-
-    } catch (error) {
-        console.error('Error detecting upvote:', error.message);
-        throw error;
+    const savedContent = await reddit.getMe().getSavedContent().fetchAll();
+    
+    if (!lastCheckedSubs.has(email)) {
+      lastCheckedSubs.set(email, new Set(savedContent.map(post => post.id)));
+      return null;
     }
+
+    const lastSavedIds = lastCheckedSubs.get(email);
+    const newPost = savedContent.find(post => !lastSavedIds.has(post.id));
+
+    if (newPost) {
+      lastSavedIds.add(newPost.id);
+      return {
+        title: newPost.title,
+        url: newPost.url,
+        subreddit: newPost.subreddit_name_prefixed,
+        author: newPost.author.name
+      };
+    }
+
+    return null;
+  } catch (error) {
+    console.error('Error checking saved posts:', error);
+    throw error;
+  }
 }
 
-  // Fonction corrigée RcreatePlaylistFromUpvote
-  async function RcreatePlaylistFromUpvote(email, upvoteData) {
+async function RcreatePlaylistFromSub(email, savedPost) {
+  const MAX_RETRIES = 3;
+  const RETRY_DELAY = 2000;
+
+  async function retry(fn, retries = MAX_RETRIES) {
     try {
-      const spotifyService = await getUserServiceByEmailAndServiceName(email, 'Spotify');
-      if (!spotifyService) throw new Error('Spotify service not connected');
-  
-      spotifyApi.setAccessToken(spotifyService.access_token);
-      spotifyApi.setRefreshToken(spotifyService.refresh_token);
-  
-      const refreshResponse = await spotifyApi.refreshAccessToken();
-      spotifyApi.setAccessToken(refreshResponse.body.access_token);
-  
-      const playlist = await spotifyApi.createPlaylist(`Reddit: ${upvoteData.title}`, {
-        description: `Playlist created from upvoted Reddit post: ${upvoteData.title}`,
-        public: true
-      });
-  
-      console.log('Created playlist:', playlist.body.name);
-      return { status: 'success', playlistId: playlist.body.id, name: playlist.body.name };
+      return await fn();
     } catch (error) {
-      console.error('Error creating playlist:', error);
-      throw error;
+      if (retries <= 0) throw error;
+      console.log(`Retrying... (${retries} attempts left)`);
+      await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
+      return retry(fn, retries - 1);
     }
   }
-  
+
+  try {
+    const spotifyService = await getUserServiceByEmailAndServiceName(email, 'Spotify');
+    if (!spotifyService) throw new Error('Spotify service not connected');
+
+    // Set up Spotify API with retries
+    await retry(async () => {
+      spotifyApi.setAccessToken(spotifyService.access_token);
+      spotifyApi.setRefreshToken(spotifyService.refresh_token);
+      const refreshResponse = await spotifyApi.refreshAccessToken();
+      spotifyApi.setAccessToken(refreshResponse.body.access_token);
+    });
+
+    // Create playlist with retries
+    const playlist = await retry(async () => {
+      return spotifyApi.createPlaylist(`Reddit: ${savedPost.title}`, {
+        description: `Playlist created from saved Reddit post from ${savedPost.subreddit}`,
+        public: true,
+        collaborative: false
+      });
+    });
+
+    console.log('Created playlist:', playlist.body.name);
+    return {
+      status: 'success',
+      playlistId: playlist.body.id,
+      name: playlist.body.name
+    };
+  } catch (error) {
+    console.error('Error creating playlist:', error);
+    return {
+      status: 'error', 
+      message: error.message
+    };
+  }
+}
+
 module.exports = {
-  OnUpvote,
-  RcreatePlaylistFromUpvote
+  OnNewSavedPost,
+  RcreatePlaylistFromSub
 };

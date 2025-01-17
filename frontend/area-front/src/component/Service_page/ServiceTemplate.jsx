@@ -6,8 +6,9 @@ import { ActionModal } from './ActionModal';
 import { ReactionModal } from './ReactionModal';
 import { ActionCard } from './ActionCard';
 import { projects } from '../services';
+import { Browser } from '@capacitor/browser';
+import { App } from '@capacitor/app';
 import Navbar from '../Navbar';
-import { useNavigate } from 'react-router-dom';
 import Footer from '../Footer';
 
 const serviceApiEndpoints = {
@@ -59,11 +60,11 @@ export function ServiceTemplate() {
       if (!serviceId) return;
 
       try {
-        const actionsResponse = await fetch(`http://flowfy.duckdns.org:3000/get-actions-by-service-id?serviceId=${serviceId}`);
+        const actionsResponse = await fetch(`https://flowfy.duckdns.org/api/get-actions-by-service-id?serviceId=${serviceId}`);
         const actionsData = await actionsResponse.json();
         setServiceActions(actionsData);
 
-        const reactionsResponse = await fetch(`http://flowfy.duckdns.org:3000/get-reactions-by-service-id?serviceId=${serviceId}`);
+        const reactionsResponse = await fetch(`https://flowfy.duckdns.org/api/get-reactions-by-service-id?serviceId=${serviceId}`);
         const reactionsData = await reactionsResponse.json();
         setAvailableReactions(reactionsData);
       } catch (error) {
@@ -77,7 +78,7 @@ export function ServiceTemplate() {
 
       try {
         const response = await fetch(
-          `http://flowfy.duckdns.org:3000/api/connection-status?email=${encodeURIComponent(email)}&serviceName=${serviceName}`
+          `https://flowfy.duckdns.org/api/connection-status?email=${encodeURIComponent(email)}&serviceName=${serviceName}`
         );
         const data = await response.json();
         if (data.isConnected) {
@@ -144,24 +145,52 @@ export function ServiceTemplate() {
     localStorage.setItem('areas', areas);
   };
 
-  const handleConnect = () => {
-    const endpoint = serviceApiEndpoints[serviceName];
-    if (!endpoint) {
-      setNotification(`No API endpoint configured for ${serviceName}`);
-      setTimeout(() => setNotification(null), 3000);
-      return;
-    }
-
-    const email = localStorage.getItem('email');
-    if (!email) {
-      setNotification('Email not found in localStorage');
-      setTimeout(() => setNotification(null), 3000);
-      return;
-    }
-
-    const url = `http://flowfy.duckdns.org:3000${endpoint}?email=${encodeURIComponent(email)}`;
-    window.location.href = url;
-  };
+        const handleConnect = async () => {
+      if (!serviceName) return;
+    
+      const email = localStorage.getItem('email');
+      if (!email) return;
+    
+      const endpoint = serviceApiEndpoints[serviceName];
+      const returnTo = window.location.href;
+      // Add platform parameter
+      const platform = window.Capacitor?.isNative ? 'mobile' : 'web';
+      const url = `https://flowfy.duckdns.org${endpoint}?email=${encodeURIComponent(email)}&returnTo=${encodeURIComponent(returnTo)}&platform=${platform}`;
+    
+      if (window.Capacitor?.isNative) {
+        try {
+          const handler = App.addListener('appUrlOpen', async ({ url }) => {
+            if (url.startsWith('flowfy://oauth/callback')) {
+              await Browser.close();
+              const urlObj = new URL(url);
+              const email = urlObj.searchParams.get('email');
+              if (email) {
+                setIsConnected(true);
+                setConnectedServices(prev => ({
+                  ...prev,
+                  [serviceName]: true
+                }));
+                handler.remove();
+                setNotification(`Successfully connected to ${serviceName}`);
+                setTimeout(() => setNotification(null), 3000);
+              }
+            }
+          });
+    
+          await Browser.open({
+            url: url,
+            windowName: '_self',
+            presentationStyle: 'fullscreen'
+          });
+        } catch (error) {
+          console.error('Error during OAuth flow:', error);
+          setNotification('Failed to open authentication window');
+          setTimeout(() => setNotification(null), 3000);
+        }
+      } else {
+        window.location.href = url;
+      }
+    };
 
   const handleActionSubmit = (action) => {
     if (!isConnected) {
@@ -180,7 +209,7 @@ export function ServiceTemplate() {
     saveToLocalStorage(newActions, newReactions);
   };
 
-  const handleReactionSubmit = async (reactions) => {
+    const handleReactionSubmit = async (reactions) => {
     if (!currentAction) {
       setNotification('Action missing');
       setTimeout(() => setNotification(null), 3000);
@@ -206,24 +235,42 @@ export function ServiceTemplate() {
   
     const currentServiceId = serviceIds[serviceName];
     const email = localStorage.getItem('email');
+    const isMobile = window.Capacitor?.isNative;
+    const platform = isMobile ? 'mobile' : 'web';
   
     for (const reaction of reactions) {
       const reactionServiceId = availableReactions.find((r) => r.description === reaction)?.required_service_id;
       if (reactionServiceId && reactionServiceId !== currentServiceId) {
-                try {
-          const response = await fetch(`http://flowfy.duckdns.org:3000/is_user_logged_service?email=${encodeURIComponent(email)}&service_id=${reactionServiceId}`, {
+        try {
+          const response = await fetch(`https://flowfy.duckdns.org/api/is_user_logged_service?email=${encodeURIComponent(email)}&service_id=${reactionServiceId}`, {
             method: 'GET',
             headers: {
               'Content-Type': 'application/json',
             },
           });
-        
+  
           if (response.status === 200) {
             console.log('User is logged in for this service');
-          } else if (response.status === 404) {
-            setNotification(`Connect to ${reactionServiceId} to activate this reaction`);
-            setTimeout(() => setNotification(null), 3000);
-            window.location.href = `http://flowfy.duckdns.org:3000${serviceApiEndpoints[Object.keys(serviceIds).find(key => serviceIds[key] === reactionServiceId)]}?email=${encodeURIComponent(email)}`;
+          } else if (response.status === 404 || response.status === 400) {
+            const returnTo = window.location.href;
+            const serviceName = Object.keys(serviceIds).find(key => serviceIds[key] === reactionServiceId);
+            const authUrl = `https://flowfy.duckdns.org${serviceApiEndpoints[serviceName]}?email=${encodeURIComponent(email)}&returnTo=${encodeURIComponent(returnTo)}&platform=${platform}`;
+  
+            if (isMobile) {
+              try {
+                const { Browser } = await import('@capacitor/browser');
+                await Browser.open({
+                  url: authUrl,
+                  windowName: '_self',
+                  presentationStyle: 'fullscreen'
+                });
+              } catch (error) {
+                console.error('Error opening browser:', error);
+                setNotification('Failed to open authentication window');
+              }
+            } else {
+              window.location.href = authUrl;
+            }
             return;
           } else {
             console.error('Unexpected response status:', response.status);
@@ -256,7 +303,7 @@ export function ServiceTemplate() {
     }
     const areas = localStorage.getItem('areas');
     try {
-      const response = await fetch('http://flowfy.duckdns.org:3000/save-action-reaction', {
+      const response = await fetch('https://flowfy.duckdns.org/api/save-action-reaction', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

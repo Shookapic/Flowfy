@@ -14,7 +14,7 @@ require('dotenv').config();
 const oauth2Client = new google.auth.OAuth2(
   process.env.YOUTUBE_CLIENT_ID,
   process.env.YOUTUBE_CLIENT_SECRET,
-  'http://flowfy.duckdns.org:3000/api/auth/youtube/callback'
+  'https://flowfy.duckdns.org/api/auth/youtube/callback'
 );
 
 /**

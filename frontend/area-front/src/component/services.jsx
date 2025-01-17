@@ -1,7 +1,7 @@
 import { HoverEffect } from "./hover-effect";
 import React from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faDiscord, faGithub, faSpotify, faYoutube, faGoogle, faXTwitter, faReddit } from '@fortawesome/free-brands-svg-icons';
+import { faDiscord, faGithub, faSpotify, faYoutube, faXTwitter, faReddit } from '@fortawesome/free-brands-svg-icons';
 
 export function Services() {
   return (

@@ -9,8 +9,10 @@
   },
   "dependencies": {
     "@microsoft/microsoft-graph-client": "^3.0.7",
+    "@tabler/icons-react": "^3.28.1",
     "axios": "^1.7.9",
     "body-parser": "^1.20.3",
+    "clsx": "^2.1.1",
     "connect-pg-simple": "^10.0.0",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
@@ -19,6 +21,7 @@
     "express": "^4.21.2",
     "express-rate-limit": "^7.5.0",
     "express-session": "^1.18.1",
+    "framer-motion": "^11.18.0",
     "googleapis": "^144.0.0",
     "isomorphic-fetch": "^3.0.0",
     "passport-azure-ad": "^4.3.5",
@@ -29,6 +32,7 @@
     "request": "^2.88.2",
     "snoowrap": "^1.23.0",
     "spotify-web-api-node": "^5.0.2",
+    "tailwind-merge": "^2.6.0",
     "twitter-api-v2": "^1.18.2"
   },
   "devDependencies": {

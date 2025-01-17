@@ -23,7 +23,7 @@ const LoginButton = () => {
                 });
 
                 await Browser.open({
-                    url: 'http://flowfy.duckdns.org:3000/api/auth/google?prompt=select_account',
+                    url: 'https://flowfy.duckdns.org/api/auth/google?prompt=select_account',
                     windowName: '_self',
                     presentationStyle: 'fullscreen',
                 });
@@ -32,14 +32,14 @@ const LoginButton = () => {
             }
         } else {
             window.open(
-                'http://flowfy.duckdns.org:3000/api/auth/google?prompt=select_account',
+                'https://flowfy.duckdns.org/api/auth/google?prompt=select_account',
                 '_blank',
                 'width=500,height=600'
             );
 
             // Add message listener for web flow
             const messageListener = (event) => {
-                if (event.origin !== 'http://flowfy.duckdns.org:3000') {
+                if (event.origin !== 'https://flowfy.duckdns.org') {
                     console.error('Invalid origin:', event.origin);
                     return;
                 }

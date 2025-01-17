@@ -3,6 +3,8 @@ DROP TABLE IF EXISTS reactions CASCADE;
 DROP TABLE IF EXISTS actions CASCADE;
 DROP TABLE IF EXISTS services CASCADE;
 DROP TABLE IF EXISTS user_services CASCADE;
+DROP TABLE IF EXISTS discord_servers CASCADE;
+DROP TABLE IF EXISTS discord_servers_members CASCADE;
 
 CREATE TABLE services (
     id SERIAL PRIMARY KEY,
@@ -35,10 +37,29 @@ CREATE TABLE users (
 CREATE TABLE user_services (
     id SERIAL PRIMARY KEY,
     user_id INT REFERENCES users(id) ON DELETE CASCADE,
-    service_id INT REFERENCES services(id) ON DELETE CASCADE UNIQUE,
+    service_id INT REFERENCES services(id) ON DELETE CASCADE,
     access_token TEXT NULL,
     refresh_token TEXT NULL,
     is_logged BOOLEAN NOT NULL
+);
+
+CREATE TABLE discord_servers (
+    id SERIAL PRIMARY KEY,
+    server_id TEXT NOT NULL UNIQUE,
+    server_name TEXT NOT NULL,
+    owner_email TEXT NOT NULL,
+    reactions_id TEXT[]
+);
+
+CREATE TABLE discord_servers_members (
+  id SERIAL PRIMARY KEY,
+  server_id TEXT NOT NULL,
+  server_name TEXT NOT NULL,
+  user_name TEXT NOT NULL,
+  user_id TEXT NOT NULL,
+  joined_at TIMESTAMP NOT NULL,
+  reactions_id TEXT[],
+  UNIQUE (server_id, user_name)
 );
 
 -- Insert services
@@ -61,10 +82,11 @@ INSERT INTO actions (service_id, description) VALUES (6, 'New pull request creat
 INSERT INTO actions (service_id, description) VALUES (6, 'New issue created');
 INSERT INTO actions (service_id, description) VALUES (5, 'New tweet liked');
 INSERT INTO actions (service_id, description) VALUES (5, 'When Following a user');
-INSERT INTO actions (service_id, description) VALUES (7, 'New friend added');
+INSERT INTO actions (service_id, description) VALUES (7, 'New server created');
+INSERT INTO actions (service_id, description) VALUES (7, 'New member in server');
 INSERT INTO actions (service_id, description) VALUES (1, 'On Playlist Creation');
 INSERT INTO actions (service_id, description) VALUES (1, 'On Song Liked');
-INSERT INTO actions (service_id, description) VALUES (11, 'OnSubJoin');
+INSERT INTO actions (service_id, description) VALUES (11, 'On Sub Join');
 
 -- Insert reactions
 INSERT INTO reactions (service_id, description, required_service_id, required_service_name) VALUES (2, 'Add songs from videos you liked to a Spotify playlist named Youtube', 1, 'Spotify');
@@ -74,5 +96,7 @@ INSERT INTO reactions (service_id, description, required_service_id, required_se
 INSERT INTO reactions (service_id, description, required_service_id, required_service_name) VALUES (5, 'Create a Google Calendar with the tweet link', 8, 'Google');
 INSERT INTO reactions (service_id, description, required_service_id, required_service_name) VALUES (5, 'Search for the user and follow him on YouTube', 2, 'YouTube');
 INSERT INTO reactions (service_id, description, required_service_id, required_service_name) VALUES (7, 'Send an email to notify about new friend', 10, 'Outlook');
+INSERT INTO reactions (service_id, description, required_service_id, required_service_name) VALUES (7, 'Create a repository after creating a Discord server', 6, 'Github');
+INSERT INTO reactions (service_id, description, required_service_id, required_service_name) VALUES (7, 'Follow a user after they joined a Discord server', 6, 'Github');
 INSERT INTO reactions (service_id, description, required_service_id, required_service_name) VALUES (1, 'Create a post with the new playlist', 11, 'Reddit');
-INSERT INTO reactions (service_id, description, required_service_id, required_service_name) VALUES (11, 'Create Playlist From Sub', 1, 'Reddit');
+INSERT INTO reactions (service_id, description, required_service_id, required_service_name) VALUES (11, 'Create Playlist From Sub', 1, 'Spotify');

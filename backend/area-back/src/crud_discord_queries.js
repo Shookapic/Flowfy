@@ -8,8 +8,9 @@ const client = require('./db');
 const fs = require('fs');
 const { getAccessTokenByEmailAndServiceName } = require('./crud_user_services');
 const path = require('path');
+const { merge } = require("./oauth2-youtube");
 
-async function writeDataToFile(data, filePath = 'DISCORD_owned_servers.json') {
+async function writeDataToFile(data, filePath) {
   try {
     let existingData = [];
 
@@ -33,7 +34,6 @@ async function writeDataToFile(data, filePath = 'DISCORD_owned_servers.json') {
 
     // Write the merged data back to the file
     fs.writeFileSync(filePath, JSON.stringify(mergedData, null, 2));
-    console.log(`Data successfully appended to ${filePath}`);
   } catch (error) {
     console.error('Error writing data to file:', error);
     throw error;
@@ -194,14 +194,87 @@ async function getUserFriends(accessToken) {
   }
 }
 
-async function AonServerCreation(email) {
-  // try {
-  //   const newGuilds = await getOwnedServers(email);
+/**
+ * Add a new reaction ID to the reactions_id array for a specific server.
+ * @param {string} serverId - The server ID of the row to update.
+ * @param {string} reactionId - The reaction ID to add to the reactions_id array.
+ * @returns {Promise<void>}
+ */
+async function addReactionIdToServer(serverId, reactionName) {
+  const query = `
+    UPDATE discord_servers
+    SET reactions_id = array_append(reactions_id, $1)
+    WHERE server_id = $2;
+  `;
 
-  //   if (newGuilds) {
+  const reactionQuery = `SELECT id FROM reactions WHERE description = $1;`;
 
-  //   }
-  // }
+  try {
+    const reactionId = await client.query(reactionQuery, [reactionName]);
+    await client.query(query, [reactionId, serverId]);
+    console.log(`Successfully added reaction ID ${reactionId} to server ${serverId}`);
+  } catch (error) {
+    console.error('Error updating reactions_id array:', error);
+    throw error;
+  }
+}
+
+async function addReactionIdToMember(username, serverId, reactionName) {
+  const query = `UPDATE discord_servers_members
+  SET reactions_id = CASE
+  WHEN array_position(reactions_id, $1) IS NULL THEN array_append(reactions_id, $1)
+  ELSE reactions_id
+  END
+  WHERE user_name = $2 AND server_id = $3;
+  `;
+
+  const actionQuery = `SELECT id FROM actions WHERE description = $1;`;
+
+  try {
+    const reactionId = await client.query(actionQuery, [reactionName]);
+    await client.query(query, [reactionId, username, serverId]);
+    console.log(`Successfully added reaction ID ${reactionId} to user ${username}`);
+  } catch (error) {
+    console.error('Error updating reactions_id array:', error);
+    throw error;
+  }
+}
+
+/**
+ * Fetch all data from discord_servers excluding rows where a specific id is in reactions_id.
+ * @param {string} excludedId - The ID to exclude from the results.
+ * @returns {Promise<Array>} - The filtered rows from the discord_servers table.
+ */
+async function fetchFilteredServers(excludedId) {
+  const query = `
+    SELECT *
+    FROM discord_servers
+    WHERE reactions_id IS NULL OR NOT $1 = ANY(reactions_id);
+  `;
+
+  try {
+    const result = await client.query(query, [excludedId]);
+    return result.rows;
+  } catch (error) {
+    console.error('Error fetching filtered data:', error);
+    throw error;
+  }
+}
+
+async function fetchFilteredMembers(excludedId) {
+  const query = `
+    SELECT *
+    FROM discord_servers_members
+    WHERE reactions_id IS NULL OR NOT $1 = ANY(reactions_id);
+  `;
+
+  try {
+    const result = await client.query(query, [excludedId]);
+    return result.rows;
+  } catch (error) {
+    console.error('Error fetching filtered data:', error);
+    throw error;
+  }
 }
 
 // Export the functions for use in other modules.
@@ -212,5 +285,10 @@ module.exports = {
   addOwnedServersToDB,
   getUserGuilds,
   getUserFriends,
-  getOwnedUserGuilds
+  getOwnedUserGuilds,
+  writeDataToFile,
+  addReactionIdToServer,
+  fetchFilteredServers,
+  fetchFilteredMembers,
+  addReactionIdToMember
 };

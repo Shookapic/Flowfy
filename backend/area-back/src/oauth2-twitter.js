@@ -15,7 +15,7 @@ const twitterClient = new TwitterApi({
   clientSecret: process.env.TWITTER_CLIENT_SECRET,
 });
 
-const callbackURL = 'http://flowfy.duckdns.org:3000/api/auth/twitter/callback';
+const callbackURL = 'https://flowfy.duckdns.org/api/auth/twitter/callback';
 
 /**
  * Route for initiating Twitter authentication.
@@ -25,13 +25,17 @@ const callbackURL = 'http://flowfy.duckdns.org:3000/api/auth/twitter/callback';
  * @param {Object} req - The request object.
  * @param {Object} req.query - The query parameters.
  * @param {string} req.query.email - The email address of the user.
+ * @param {string} req.query.returnTo - The return URL after authentication.
  * @param {Object} res - The response object.
  */
 router.get('/api/auth/twitter', async (req, res) => {
-  const { email } = req.query;
+  const { email, returnTo } = req.query;
 
   if (!email) {
     return res.status(400).send('Email is required');
+  }
+  if (!returnTo) {
+    return res.status(400).send('ReturnTo is required');
   }
 
   try {
@@ -45,6 +49,7 @@ router.get('/api/auth/twitter', async (req, res) => {
 
     const { url, codeVerifier, state } = twitterClient.generateOAuth2AuthLink(callbackURL, {
       scope: ['tweet.read', 'tweet.write', 'users.read', 'offline.access'],
+      state: JSON.stringify({ email, userId, returnTo })
     });
 
     req.session.codeVerifier = codeVerifier;
@@ -74,6 +79,7 @@ router.get('/api/auth/twitter', async (req, res) => {
  */
 router.get('/api/auth/twitter/callback', async (req, res) => {
   const { state, code } = req.query;
+  const { email, userId, returnTo } = JSON.parse(state);
 
   console.log('Received state:', state);
   console.log('Session state:', req.session.state);
@@ -95,18 +101,14 @@ router.get('/api/auth/twitter/callback', async (req, res) => {
     // Store accessToken and refreshToken in the database
     const service_id = await getServiceByName('Twitter');
     console.log(`Service ID: ${service_id}`);
-    await createUserServiceID(req.session.userId, service_id, accessToken, refreshToken, true);
+    await createUserServiceID(userId, service_id, accessToken, refreshToken, true);
     console.log(`User ${user.username} connected to Twitter`);
 
-    res.json({
-      message: 'Twitter authentication successful',
-      user,
-      accessToken,
-      refreshToken,
-    });
+    // Redirect with connected=true parameter
+    res.redirect(`${returnTo}?connected=true`);
   } catch (error) {
     console.error('Error during Twitter authentication:', error);
-    res.status(500).send('Authentication failed');
+    res.redirect(`${returnTo}?connected=false&error=${encodeURIComponent(error.message)}`);
   }
 });
 

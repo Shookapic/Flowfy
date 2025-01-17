@@ -5,7 +5,7 @@ const AuthCallback = () => {
     const navigate = useNavigate();
 
     useEffect(() => {
-        fetch('http://flowfy.duckdns.org:3000/api/auth/google/callback', {
+        fetch('https://flowfy.duckdns.org/api/auth/google/callback', {
             credentials: 'include',
         })
             .then((res) => res.json())

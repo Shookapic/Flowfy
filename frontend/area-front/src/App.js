@@ -43,11 +43,11 @@ function App() {
         <Routes>
           <Route path="/login" element={<Oauth2 />} />
           <Route path="/auth/callback" element={<AuthCallback />} />
+          <Route path="/" element={<Homepage />} />
           <Route path="/services" element={<ProtectedRoute><Services /></ProtectedRoute>} />
           <Route path="/:serviceName" element={<ProtectedRoute><ServiceTemplate /></ProtectedRoute>} />
+          <Route path="/profile" element={<ProtectedRoute><Profilepage /></ProtectedRoute>} />
           <Route path="*" element={<Navigate to="/login" replace />} />
-          <Route path="/" element={<ProtectedRoute> <Homepage /> </ProtectedRoute>} />
-          <Route path="/profile" element={<ProtectedRoute> <Profilepage /> </ProtectedRoute>} />
         </Routes>
       </div>
     </Router>

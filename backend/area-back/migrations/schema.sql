@@ -86,7 +86,7 @@ INSERT INTO actions (service_id, description) VALUES (7, 'New server created');
 INSERT INTO actions (service_id, description) VALUES (7, 'New member in server');
 INSERT INTO actions (service_id, description) VALUES (1, 'On Playlist Creation');
 INSERT INTO actions (service_id, description) VALUES (1, 'On Song Liked');
-INSERT INTO actions (service_id, description) VALUES (11, 'On Sub Join');
+INSERT INTO actions (service_id, description) VALUES (11, 'On Save Post');
 
 -- Insert reactions
 INSERT INTO reactions (service_id, description, required_service_id, required_service_name) VALUES (2, 'Add songs from videos you liked to a Spotify playlist named Youtube', 1, 'Spotify');

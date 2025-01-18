@@ -315,7 +315,7 @@ async function isUserLogged(userId, serviceId) {
   const query = 'SELECT is_logged FROM user_services WHERE user_id = $1 AND service_id = $2';
   const values = [userId, serviceId];
   const result = await client.query(query, values);
-    return result.rows[0]?.is_logged;
+  return result.rows[0]?.is_logged;
 }
 
 const { Pool } = require('pg');

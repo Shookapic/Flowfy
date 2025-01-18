@@ -50,22 +50,6 @@ export const projects = [
     textColor: "#FFFFFF",
   },
   {
-    title: "X",
-    description: "X",
-    link: "/x-service",
-    icon: <FontAwesomeIcon icon={faXTwitter} className="w-20 h-20" style={{ color: "#FFFFFF" }} />,
-    bgColor: "#000000",
-    textColor: "#FFFFFF",
-  },
-  {
-    title: "YouTube",
-    description: "Youtube",
-    link: "/youtube-service",
-    icon: <FontAwesomeIcon icon={faYoutube} className="w-20 h-20" style={{ color: "#FFFFFF" }} />,
-    bgColor: "#FF0000",
-    textColor: "#FFFFFF",
-  },
-  {
     title: "Reddit",
     description: "Reddit",
     link: "/reddit-service",

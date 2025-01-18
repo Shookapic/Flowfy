@@ -75,18 +75,23 @@ export function ServiceTemplate() {
     const fetchConnectionStatus = async () => {
       const email = localStorage.getItem('email');
       if (!email) return;
-
+    
+      const serviceId = serviceIds[serviceName];
+      if (!serviceId) return;
+    
       try {
         const response = await fetch(
-          `https://flowfy.duckdns.org/api/connection-status?email=${encodeURIComponent(email)}&serviceName=${serviceName}`
+          `https://flowfy.duckdns.org/api/is_user_logged_service?email=${encodeURIComponent(email)}&service_id=${serviceId}`
         );
-        const data = await response.json();
-        if (data.isConnected) {
+    
+        if (response.status === 200) {
           setIsConnected(true);
           setConnectedServices((prevState) => ({
             ...prevState,
             [serviceName]: true,
           }));
+        } else {
+          setIsConnected(false);
         }
       } catch (error) {
         console.error('Error fetching connection status:', error);
@@ -117,7 +122,7 @@ export function ServiceTemplate() {
   }, [serviceName]);
 
   useEffect(() => {
-    const storedAreas = localStorage.getItem('areas');
+    const storedAreas = localStorage.getItem(`areas${serviceName.toUpperCase()}`);
     if (storedAreas) {
       const actionsAndReactions = storedAreas.split(',');
       const actions = [];
@@ -133,7 +138,7 @@ export function ServiceTemplate() {
       setSelectedActions(actions);
       setSelectedReactions(reactions);
     }
-  }, []);
+  }, [serviceName]);
 
   const saveToLocalStorage = (actions, reactions) => {
     const areas = actions
@@ -142,55 +147,55 @@ export function ServiceTemplate() {
         return `${action.name}:${reactionList.join('|')}`;
       })
       .join(',');
-    localStorage.setItem('areas', areas);
+    localStorage.setItem(`areas${serviceName.toUpperCase()}`, areas);
   };
 
-        const handleConnect = async () => {
-      if (!serviceName) return;
-    
-      const email = localStorage.getItem('email');
-      if (!email) return;
-    
-      const endpoint = serviceApiEndpoints[serviceName];
-      const returnTo = window.location.href;
-      // Add platform parameter
-      const platform = window.Capacitor?.isNative ? 'mobile' : 'web';
-      const url = `https://flowfy.duckdns.org${endpoint}?email=${encodeURIComponent(email)}&returnTo=${encodeURIComponent(returnTo)}&platform=${platform}`;
-    
-      if (window.Capacitor?.isNative) {
-        try {
-          const handler = App.addListener('appUrlOpen', async ({ url }) => {
-            if (url.startsWith('flowfy://oauth/callback')) {
-              await Browser.close();
-              const urlObj = new URL(url);
-              const email = urlObj.searchParams.get('email');
-              if (email) {
-                setIsConnected(true);
-                setConnectedServices(prev => ({
-                  ...prev,
-                  [serviceName]: true
-                }));
-                handler.remove();
-                setNotification(`Successfully connected to ${serviceName}`);
-                setTimeout(() => setNotification(null), 3000);
-              }
+  const handleConnect = async () => {
+    if (!serviceName) return;
+
+    const email = localStorage.getItem('email');
+    if (!email) return;
+
+    const endpoint = serviceApiEndpoints[serviceName];
+    const returnTo = window.location.href;
+    // Add platform parameter
+    const platform = window.Capacitor?.isNative ? 'mobile' : 'web';
+    const url = `https://flowfy.duckdns.org${endpoint}?email=${encodeURIComponent(email)}&returnTo=${encodeURIComponent(returnTo)}&platform=${platform}`;
+
+    if (window.Capacitor?.isNative) {
+      try {
+        const handler = App.addListener('appUrlOpen', async ({ url }) => {
+          if (url.startsWith('flowfy://oauth/callback')) {
+            await Browser.close();
+            const urlObj = new URL(url);
+            const email = urlObj.searchParams.get('email');
+            if (email) {
+              setIsConnected(true);
+              setConnectedServices(prev => ({
+                ...prev,
+                [serviceName]: true
+              }));
+              handler.remove();
+              setNotification(`Successfully connected to ${serviceName}`);
+              setTimeout(() => setNotification(null), 3000);
             }
-          });
-    
-          await Browser.open({
-            url: url,
-            windowName: '_self',
-            presentationStyle: 'fullscreen'
-          });
-        } catch (error) {
-          console.error('Error during OAuth flow:', error);
-          setNotification('Failed to open authentication window');
-          setTimeout(() => setNotification(null), 3000);
-        }
-      } else {
-        window.location.href = url;
+          }
+        });
+
+        await Browser.open({
+          url: url,
+          windowName: '_self',
+          presentationStyle: 'fullscreen'
+        });
+      } catch (error) {
+        console.error('Error during OAuth flow:', error);
+        setNotification('Failed to open authentication window');
+        setTimeout(() => setNotification(null), 3000);
       }
-    };
+    } else {
+      window.location.href = url;
+    }
+  };
 
   const handleActionSubmit = (action) => {
     if (!isConnected) {
@@ -209,35 +214,35 @@ export function ServiceTemplate() {
     saveToLocalStorage(newActions, newReactions);
   };
 
-    const handleReactionSubmit = async (reactions) => {
+  const handleReactionSubmit = async (reactions) => {
     if (!currentAction) {
       setNotification('Action missing');
       setTimeout(() => setNotification(null), 3000);
       return;
     }
-  
+
     const newReactions = {
       ...selectedReactions,
       [currentAction]: reactions,
     };
-  
+
     const serviceNames = reactions
       .filter((r) => typeof r === 'string')
       .map((r) => r.match(/\((.*?)\)/)?.[1]?.toLowerCase() || '');
-  
+
     const notConnectedServices = serviceNames.filter((name) => name && !connectedServices[name]);
-  
+
     if (notConnectedServices.length > 0) {
       setNotification(`Connect to (${notConnectedServices.join('), (')}) to activate this reaction`);
       setTimeout(() => setNotification(null), 3000);
       return;
     }
-  
+
     const currentServiceId = serviceIds[serviceName];
     const email = localStorage.getItem('email');
     const isMobile = window.Capacitor?.isNative;
     const platform = isMobile ? 'mobile' : 'web';
-  
+
     for (const reaction of reactions) {
       const reactionServiceId = availableReactions.find((r) => r.description === reaction)?.required_service_id;
       if (reactionServiceId && reactionServiceId !== currentServiceId) {
@@ -248,14 +253,14 @@ export function ServiceTemplate() {
               'Content-Type': 'application/json',
             },
           });
-  
+
           if (response.status === 200) {
             console.log('User is logged in for this service');
           } else if (response.status === 404 || response.status === 400) {
             const returnTo = window.location.href;
             const serviceName = Object.keys(serviceIds).find(key => serviceIds[key] === reactionServiceId);
             const authUrl = `https://flowfy.duckdns.org${serviceApiEndpoints[serviceName]}?email=${encodeURIComponent(email)}&returnTo=${encodeURIComponent(returnTo)}&platform=${platform}`;
-  
+
             if (isMobile) {
               try {
                 const { Browser } = await import('@capacitor/browser');
@@ -286,7 +291,7 @@ export function ServiceTemplate() {
         }
       }
     }
-  
+
     setSelectedReactions(newReactions);
     setIsReactionModalOpen(false);
     setCurrentAction(null);
@@ -301,7 +306,7 @@ export function ServiceTemplate() {
       setTimeout(() => setNotification(null), 3000);
       return;
     }
-    const areas = localStorage.getItem('areas');
+    const areas = localStorage.getItem(`areas${serviceName.toUpperCase()}`);
     try {
       const response = await fetch('https://flowfy.duckdns.org/api/save-action-reaction', {
         method: 'POST',

@@ -8,6 +8,8 @@ import { ActionCard } from './ActionCard';
 import { projects } from '../services';
 import { Browser } from '@capacitor/browser';
 import { App } from '@capacitor/app';
+import Navbar from '../Navbar';
+import Footer from '../Footer';
 
 const serviceApiEndpoints = {
   'spotify-service': '/api/auth/spotify',
@@ -326,14 +328,16 @@ export function ServiceTemplate() {
   if (!service) return <div>Service not found</div>;
 
   return (
-    <div className="min-h-screen bg-gray-900">
+    <>
+    <Navbar />
+    <div className="min-h-screen">
       {notification && <Notification message={notification} />}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
           <ServiceHeader service={service} isConnected={isConnected} onConnect={handleConnect} />
           <div className="mt-6">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-semibold text-white">Actions & Reactions</h2>
+              <h2 className="text-xl font-semibold dark:text-white">Actions & Reactions</h2>
               <button
                 onClick={() => setIsActionModalOpen(true)}
                 className="px-4 py-2 text-white rounded-full transition-all duration-300 ease-in-out transform hover:opacity-80 hover:scale-110"
@@ -389,5 +393,7 @@ export function ServiceTemplate() {
         onSubmit={handleReactionSubmit}
       />
     </div>
+    <Footer />
+    </>
   );
 }

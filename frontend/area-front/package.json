@@ -18,6 +18,8 @@
     "@mui/material": "^6.1.10",
     "@mui/styled-engine-sc": "^6.1.10",
     "@mui/x-charts": "^7.23.1",
+    "@preline/carousel": "^2.5.2",
+    "@tabler/icons-react": "^3.28.1",
     "@tailwindcss/forms": "^0.5.9",
     "@testing-library/jest-dom": "^5.17.0",
     "@testing-library/react": "^13.4.0",
@@ -25,7 +27,7 @@
     "chart.js": "^4.4.7",
     "clsx": "^2.1.1",
     "font-awesome": "^4.7.0",
-    "framer-motion": "^11.11.17",
+    "framer-motion": "^11.18.0",
     "googleapis": "^144.0.0",
     "jwt-decode": "^4.0.0",
     "navigate": "^0.3.6",
@@ -37,8 +39,9 @@
     "react-native-app-auth": "^8.0.1",
     "react-router-dom": "^7.0.1",
     "react-scripts": "5.0.1",
+    "react-type-animation": "^3.2.0",
     "styled-components": "^6.1.13",
-    "tailwind-merge": "^2.5.5",
+    "tailwind-merge": "^2.6.0",
     "web-vitals": "^2.1.4"
   },
   "scripts": {

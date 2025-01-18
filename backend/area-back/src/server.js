@@ -22,7 +22,7 @@
   const spotifyAuth = require('./oauth2-spotify');
   const redditAuth = require('./oauth2-reddit');
   const authRateLimiter = require('./middlewares/rateLimiter'); // Import the rate limiter middleware
-  
+  const axios = require('axios');
   const app = express();
   const port = 3000;
   let storedRepositories = [];
@@ -539,5 +539,57 @@
     });
   });
 
-  module.exports = app;
+async function getLatestArtifactUrl() {
+  const artifactsUrl = 'https://api.github.com/repos/Shookapic/Flowfy/actions/artifacts';
+  
+  const response = await axios.get(artifactsUrl, {
+    headers: {
+      Authorization: `Bearer ${process.env.GITHUB_TOKEN}`,
+      Accept: 'application/vnd.github.v3+json',
+    },
+  });
+
+  if (!response.data.artifacts || response.data.artifacts.length === 0) {
+    throw new Error('No artifacts found');
+  }
+
+  const artifacts = response.data.artifacts;
+  // Filter for APK artifacts only
+  const apkArtifacts = artifacts.filter(a => a.name.includes('apk'));
+  if (apkArtifacts.length === 0) {
+    throw new Error('No APK artifacts found');
+  }
+
+  // Sort by creation date
+  apkArtifacts.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  
+  // Get download URL with token
+  return `${apkArtifacts[0].archive_download_url}?access_token=${process.env.GITHUB_TOKEN}`;
+}
+
+app.get('/api/apk', async (req, res) => {
+  try {
+    const artifactUrl = await getLatestArtifactUrl();
+    
+    // Download artifact instead of redirecting
+    const response = await axios.get(artifactUrl, {
+      responseType: 'stream',
+      headers: {
+        Authorization: `Bearer ${process.env.GITHUB_TOKEN}`,
+      }
+    });
+
+    // Set proper headers for download
+    res.setHeader('Content-Type', 'application/vnd.android.package-archive');
+    res.setHeader('Content-Disposition', 'attachment; filename="flowfy.apk.zip"');
+
+    // Pipe the download stream
+    response.data.pipe(res);
+  } catch (error) {
+    console.error('Error fetching artifact:', error.message);
+    res.status(500).send('Error fetching APK. Please try again later.');
+  }
+});
+
+module.exports = app;
   

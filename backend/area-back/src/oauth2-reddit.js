@@ -14,7 +14,7 @@ const redditApi = {
 
 // Reddit auth route
 router.get('/api/auth/reddit', async (req, res) => {
-  const { email, returnTo } = req.query;
+  const { email, returnTo, platform } = req.query;
   
   if (!email) {
     return res.status(400).send('Email is required');
@@ -30,7 +30,8 @@ router.get('/api/auth/reddit', async (req, res) => {
       return res.status(404).send('User not found');
     }
 
-    const state = JSON.stringify({ email, userId, returnTo });
+    const isMobile = platform === 'mobile';
+    const state = JSON.stringify({ email, userId, returnTo, isMobile });
     const authUrl = `https://www.reddit.com/api/v1/authorize?` +
       `client_id=${redditApi.clientId}` +
       `&response_type=code` +
@@ -52,7 +53,7 @@ router.get('/api/auth/reddit', async (req, res) => {
 // Reddit callback route
 router.get('/api/auth/reddit/callback', async (req, res) => {
   const { code, state } = req.query;
-  const { email, userId, returnTo } = JSON.parse(state);
+  const { email, userId, returnTo, isMobile } = JSON.parse(state);
 
   try {
     // Exchange code for tokens
@@ -90,9 +91,25 @@ router.get('/api/auth/reddit/callback', async (req, res) => {
     );
 
     console.log('Reddit auth successful:', { email, userId, serviceId });
-    const redirectUrl = new URL(returnTo);
-    redirectUrl.searchParams.set('connected', 'true');
-    res.redirect(redirectUrl.toString());
+
+    if (isMobile) {
+      res.send(`
+        <html>
+          <body>
+            <script>
+              window.location.replace("flowfy://oauth/callback?email=${encodeURIComponent(email)}&token=${encodeURIComponent(tokens.access_token)}");
+              setTimeout(function() {
+                window.close();
+              }, 1000);
+            </script>
+          </body>
+        </html>
+      `);
+    } else {
+      const redirectUrl = new URL(returnTo);
+      redirectUrl.searchParams.set('connected', 'true');
+      res.redirect(redirectUrl.toString());
+    }
   } catch (error) {
     console.error('Error during Reddit OAuth2 callback:', error);
     const redirectUrl = new URL(returnTo);

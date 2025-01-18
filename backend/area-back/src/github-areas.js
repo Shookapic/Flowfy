@@ -311,8 +311,24 @@ async function AonNewPullRequest(email) {
       }
     });
 
-    // Write the data to a file named "recent pull request"
-    fs.writeFileSync('recent_pull_requests.json', JSON.stringify(pullRequestResponse.data, null, 2));
+    const newContent = JSON.stringify(pullRequestResponse.data, null, 2);
+
+    // Check if the file exists and read its content
+    if (fs.existsSync('recent_pull_requests.json')) {
+      const currentContent = fs.readFileSync('recent_pull_requests.json', 'utf-8');
+      if (currentContent === newContent) {
+        console.log('No changes detected in recent pull requests.');
+        return null;
+      }
+
+      // Create a backup of the current file
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+      fs.copyFileSync('recent_pull_requests.json', `backup_recent_pull_requests_${timestamp}.json`);
+      console.log('Backup of recent pull requests created.');
+    }
+
+    // Write the new content to the file
+    fs.writeFileSync('recent_pull_requests.json', newContent);
     console.log('Recent pull requests have been saved.');
     return pullRequestResponse.data;
   } catch (error) {
@@ -359,15 +375,30 @@ async function AonNewIssue(email) {
       }
     });
 
-    // Write the data to a file named "recent issue"
-    fs.writeFileSync('recent_issues.json', JSON.stringify(issueResponse.data, null, 2));
+    const newContent = JSON.stringify(issueResponse.data, null, 2);
+
+    // Check if the file exists and read its content
+    if (fs.existsSync('recent_issues.json')) {
+      const currentContent = fs.readFileSync('recent_issues.json', 'utf-8');
+      if (currentContent === newContent) {
+        console.log('No changes detected in recent issues.');
+        return null;
+      }
+
+      // Create a backup of the current file
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+      fs.copyFileSync('recent_issues.json', `backup_recent_issues_${timestamp}.json`);
+      console.log('Backup of recent issues created.');
+    }
+
+    // Write the new content to the file
+    fs.writeFileSync('recent_issues.json', newContent);
     console.log('Recent issues have been saved.');
     return issueResponse.data;
   } catch (error) {
     console.error('Error fetching issues:', error.response ? error.response.data : error.message);
   }
 }
-
 // Function to add tasks to the "Github Tasks" Notion calendar
 async function RaddTaskToNotion(email) {
   try {

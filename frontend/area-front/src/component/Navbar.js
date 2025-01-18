@@ -74,17 +74,17 @@ const Navbar = () => {
       <div className="navbar-end relative flex items-center gap-4">
         {/* Add the download button before the avatar */}
         <a 
-          href="/android/app/build/outputs/apk/debug/app-debug.apk" 
-          download
-          className="btn btn-primary hidden md:inline-flex btn-sm lg:btn-md" // Desktop version
-        >
-          <FontAwesomeIcon icon={['fab', 'android']} className="mr-2" />
-          Download APK
+            href="/api/apk"  // Remove the domain since we're using relative path
+            className="btn btn-primary hidden md:inline-flex btn-sm lg:btn-md"
+            download="flowfy.apk.zip"
+          >
+            <FontAwesomeIcon icon={['fab', 'android']} className="mr-2" />
+            Download APK
         </a>
         
         {/* Mobile version of download button */}
         <a 
-          href="/android/app/build/outputs/apk/debug/app-debug.apk" 
+          href="https://flowfy.duckdns.org/api/apk" 
           download
           className="btn btn-primary btn-circle btn-xs md:hidden" // Mobile version
           title="Download APK"

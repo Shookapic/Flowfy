@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import LoginButton from './LoginButton';
 import LogoutButton from './LogoutButton';
 import UserProfile from './UserProfile';
+import Navbar from './Navbar'; // Import the Navbar component
 import lightImage from '../assets/homepage/tile_background_light.png';
 import darkImage from '../assets/homepage/tile_background.png';
 import { motion } from 'framer-motion';
@@ -31,6 +32,7 @@ const Oauth2 = () => {
 
     return (
         <div style={{ backgroundImage: `url(${headerImage})`, backgroundSize: 'cover', height: '100vh' }}>
+            <Navbar /> {/* Include the Navbar component */}
             <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ duration: 1 }}>
                 <div className="flex w-full justify-center">
                     <div className="px-4 py-52 sm:px-6 lg:px-8">

@@ -3,6 +3,8 @@ const fs = require('fs');
 const readline = require('readline');
 require('dotenv').config();
 const GITHUB_API_URL = 'https://api.github.com';
+const {getAccessTokenByEmailAndServiceName } = require('./crud_user_services');
+const {addReactionIdToServer, fetchFilteredServers, fetchFilteredMembers, addReactionIdToMember } = require('./crud_discord_queries');
 
 /**
  * Fetches repositories from GitHub and stores them.
@@ -77,7 +79,7 @@ const compareRepositories = async (storedRepos) => {
  */
 async function checkUserExists(username, githubToken) {
   try {
-    const response = await axios.get(`${GITHUB_API_URL}/users/${username}`, {
+    const response = await axios.get(`https://api.github.com/users/${username}`, {
       headers: {
         Authorization: `Bearer ${githubToken}`,
       },
@@ -100,79 +102,88 @@ async function checkUserExists(username, githubToken) {
 async function RcreateRepositoryFromDiscordServers(email) {
   try {
     // Retrieve the GitHub access token for the user
+
     const githubAccessToken = await getAccessTokenByEmailAndServiceName(email, 'Github');
 
     if (!githubAccessToken) {
       throw new Error('No GitHub access token found for this user.');
     }
 
-    const ownedServers = await fetchFilteredServers('10');
+    const ownedServers = await fetchFilteredServers('8');
     if (!ownedServers) {
       throw new Error('No Server found.');
     }
 
     for (const server of ownedServers) {
-      // Define the repository name
-      const repoName = server.server_name.replace(/\s+/g, '-').toLowerCase(); // Convert spaces to dashes for repo name
+      try {
+        // Define the repository name
+        const repoName = server.server_name.replace(/\s+/g, '-').toLowerCase(); // Convert spaces to dashes for repo name
+        console.log(`Handling server ${server.server_name}: repo is ${repoName}`);
 
-      // Check if the repository already exists
-      const repoExists = await checkIfRepoExists(githubAccessToken, repoName);
-      if (repoExists) {
-        console.log(`Repository already exists for server ${server.server_name}: ${repoName}`);
-        continue; // Skip to the next server
+        // Check if the repository already exists
+        const repoExists = await checkIfRepoExists(githubAccessToken, repoName);
+        if (repoExists) {
+          console.log(`Repository already exists for server ${server.server_name}: ${repoName}`);
+          await addReactionIdToServer(server.server_id, 'Create a repository after creating a Discord server');
+          continue; // Skip to the next server
+        }
+
+        // Define repository settings
+        const repoData = {
+          name: repoName,
+          description: `Repository for Discord server: ${server.server_name}`,
+          private: true, // Set to `true` if you want the repo to be private
+        };
+
+        // Create the repository via GitHub API
+        const response = await axios.post(
+          `${GITHUB_API_URL}/user/repos`,
+          {
+            name: repoData.name,
+            description: repoData.description || '',
+            private: repoData.private,
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${githubAccessToken}`,
+              'Content-Type': 'application/json',
+            },
+          }
+        );
+
+        const repoUrl = response.data.html_url;
+        const owner = response.data.owner.login;
+
+        console.log(`Repository created for server ${server.server_name}: ${repoUrl}`);
+        await addReactionIdToServer(server.server_id, 'Create a repository after creating a Discord server');
+
+        // Add a basic README.md file
+        const readmeContent = `# ${server.server_name}\n\nThis repository is for the Discord server: ${server.server_name}.`;
+
+        await axios.put(
+          `https://api.github.com//repos/${owner}/${repoName}/contents/README.md`,
+          {
+            message: 'Add initial README.md',
+            content: Buffer.from(readmeContent).toString('base64'), // Encode content in base64
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${githubAccessToken}`,
+              'Content-Type': 'application/json',
+            },
+          }
+        );
+
+        console.log(`README.md added to repository ${repoName}`);
+      } catch (innerError) {
+        console.error(`Error handling server ${server.server_name}:`);
+        // console.error(`Error handling server ${server.server_name}:`, innerError.message);
+        continue;
       }
-
-      // Define repository settings
-      const repoData = {
-        name: repoName,
-        description: `Repository for Discord server: ${server.server_name}`,
-        private: true, // Set to `true` if you want the repo to be private
-      };
-
-      // Create the repository via GitHub API
-      const response = await axios.post(
-        `${GITHUB_API_URL}/user/repos`,
-        {
-          name: repoData.name,
-          description: repoData.description || '',
-          private: repoData.private,
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${githubAccessToken}`,
-            'Content-Type': 'application/json',
-          },
-        }
-      );
-
-      const repoUrl = response.data.html_url;
-      const owner = response.data.owner.login;
-
-      console.log(`Repository created for server ${server.server_name}: ${repoUrl}`);
-      addReactionIdToServer(server.server_id, 'Create a repository after creating a server');
-
-      // Add a basic README.md file
-      const readmeContent = `# ${server.server_name}\n\nThis repository is for the Discord server: ${server.server_name}.`;
-
-      await axios.put(
-        `${GITHUB_API_URL}/repos/${owner}/${repoName}/contents/README.md`,
-        {
-          message: 'Add initial README.md',
-          content: Buffer.from(readmeContent).toString('base64'), // Encode content in base64
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${githubAccessToken}`,
-            'Content-Type': 'application/json',
-          },
-        }
-      );
-
-      console.log(`README.md added to repository ${repoName}`);
     }
   } catch (error) {
-    console.error('Error creating repositories or adding README.md:', error);
-    throw error;
+    console.error('Error creating repositories or adding README.md:', error.message);
+    throw error; // Optional: Re-throw if you want to escalate the error further
   }
 }
 
@@ -211,13 +222,13 @@ async function RfollowNewServerMembers(email) {
     if (!githubAccessToken) {
       throw new Error('No GitHub access token found for this user.');
     }
-    const members = await fetchFilteredMembers('11');
+    const members = await fetchFilteredMembers('9');
     if (!members) {
       throw new Error('No Server found.');
     }
     for (const member of members) {
       const userExists = await checkUserExists(member.user_name, githubAccessToken);
-      addReactionIdToMember(member.user_name, member.server_id, 'Follow a user after they joined a Discord server');
+      await addReactionIdToMember(member.user_name, member.server_id, 'Follow a user after they joined a Discord server');
       if (!userExists) {
         console.log(`User ${member.user_name} does not exist.`);
         continue;
@@ -226,17 +237,18 @@ async function RfollowNewServerMembers(email) {
       // If the user exists, follow them
       try {
         await axios.put(
-          `${GITHUB_API_URL}/user/following/${username}`,
+          `https://api.github.com/user/following/${member.user_name}`,
           {},
           {
             headers: {
-              Authorization: `Bearer ${githubToken}`,
+              Authorization: `Bearer ${githubAccessToken}`,
             },
           }
         );
+        console.log(`following User ${member.user_name}.`);
       } catch (error) {
-        console.error(`Error following user: ${username}`, error.response?.data || error.message);
-        throw new Error(`Error following ${username}`);
+        console.error(`Error following user: ${member.user_name}`,  error);
+        throw new Error(`Error following ${member.user_name}`);
       }
     }
 

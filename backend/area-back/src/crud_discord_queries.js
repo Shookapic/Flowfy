@@ -196,22 +196,32 @@ async function getUserFriends(accessToken) {
 
 /**
  * Add a new reaction ID to the reactions_id array for a specific server.
+ * Ensures the ID is unique within the array.
  * @param {string} serverId - The server ID of the row to update.
- * @param {string} reactionId - The reaction ID to add to the reactions_id array.
+ * @param {string} reactionName - The name of the reaction to add.
  * @returns {Promise<void>}
  */
 async function addReactionIdToServer(serverId, reactionName) {
-  const query = `
+  const getReactionIdQuery = `SELECT id FROM reactions WHERE description = $1;`;
+  const updateReactionsQuery = `
     UPDATE discord_servers
-    SET reactions_id = array_append(reactions_id, $1)
+    SET reactions_id = CASE
+      WHEN $1 = ANY(reactions_id) THEN reactions_id
+      ELSE array_append(reactions_id, $1)
+    END
     WHERE server_id = $2;
   `;
 
-  const reactionQuery = `SELECT id FROM reactions WHERE description = $1;`;
-
   try {
-    const reactionId = await client.query(reactionQuery, [reactionName]);
-    await client.query(query, [reactionId, serverId]);
+    // Fetch the reaction ID
+    const reactionResult = await client.query(getReactionIdQuery, [reactionName]);
+    if (reactionResult.rows.length === 0) {
+      throw new Error(`Reaction "${reactionName}" not found.`);
+    }
+    const reactionId = reactionResult.rows[0].id;
+
+    // Update the reactions_id array
+    await client.query(updateReactionsQuery, [reactionId, serverId]);
     console.log(`Successfully added reaction ID ${reactionId} to server ${serverId}`);
   } catch (error) {
     console.error('Error updating reactions_id array:', error);
@@ -219,20 +229,35 @@ async function addReactionIdToServer(serverId, reactionName) {
   }
 }
 
+/**
+ * Add a new reaction ID to the reactions_id array for a specific member.
+ * Ensures the ID is unique within the array.
+ * @param {string} username - The username of the member.
+ * @param {string} serverId - The server ID where the member belongs.
+ * @param {string} reactionName - The name of the reaction to add.
+ * @returns {Promise<void>}
+ */
 async function addReactionIdToMember(username, serverId, reactionName) {
-  const query = `UPDATE discord_servers_members
-  SET reactions_id = CASE
-  WHEN array_position(reactions_id, $1) IS NULL THEN array_append(reactions_id, $1)
-  ELSE reactions_id
-  END
-  WHERE user_name = $2 AND server_id = $3;
+  const getReactionIdQuery = `SELECT id FROM reactions WHERE description = $1;`;
+  const updateReactionsQuery = `
+    UPDATE discord_servers_members
+    SET reactions_id = CASE
+      WHEN array_position(reactions_id, $1) IS NULL THEN array_append(reactions_id, $1)
+      ELSE reactions_id
+    END
+    WHERE user_name = $2 AND server_id = $3;
   `;
 
-  const actionQuery = `SELECT id FROM actions WHERE description = $1;`;
-
   try {
-    const reactionId = await client.query(actionQuery, [reactionName]);
-    await client.query(query, [reactionId, username, serverId]);
+    // Fetch the action ID
+    const reactionResult = await client.query(getReactionIdQuery, [reactionName]);
+    if (reactionResult.rows.length === 0) {
+      throw new Error(`Reaction "${reactionName}" not found.`);
+    }
+    const reactionId = reactionResult.rows[0].id;
+
+    // Update the reactions_id array
+    await client.query(updateReactionsQuery, [reactionId, username, serverId]);
     console.log(`Successfully added reaction ID ${reactionId} to user ${username}`);
   } catch (error) {
     console.error('Error updating reactions_id array:', error);

@@ -34,7 +34,7 @@ passport.use(
       clientID: process.env.DISCORD_CLIENT_ID,
       clientSecret: process.env.DISCORD_CLIENT_SECRET,
       callbackURL: DISCORD_CALLBACK_URL,
-      scope: ["identify", "email", "connections", "bot"],
+      scope: ["identify", "email", "guilds", "guilds.members.read", "guilds.join"],
     },
     function (accessToken, refreshToken, profile, done) {
       return done(null, profile);

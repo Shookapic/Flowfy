@@ -4,7 +4,7 @@ const DiscordStrategy = require("passport-discord").Strategy;
 const session = require("express-session");
 require('dotenv').config();
 const router = express.Router();
-const { getUserIdByEmail, createUserServiceEMAIL, getAccessTokenByEmailAndServiceName, createUserServiceID } = require('./crud_user_services');
+const { getAccessTokenByEmailAndServiceName } = require('./crud_user_services');
 const { writeDataToFile, getUserGuilds } = require('./crud_discord_queries');
 const { getServiceByName } = require('./crud_services');
 const fs = require('fs');
@@ -20,7 +20,8 @@ const client = new Client({
     GatewayIntentBits.MessageContent, // Required for reading message content
   ],
 });
-
+const axios = require('axios');
+const botToken = process.env.DISCORD_BOT_TOKEN;
 function findNewOwnedServers(currentGuilds, previousGuilds) {
   const previousGuildIds = new Set(previousGuilds.map(guild => guild.id));
   return currentGuilds.filter(guild => !previousGuildIds.has(guild.id) && guild.owner);
@@ -61,13 +62,17 @@ const storeNewUser = async (member, guildInfo) => {
 
 async function AonServerCreation(email) {
   try {
+    console.log('in AonServerCreation');
     // Fetch the user's guilds
     const accessToken = await getAccessTokenByEmailAndServiceName(email, 'Discord');
     const guilds = await getUserGuilds(accessToken);
 
     // Filter for owned servers
     const ownedServers = guilds.filter(guild => guild.owner);
-
+    if (ownedServers.length === 0) {
+      console.log('No owned servers found for email:', email);
+      return null;
+    }
     ownedServers.forEach(server => {
       server.owner_email = email; // Add email to each server object
     });
@@ -86,56 +91,146 @@ async function AonServerCreation(email) {
         );
       }
       writeDataToFile(ownedServers, './DISCORD_owned_servers.json');
-
+      console.log('added servers to db return email', email);
     } catch (dbError) {
       console.error('Error inserting owned servers into database:', dbError);
+      console.log('Error inserting owned servers into database:', dbError);
+      return null;
       throw dbError;
     }
-    return ownedServers;
+    console.log('return email', email);
   } catch (error) {
     console.error('Error adding owned servers:', error);
+    console.log('Error adding owned servers:', error);
     throw error;
   }
+  return email;
 }
 
 async function AonNewServerMember(email) {
-  client.once('guildMemberAdd', async (member) => {
-    const guildName = member.guild.name; // Get the name of the guild
-    const guildId = member.guild.id; // Get the ID of the guild
-    const userTag = `${member.user.username}#${member.user.discriminator}`; // Get the user's tag
+  try {
+    console.log('Checking for new server members for email:', email);
 
-    console.log(`New member joined: ${userTag}`);
-    console.log(`Joined Server: ${guildName} (ID: ${guildId})`);
-    const userInfo = {
-      discordId: member.user.id,
-      username: member.user.username,
-      discriminator: member.user.discriminator,
-      joinedAt: new Date().toISOString(),
-      guildName,
-      guildId,
-    };
+    // Fetch the user's guilds
+    const accessToken = await getAccessTokenByEmailAndServiceName(email, 'Discord');
+    const guilds = await getUserGuilds(accessToken);
 
-    userInfo.server_name = guildName;
-    userInfo.server_id = guildId;
-    console.log('userTag', userTag);
-    console.log('guildId', guildId);
-    console.log('guildName', guildName);
-    // Pass member and guild info to the storeNewUser function
-    try {
-      await writeDataToFile(userInfo, './DISCORD_new_server_members.json');
-      await db.query(
-        `INSERT INTO discord_servers_members (server_id, server_name, user_name, user_id, joined_at)
-        VALUES ($1, $2, $3, $4, $5)
-        ON CONFLICT (server_id, user_name) DO NOTHING;`,
-        [guildId, guildName, userInfo.username, userInfo.discordId, userInfo.joinedAt]
-      );
-
-    } catch (dbError) {
-      console.error('Error inserting owned servers into database:', dbError);
-      throw dbError;
+    // Filter for owned servers
+    const ownedServers = guilds.filter(guild => guild.owner);
+    if (ownedServers.length === 0) {
+      console.log('No owned servers found for email:', email);
+      return null;
     }
-    return userInfo;
-  });
+    for (const server of ownedServers) {
+      console.log(`Fetching members for guild: ${server.name} (ID: ${server.id})`);
+
+      // Fetch members of the guild
+      const members = await fetchGuildMembers(server.id, botToken);
+
+      // Fetch recorded members from the database
+      const recordedMembers = await db.query(
+        `SELECT user_id FROM discord_servers_members WHERE server_id = $1`,
+        [server.id]
+      );
+      const recordedMemberIds = recordedMembers.rows.map(row => row.user_id);
+
+      if (recordedMemberIds.length === 0) {
+        console.log('No recorded members found for server:', server.name);
+        // Insert all fetched members into the database
+        for (const member of members) {
+          const userInfo = {
+            discordId: member.user.id,
+            username: member.user.username,
+            discriminator: member.user.discriminator,
+            joinedAt: new Date().toISOString(),
+            guildName: server.name,
+            guildId: server.id,
+          };
+
+          try {
+            // Save new member to database
+            await db.query(
+              `INSERT INTO discord_servers_members (server_id, server_name, user_name, user_id, joined_at)
+               VALUES ($1, $2, $3, $4, $5)
+               ON CONFLICT (server_id, user_name) DO NOTHING;`,
+              [server.id, server.name, userInfo.username, userInfo.discordId, userInfo.joinedAt]
+            );
+
+            // Optionally save new member data to a file
+            await writeDataToFile(userInfo, './DISCORD_new_server_members.json');
+            console.log('Added new member to database:', userInfo.username);
+          } catch (dbError) {
+            console.error('Error inserting new member into database:', dbError);
+            throw dbError;
+          }
+        }
+        continue;
+      }
+
+      // Find new members by comparing recorded IDs
+      const newMembers = members.filter(member => !recordedMemberIds.includes(member.user.id));
+      if (newMembers.length === 0) {
+        console.log('No new members found for server:', server.name);
+        continue;
+      }
+      for (const newMember of newMembers) {
+        const userInfo = {
+          discordId: newMember.user.id,
+          username: newMember.user.username,
+          discriminator: newMember.user.discriminator,
+          joinedAt: new Date().toISOString(),
+          guildName: server.name,
+          guildId: server.id,
+        };
+
+        try {
+          // Save new member to database
+          await db.query(
+            `INSERT INTO discord_servers_members (server_id, server_name, user_name, user_id, joined_at)
+             VALUES ($1, $2, $3, $4, $5)
+             ON CONFLICT (server_id, user_name) DO NOTHING;`,
+            [server.id, server.name, userInfo.username, userInfo.discordId, userInfo.joinedAt]
+          );
+
+          // Optionally save new member data to a file
+          await writeDataToFile(userInfo, './DISCORD_new_server_members.json');
+          console.log('Added new member to database:', userInfo.username);
+        } catch (dbError) {
+          console.error('Error inserting new member into database:', dbError);
+          throw dbError;
+        }
+      }
+    }
+
+    console.log('Finished checking for new server members for email:', email);
+  } catch (error) {
+    console.error('Error detecting new server members:', error);
+    throw error;
+  }
+  return "done";
+}
+/**
+ * Fetches members for a specific guild using the Discord API.
+ * Replace this with the appropriate API call for your Discord bot or integration.
+ */
+async function fetchGuildMembers(guildId, botToken) {
+  const url = `https://discord.com/api/v10/guilds/${guildId}/members?limit=1000`;
+  try {
+    const response = await axios.get(url, {
+      headers: {
+        Authorization: `Bot ${botToken}`, // Use bot token here
+      },
+    });
+
+    if (response.status !== 200) {
+      throw new Error(`Failed to fetch members for guild ${guildId}. Status: ${response.status}`);
+    }
+
+    return response.data;
+  } catch (error) {
+    console.error(`Error fetching members for guild ${guildId}:`, error.response?.data || error.message);
+    throw error;
+  }
 }
 
 module.exports = {

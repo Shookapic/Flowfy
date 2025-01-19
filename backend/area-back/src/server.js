@@ -377,58 +377,58 @@
   });
   
   // When the bot is ready
-  client.once('ready', () => {
-    console.log(`Logged in as ${client.user.tag}`);
-    AonNewServerMember('placeholder');
-  });
+  // client.once('ready', () => {
+  //   console.log(`Logged in as ${client.user.tag}`);
+  //   AonNewServerMember('placeholder');
+  // });
   
   // Listen for messages
-  client.on('messageCreate', (message) => {
-    if (message.author.bot) return; // Ignore bot messages
+  // client.on('messageCreate', (message) => {
+  //   if (message.author.bot) return; // Ignore bot messages
   
-    if (message.content === '!ping') {
-        message.reply('Pong!');
-    }
-  });
+  //   if (message.content === '!ping') {
+  //       message.reply('Pong!');
+  //   }
+  // });
   
   // Login to Discord
   client.login(process.env.DISCORD_BOT_TOKEN);
   
   // Listen for messages
-  client.on('messageCreate', async (message) => {
-    if (message.author.bot) return; // Ignore bot messages
+  // client.on('messageCreate', async (message) => {
+  //   if (message.author.bot) return; // Ignore bot messages
   
-    // Example command to fetch friend list
-    if (message.content === '!friends') {
-        // Fetch the user's friend list
-        try {
-          message.reply('Fetching your friends.');
-          const guild = await message.guild.members.fetch();
-          const friendList = guild.map(member => member.user.tag); // Simulating friends from guild members
-          message.channel.send(`Friends in this server: ${friendList.join(', ')}`);
-        } catch (error) {
-            console.error('Error fetching friends:', error);
-            message.reply('Sorry, there was an error fetching your friends.');
-        }
-    }
-  });
+  //   // Example command to fetch friend list
+  //   if (message.content === '!friends') {
+  //       // Fetch the user's friend list
+  //       try {
+  //         message.reply('Fetching your friends.');
+  //         const guild = await message.guild.members.fetch();
+  //         const friendList = guild.map(member => member.user.tag); // Simulating friends from guild members
+  //         message.channel.send(`Friends in this server: ${friendList.join(', ')}`);
+  //       } catch (error) {
+  //           console.error('Error fetching friends:', error);
+  //           message.reply('Sorry, there was an error fetching your friends.');
+  //       }
+  //   }
+  // });
   
-  client.on('messageCreate', async (message) => {
-    if (message.content === '!getfriends') {
-      try {
-        // Fetch guild members (the bot must have access to the guild)
-        const guild = await message.guild.members.fetch();
-        const friendList = guild.map(member => member.user.tag); // Simulating friends from guild members
-        message.channel.send(`Friends in this server: ${friendList.join(', ')}`);
-      } catch (error) {
-        message.channel.send('Error fetching friends.');
-      }
-    }
-  });
+  // client.on('messageCreate', async (message) => {
+  //   if (message.content === '!getfriends') {
+  //     try {
+  //       // Fetch guild members (the bot must have access to the guild)
+  //       const guild = await message.guild.members.fetch();
+  //       const friendList = guild.map(member => member.user.tag); // Simulating friends from guild members
+  //       message.channel.send(`Friends in this server: ${friendList.join(', ')}`);
+  //     } catch (error) {
+  //       message.channel.send('Error fetching friends.');
+  //     }
+  //   }
+  // });
   
-  client.on('guildBanAdd', async (ban) => {
-    console.log(`User banned: ${ban.user.tag}`);
-  });
+  // client.on('guildBanAdd', async (ban) => {
+  //   console.log(`User banned: ${ban.user.tag}`);
+  // });
   
   if (process.env.NODE_ENV !== 'test') {
     setInterval(runAREAS, 5 * 1000);
